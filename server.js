@@ -1,4 +1,4 @@
-// server.js – präzise Version für xG Value Dashboard
+// server.js â€“ prÃ¤zise Version fÃ¼r xG Value Dashboard
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -12,11 +12,11 @@ app.use(express.static(__dirname));
 const PORT = process.env.PORT || 10000;
 const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_API_KEY || "";
 
-// Cache für API-Ergebnisse
+// Cache fÃ¼r API-Ergebnisse
 let cache = { timestamp: 0, data: [] };
 const CACHE_DURATION = 15 * 60 * 1000; // 15 Minuten
 
-// Ligen-IDs für football-data.org
+// Ligen-IDs fÃ¼r football-data.org
 const LEAGUE_IDS = {
   "Premier League": "PL",
   "Bundesliga": "BL1",
@@ -25,7 +25,7 @@ const LEAGUE_IDS = {
   "Ligue 1": "FL1",
   "Champions League": "CL",
   "Eredivisie": "DED",
-  "Campeonato Brasileiro Série A": "BSA",
+  "Campeonato Brasileiro SÃ©rie A": "BSA",
   "Championship": "ELC",
   "Primeira Liga": "PPL",
   "European Championship": "EC"
@@ -94,14 +94,14 @@ function estimateXG(teamName, isHome) {
   const base = isHome ? 1.45 : 1.15; // Heimbonus
   let adj = 0;
 
-  // Team-Stärke grob simulieren
+  // Team-StÃ¤rke grob simulieren
   const strongTeams = ["Man City", "Liverpool", "Bayern", "Real", "PSG", "Inter", "Arsenal"];
   const weakTeams = ["Bochum", "Cadiz", "Verona", "Clermont", "Empoli", "Luton", "Sheffield"];
 
   if (strongTeams.some(t => teamName.includes(t))) adj += 0.4;
   if (weakTeams.some(t => teamName.includes(t))) adj -= 0.25;
 
-  const random = (Math.random() - 0.5) * 0.25; // leicht zufällig
+  const random = (Math.random() - 0.5) * 0.25; // leicht zufÃ¤llig
   return +(base + adj + random).toFixed(2);
 }
 
@@ -155,7 +155,7 @@ async function fetchGamesFromAPI() {
           under25: +((prob.under25 * odds.under25) - 1).toFixed(4)
         };
 
-        // Trendlogik (präziser)
+        // Trendlogik (prÃ¤ziser)
         let trend = "neutral";
         const mainVal = Math.max(value.home, value.draw, value.away);
         if (value.home > 0.1 && prob.home > 0.45) trend = "home";
@@ -205,4 +205,4 @@ app.get("/api/games", async (req, res) => {
 /* ---------- Frontend ---------- */
 app.get("*", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
 
-app.listen(PORT, () => console.log(`🚀 Server läuft auf Port ${PORT}`));
+app.listen(PORT, () => console.log(`ðŸš€ Server lÃ¤uft auf Port ${PORT}`));
