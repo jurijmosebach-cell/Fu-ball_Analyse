@@ -1,148 +1,117 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>xG Value Dashboard</title>
-<link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Football Dashboard</title>
 <style>
-:root{
-  --bg1:#f9fafb; --bg2:#ffffff; --accent:#4caf50; --muted:#6b7280; --card:#ffffff;
-}
-*{box-sizing:border-box}
-body{
-  margin:0; font-family:Inter,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
-  background:linear-gradient(135deg,var(--bg1),var(--bg2)); color:#111827;
-}
-.container{max-width:1200px;margin:24px auto;padding:20px;}
-header h1{text-align:center;font-size:1.8rem;margin:0;}
-.subtitle{text-align:center;color:var(--muted);margin:6px 0 16px;}
-.controls{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:18px;}
-.controls label{display:flex;flex-direction:column;font-size:0.85rem;color:var(--muted);}
-.controls input[type="date"], .controls input[type="text"], .controls select{padding:8px 10px;border-radius:8px;border:1px solid #e6e9ef;background:#fff;min-width:150px;}
-button#loadBtn{padding:9px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;box-shadow:0 6px 18px rgba(76,175,80,0.18);cursor:pointer;}
-button#loadBtn:hover{transform:translateY(-1px);}
-main{margin-top:18px;}
-.games{display:flex;flex-direction:column;gap:12px;}
-.game{background:var(--card);padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(15,23,42,0.06);border-left:6px solid #e5e7eb;transition:transform .12s;}
-.game:hover{transform:translateY(-4px);}
-.game.top3{padding:18px;border-radius:12px;font-weight:600;}
-.two-column{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px;}
-.list div{background:var(--card);padding:10px;border-radius:8px;margin-bottom:8px;box-shadow:0 4px 12px rgba(12,15,20,0.04);}
-.team{display:flex;align-items:center;gap:8px;margin-top:8px;color:#374151;font-weight:600;}
-.team img{width:26px;height:18px;object-fit:cover;border-radius:3px;}
-.date{color:var(--muted);font-size:0.9rem;margin-top:6px;}
-.bar-container{background:#eef2f6;height:14px;border-radius:8px;margin-top:8px;overflow:hidden;}
-.bar{height:100%;border-radius:8px;display:flex;align-items:center;padding-left:8px;color:#fff;font-weight:600;font-size:12px;}
-.home-bar{background:#4caf50;}
-.draw-bar{background:#f59e0b;}
-.away-bar{background:#ef4444;}
-.over25-bar{background:#2196f3;}
-.under25-bar{background:#8b5cf6;}
-.btts-bar{background:#8b3ff6;}
-footer{margin-top:18px;text-align:center;color:var(--muted);font-size:0.85rem;}
-.top10-table{width:100%;border-collapse:collapse;margin-top:16px;}
-.top10-table th,.top10-table td{border:1px solid #e5e7eb;padding:6px 8px;text-align:center;font-size:0.85rem;}
-.top10-table th{background:#f3f4f6;font-weight:600;}
-@media(max-width:900px){.two-column{grid-template-columns:1fr}.controls{justify-content:space-between;padding:0 12px}.container{padding:12px}}
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f3f4f6;
+    color: #111;
+    margin: 0;
+    padding: 0 10px;
+  }
+  h1, h2 {
+    text-align: center;
+  }
+  .filters {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  input, select, button {
+    padding: 6px 10px;
+    font-size: 1em;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+  }
+  #top10, #top3, #top7Value, #top5Over25, #games {
+    margin-bottom: 20px;
+  }
+  .game {
+    background-color: #fff;
+    padding: 8px;
+    margin-bottom: 6px;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .game.top10 {
+    display: flex;
+    flex-direction: column;
+  }
+  .team {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 2px 0;
+  }
+  .team img {
+    width: 24px;
+    height: 18px;
+  }
+  .bar-container {
+    width: 100%;
+    background-color: #e5e7eb;
+    border-radius: 4px;
+    margin: 2px 0;
+    height: 18px;
+    position: relative;
+  }
+  .bar {
+    height: 100%;
+    border-radius: 4px;
+    line-height: 18px;
+    color: #fff;
+    text-align: right;
+    padding-right: 4px;
+    font-size: 0.85em;
+    box-sizing: border-box;
+  }
 </style>
 </head>
 <body>
-<div class="container">
-  <header>
-    <h1>xG Value Dashboard</h1>
-    <p class="subtitle">Top 3, Top 7 Value, Top 5 Over, Top 10 Wahrscheinlichkeiten – Datum / Liga / Team filtern</p>
-  </header>
 
-  <div class="controls">
-    <label>Datum<input type="date" id="date" /></label>
-    <label>Liga
-      <select id="league">
-        <option value="">Alle</option>
-        <option>Premier League</option>
-        <option>Bundesliga</option>
-        <option>La Liga</option>
-        <option>Serie A</option>
-        <option>Ligue 1</option>
-        <option>Champions League</option>
-        <option>Eredivisie</option>
-        <option>Campeonato Brasileiro Série A</option>
-        <option>Championship</option>
-        <option>Primeira Liga</option>
-        <option>European Championship</option>
-      </select>
-    </label>
-    <label>Team<input type="text" id="team" placeholder="Teamname" /></label>
-    <button id="loadBtn">Spiele laden</button>
-  </div>
+<h1>Football Dashboard</h1>
 
-  <main>
-    <section>
-      <h2>Top 3 Spiele</h2>
-      <div id="top3" class="games"></div>
-    </section>
-
-    <section class="two-column">
-      <div>
-        <h2>Top 7 Value</h2>
-        <div id="top7Value" class="list"></div>
-      </div>
-      <div>
-        <h2>Top 5 Over 2.5</h2>
-        <div id="top5Over25" class="list"></div>
-      </div>
-    </section>
-
-    <section>
-      <h2>Top 10 Wahrscheinlichkeiten</h2>
-      <table class="top10-table">
-        <thead>
-          <tr>
-            <th>#</th><th>Datum</th><th>Liga</th><th>Home</th><th>Away</th><th>Wahrscheinlichkeiten</th><th>Trend</th>
-          </tr>
-        </thead>
-        <tbody id="top10Body"></tbody>
-      </table>
-    </section>
-
-    <section>
-      <h2>Alle Spiele</h2>
-      <div id="games" class="games"></div>
-    </section>
-  </main>
-
-  <footer>
-    <small>Benötigt FOOTBALL_DATA_API_KEY in Render / Environment</small>
-  </footer>
+<div class="filters">
+  <input type="date" id="date">
+  <select id="league">
+    <option value="">Alle Ligen</option>
+    <option value="Premier League">Premier League</option>
+    <option value="Bundesliga">Bundesliga</option>
+    <option value="La Liga">La Liga</option>
+    <option value="Serie A">Serie A</option>
+    <option value="Ligue 1">Ligue 1</option>
+    <option value="Champions League">Champions League</option>
+    <option value="Eredivisie">Eredivisie</option>
+    <option value="Campeonato Brasileiro Série A">Brasileirão</option>
+    <option value="Championship">Championship</option>
+    <option value="Primeira Liga">Primeira Liga</option>
+    <option value="European Championship">EM</option>
+  </select>
+  <input type="text" id="team" placeholder="Team suchen">
+  <button id="loadBtn">Spiele laden</button>
 </div>
 
+<h2>Top 10 nach Siegwahrscheinlichkeit</h2>
+<div id="top10"></div>
+
+<h2>Top 3 Spiele</h2>
+<div id="top3"></div>
+
+<h2>Top 7 Value Spiele</h2>
+<div id="top7Value"></div>
+
+<h2>Top 5 Over 2.5</h2>
+<div id="top5Over25"></div>
+
+<h2>Alle Spiele</h2>
+<div id="games"></div>
+
 <script src="app.js"></script>
-<script>
-const top10Body = document.getElementById('top10Body');
 
-function createBars(game){
-  const wrap = document.createElement('div');
-  ['home','draw','away','over25','btts'].forEach(key=>{
-    const val = game.prob[key] || (key==='btts'?game.btts:0);
-    const bar = document.createElement('div');
-    bar.className='bar '+key+'-bar';
-    bar.style.width = (val*100)+'%';
-    bar.textContent = key==='btts'?'BTTS':key==='over25'?'Over2.5':key.charAt(0).toUpperCase()+key.slice(1);
-    wrap.appendChild(bar);
-  });
-  return wrap;
-}
-
-function trendColor(trend){
-  switch(trend){
-    case 'Home': return 'bg-green-500';
-    case 'Away': return 'bg-red-500';
-    case 'Draw': return 'bg-yellow-500';
-    case 'Over2.5': return 'bg-blue-500';
-    case 'BTTS': return 'bg-purple-500';
-    default: return 'bg-gray-400';
-  }
-}
-</script>
 </body>
 </html>
