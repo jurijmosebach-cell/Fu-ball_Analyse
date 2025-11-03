@@ -1,8 +1,8 @@
-const top10Div = document.getElementById("top10");
 const top3Div = document.getElementById("top3");
 const top7ValueDiv = document.getElementById("top7Value");
 const top5OverDiv = document.getElementById("top5Over25");
 const gamesDiv = document.getElementById("games");
+const top10Body = document.getElementById("top10Body");
 const loadBtn = document.getElementById("loadBtn");
 const dateInput = document.getElementById("date");
 const leagueSelect = document.getElementById("league");
@@ -22,24 +22,9 @@ function createBar(label, value, color){
 }
 
 function getTrafficColor(value, trend){
-  if(value > 0.15 && (trend === 'Home' || trend === 'Away')) return '#16a34a'; // stark grün
+  if(value > 0.15 && (trend === 'home' || trend === 'away')) return '#16a34a'; // stark grün
   if(value > 0) return '#f59e0b'; // gelb
   return '#ef4444'; // rot
-}
-
-// Trend-Bestimmung
-function determineTrend(game){
-  const probs = game.prob;
-  const btts = game.btts ?? 0;
-  const trendMap = {
-    Home: probs.home ?? 0,
-    Draw: probs.draw ?? 0,
-    Away: probs.away ?? 0,
-    Over2.5: probs.over25 ?? 0,
-    BTTS: btts
-  };
-  let best = Object.entries(trendMap).reduce((a,b)=>b[1]>a[1]?b:a);
-  return best[0];
 }
 
 async function loadGames(){
@@ -48,6 +33,7 @@ async function loadGames(){
     if(dateInput.value) url += "?date=" + dateInput.value;
     const res = await fetch(url);
     const data = await res.json();
+
     if(!data || !Array.isArray(data.response)){
       gamesDiv.innerHTML = "<p>Fehler: keine Spieldaten erhalten.</p>";
       return;
@@ -63,38 +49,16 @@ async function loadGames(){
       games = games.filter(g => g.home.toLowerCase().includes(q) || g.away.toLowerCase().includes(q));
     }
 
-    // Trend für alle Spiele berechnen
-    games.forEach(g=>{
-      g.btts = g.btts ?? 0;
-      g.trend = determineTrend(g);
-      switch(g.trend){
-        case 'Home': g.trendProb = g.prob?.home ?? 0; break;
-        case 'Draw': g.trendProb = g.prob?.draw ?? 0; break;
-        case 'Away': g.trendProb = g.prob?.away ?? 0; break;
-        case 'Over2.5': g.trendProb = g.prob?.over25 ?? 0; break;
-        case 'BTTS': g.trendProb = g.btts ?? 0; break;
-      }
-    });
-
-    // --- Top10 Most Likely ---
-    top10Div.innerHTML = "";
-    const top10 = games.slice().sort((a,b)=>b.trendProb - a.trendProb).slice(0,10);
-    top10.forEach(g=>{
-      const div = document.createElement("div");
-      div.className="game";
-      const dateObj = g.date ? new Date(g.date) : new Date();
-      div.textContent = `${g.home} vs ${g.away} (${g.league}) → ${g.trend} ${(g.trendProb*100).toFixed(0)}% | xG: ${g.homeXG.toFixed(2)}-${g.awayXG.toFixed(2)}`;
-      top10Div.appendChild(div);
-    });
-
     // Sortiere nach maximalem Value (1X2)
     games.sort((a,b) => Math.max(b.value.home,b.value.draw,b.value.away) - Math.max(a.value.home,a.value.draw,a.value.away));
+
     const topGames = games.slice(0,3);
     const otherGames = games.slice(3);
 
     // Top3
     top3Div.innerHTML = "";
     topGames.forEach(g => {
+      g.btts = g.btts ?? 0;
       const div = document.createElement("div");
       div.className = "game top3";
       const dateObj = g.date ? new Date(g.date) : new Date();
@@ -103,22 +67,24 @@ async function loadGames(){
       div.style.borderLeft = `6px solid ${color}`;
       div.innerHTML = `<div><strong>${g.home}</strong> vs <strong>${g.away}</strong> (${g.league}) - <span class="date">${dateObj.toLocaleString()}</span></div>
         <div class="team"><img src="${g.homeLogo}" alt=""> ${g.home} xG:${g.homeXG} | Trend:${g.trend}</div>
-        <div class="team"><img src="${g.awayLogo}" alt=""> ${g.away} xG:${g.awayXG} | Trend:${g.trend}</div>`;
+        <div class="team"><img src="${g.awayLogo}" alt=""> ${g.away} xG:${g.awayXG} | Trend:${g.trend}</div>
+      `;
       div.appendChild(createBar("Home", g.prob?.home ?? g.value.home, "#4caf50"));
       div.appendChild(createBar("Draw", g.prob?.draw ?? g.value.draw, "#f59e0b"));
       div.appendChild(createBar("Away", g.prob?.away ?? g.value.away, "#ef4444"));
       div.appendChild(createBar("Over 2.5", g.prob?.over25 ?? g.value.over25, "#2196f3"));
       div.appendChild(createBar("Under 2.5", g.prob ? (1 - g.prob.over25) : g.value.under25, "#8b5cf6"));
       div.appendChild(createBar("BTTS", g.btts ?? 0, "#ff7a00"));
+
       top3Div.appendChild(div);
     });
 
     // Top7 Value
     top7ValueDiv.innerHTML = "";
     const top7 = games.slice(0,7);
-    top7.forEach(g=>{
+    top7.forEach(g => {
       const div = document.createElement("div");
-      div.className="game";
+      div.className = "game";
       const dateObj = g.date ? new Date(g.date) : new Date();
       const bestVal = Math.max(g.value.home, g.value.draw, g.value.away);
       const color = getTrafficColor(bestVal, g.trend);
@@ -130,9 +96,9 @@ async function loadGames(){
     // Top5 Over
     top5OverDiv.innerHTML = "";
     const top5Over = games.slice().sort((a,b) => b.value.over25 - a.value.over25).slice(0,5);
-    top5Over.forEach(g=>{
+    top5Over.forEach(g => {
       const div = document.createElement("div");
-      div.className="game";
+      div.className = "game";
       div.style.borderLeft = `6px solid #2196f3`;
       div.textContent = `${g.home} vs ${g.away} (${g.league}) → Over2.5 ${(g.prob?.over25 ?? g.value.over25).toFixed(2)} | Trend: ${g.trend}`;
       top5OverDiv.appendChild(div);
@@ -140,7 +106,8 @@ async function loadGames(){
 
     // Alle anderen Spiele
     gamesDiv.innerHTML = "";
-    otherGames.forEach(g=>{
+    otherGames.forEach(g => {
+      g.btts = g.btts ?? 0;
       const div = document.createElement("div");
       div.className = "game";
       const dateObj = g.date ? new Date(g.date) : new Date();
@@ -149,14 +116,45 @@ async function loadGames(){
       div.style.borderLeft = `6px solid ${color}`;
       div.innerHTML = `<div><strong>${g.home}</strong> vs <strong>${g.away}</strong> (${g.league}) - <span class="date">${dateObj.toLocaleString()}</span></div>
         <div class="team"><img src="${g.homeLogo}" alt=""> ${g.home} xG:${g.homeXG} | Trend:${g.trend}</div>
-        <div class="team"><img src="${g.awayLogo}" alt=""> ${g.away} xG:${g.awayXG} | Trend:${g.trend}</div>`;
+        <div class="team"><img src="${g.awayLogo}" alt=""> ${g.away} xG:${g.awayXG} | Trend:${g.trend}</div>
+      `;
       div.appendChild(createBar("Home", g.prob?.home ?? g.value.home, "#4caf50"));
       div.appendChild(createBar("Draw", g.prob?.draw ?? g.value.draw, "#f59e0b"));
       div.appendChild(createBar("Away", g.prob?.away ?? g.value.away, "#ef4444"));
       div.appendChild(createBar("Over 2.5", g.prob?.over25 ?? g.value.over25, "#2196f3"));
       div.appendChild(createBar("Under 2.5", g.prob ? (1 - g.prob.over25) : g.value.under25, "#8b5cf6"));
       div.appendChild(createBar("BTTS", g.btts ?? 0, "#ff7a00"));
+
       gamesDiv.appendChild(div);
+    });
+
+    // ---------- Top 10 Wahrscheinlichkeiten ----------
+    top10Body.innerHTML = "";
+    const gamesWithMaxProb = games.map(g => {
+      const probs = [
+        {type:'Home', value:g.prob?.home ?? g.value.home},
+        {type:'Draw', value:g.prob?.draw ?? g.value.draw},
+        {type:'Away', value:g.prob?.away ?? g.value.away},
+        {type:'Over2.5', value:g.prob?.over25 ?? g.value.over25},
+        {type:'BTTS', value:g.btts ?? 0}
+      ];
+      const maxProb = probs.reduce((a,b)=>b.value>a.value?b:a);
+      return {...g, topTrend:maxProb.type, topProb:maxProb.value};
+    });
+    const top10 = gamesWithMaxProb.sort((a,b)=>b.topProb-a.topProb).slice(0,10);
+    top10.forEach((g,i)=>{
+      const dateObj = g.date ? new Date(g.date) : new Date();
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${i+1}</td>
+        <td>${dateObj.toLocaleDateString()}</td>
+        <td>${g.league}</td>
+        <td>${g.home}</td>
+        <td>${g.away}</td>
+        <td>${(g.topProb*100).toFixed(1)}%</td>
+        <td>${g.topTrend}</td>
+      `;
+      top10Body.appendChild(tr);
     });
 
   } catch (err) {
