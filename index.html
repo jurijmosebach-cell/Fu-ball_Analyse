@@ -1,222 +1,148 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>xG Value Dashboard</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/dist/tailwind.min.css">
-  <style>
-    .bar-container { height:14px; border-radius:6px; background:#e5e7eb; overflow:hidden; margin-top:4px; }
-    .bar { height:100%; text-align:right; padding-right:4px; font-size:10px; font-weight:600; color:#fff; }
-    .bar-home { background:#4caf50; }
-    .bar-draw { background:#f59e0b; }
-    .bar-away { background:#ef4444; }
-    .bar-over { background:#2196f3; }
-    .bar-btts { background:#8b5cf6; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>xG Value Dashboard</title>
+<link rel="stylesheet" href="style.css" />
+<style>
+:root{
+  --bg1:#f9fafb; --bg2:#ffffff; --accent:#4caf50; --muted:#6b7280; --card:#ffffff;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; font-family:Inter,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+  background:linear-gradient(135deg,var(--bg1),var(--bg2)); color:#111827;
+}
+.container{max-width:1200px;margin:24px auto;padding:20px;}
+header h1{text-align:center;font-size:1.8rem;margin:0;}
+.subtitle{text-align:center;color:var(--muted);margin:6px 0 16px;}
+.controls{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:18px;}
+.controls label{display:flex;flex-direction:column;font-size:0.85rem;color:var(--muted);}
+.controls input[type="date"], .controls input[type="text"], .controls select{padding:8px 10px;border-radius:8px;border:1px solid #e6e9ef;background:#fff;min-width:150px;}
+button#loadBtn{padding:9px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;box-shadow:0 6px 18px rgba(76,175,80,0.18);cursor:pointer;}
+button#loadBtn:hover{transform:translateY(-1px);}
+main{margin-top:18px;}
+.games{display:flex;flex-direction:column;gap:12px;}
+.game{background:var(--card);padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(15,23,42,0.06);border-left:6px solid #e5e7eb;transition:transform .12s;}
+.game:hover{transform:translateY(-4px);}
+.game.top3{padding:18px;border-radius:12px;font-weight:600;}
+.two-column{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px;}
+.list div{background:var(--card);padding:10px;border-radius:8px;margin-bottom:8px;box-shadow:0 4px 12px rgba(12,15,20,0.04);}
+.team{display:flex;align-items:center;gap:8px;margin-top:8px;color:#374151;font-weight:600;}
+.team img{width:26px;height:18px;object-fit:cover;border-radius:3px;}
+.date{color:var(--muted);font-size:0.9rem;margin-top:6px;}
+.bar-container{background:#eef2f6;height:14px;border-radius:8px;margin-top:8px;overflow:hidden;}
+.bar{height:100%;border-radius:8px;display:flex;align-items:center;padding-left:8px;color:#fff;font-weight:600;font-size:12px;}
+.home-bar{background:#4caf50;}
+.draw-bar{background:#f59e0b;}
+.away-bar{background:#ef4444;}
+.over25-bar{background:#2196f3;}
+.under25-bar{background:#8b5cf6;}
+.btts-bar{background:#8b3ff6;}
+footer{margin-top:18px;text-align:center;color:var(--muted);font-size:0.85rem;}
+.top10-table{width:100%;border-collapse:collapse;margin-top:16px;}
+.top10-table th,.top10-table td{border:1px solid #e5e7eb;padding:6px 8px;text-align:center;font-size:0.85rem;}
+.top10-table th{background:#f3f4f6;font-weight:600;}
+@media(max-width:900px){.two-column{grid-template-columns:1fr}.controls{justify-content:space-between;padding:0 12px}.container{padding:12px}}
+</style>
 </head>
-<body class="bg-gray-50 font-sans">
-  <div class="max-w-6xl mx-auto p-4">
-    <header class="text-center mb-4">
-      <h1 class="text-2xl font-bold text-gray-800">xG Value Dashboard</h1>
-      <p class="text-gray-600">Top 3, Top 7 Value, Top 5 Over & Top 10 Wahrscheinlichkeiten — Datum / Liga / Team filtern</p>
-    </header>
+<body>
+<div class="container">
+  <header>
+    <h1>xG Value Dashboard</h1>
+    <p class="subtitle">Top 3, Top 7 Value, Top 5 Over, Top 10 Wahrscheinlichkeiten – Datum / Liga / Team filtern</p>
+  </header>
 
-    <div class="flex flex-wrap gap-3 justify-center mb-6">
-      <label class="flex flex-col">
-        Datum
-        <input type="date" id="date" class="p-2 border rounded shadow-sm">
-      </label>
-      <label class="flex flex-col">
-        Liga
-        <select id="league" class="p-2 border rounded shadow-sm">
-          <option value="">Alle</option>
-          <option>Premier League</option>
-          <option>Bundesliga</option>
-          <option>La Liga</option>
-          <option>Serie A</option>
-          <option>Ligue 1</option>
-          <option>Champions League</option>
-          <option>Eredivisie</option>
-          <option>Campeonato Brasileiro Série A</option>
-          <option>Primera Division</option>
-          <option>Championship</option>
-          <option>Primeira Liga</option>
-          <option>European Championship</option>
-        </select>
-      </label>
-      <label class="flex flex-col">
-        Team
-        <input type="text" id="team" placeholder="Teamname" class="p-2 border rounded shadow-sm">
-      </label>
-      <button id="loadBtn" class="p-2 px-4 bg-green-500 text-white font-semibold rounded shadow">Spiele laden</button>
-    </div>
-
-    <main class="space-y-8">
-      <!-- Top 10 Wahrscheinlichkeiten -->
-      <section>
-        <h2 class="text-xl font-bold mb-2">Top 10 Wahrscheinlichste Spiele</h2>
-        <table class="w-full table-auto border-collapse border border-gray-300 shadow-sm">
-          <thead class="bg-gray-200">
-            <tr>
-              <th class="p-2 border">#</th>
-              <th class="p-2 border">Datum</th>
-              <th class="p-2 border">Liga</th>
-              <th class="p-2 border">Home</th>
-              <th class="p-2 border">Away</th>
-              <th class="p-2 border">Wahrscheinlichkeiten</th>
-            </tr>
-          </thead>
-          <tbody id="top10" class="bg-white text-center">
-            <tr><td colspan="6" class="p-4">Lade Daten...</td></tr>
-          </tbody>
-        </table>
-      </section>
-
-      <!-- Top 3 Spiele -->
-      <section>
-        <h2 class="text-xl font-bold mb-2">Top 3 Spiele</h2>
-        <div id="top3" class="space-y-3"></div>
-      </section>
-
-      <!-- Top 7 Value & Top 5 Over -->
-      <section class="grid md:grid-cols-2 gap-6">
-        <div>
-          <h2 class="text-xl font-bold mb-2">Top 7 Value</h2>
-          <div id="top7Value" class="space-y-2"></div>
-        </div>
-        <div>
-          <h2 class="text-xl font-bold mb-2">Top 5 Over 2.5</h2>
-          <div id="top5Over25" class="space-y-2"></div>
-        </div>
-      </section>
-    </main>
+  <div class="controls">
+    <label>Datum<input type="date" id="date" /></label>
+    <label>Liga
+      <select id="league">
+        <option value="">Alle</option>
+        <option>Premier League</option>
+        <option>Bundesliga</option>
+        <option>La Liga</option>
+        <option>Serie A</option>
+        <option>Ligue 1</option>
+        <option>Champions League</option>
+        <option>Eredivisie</option>
+        <option>Campeonato Brasileiro Série A</option>
+        <option>Championship</option>
+        <option>Primeira Liga</option>
+        <option>European Championship</option>
+      </select>
+    </label>
+    <label>Team<input type="text" id="team" placeholder="Teamname" /></label>
+    <button id="loadBtn">Spiele laden</button>
   </div>
 
-  <script>
-    const top3Div = document.getElementById("top3");
-    const top7ValueDiv = document.getElementById("top7Value");
-    const top5OverDiv = document.getElementById("top5Over25");
-    const top10Body = document.getElementById("top10");
-    const loadBtn = document.getElementById("loadBtn");
-    const dateInput = document.getElementById("date");
-    const leagueSelect = document.getElementById("league");
-    const teamInput = document.getElementById("team");
+  <main>
+    <section>
+      <h2>Top 3 Spiele</h2>
+      <div id="top3" class="games"></div>
+    </section>
 
-    function createBars(game) {
-      const container = document.createElement('div');
-      container.className = 'flex flex-col gap-1';
-      const bars = [
-        {label:'Home', val:game.prob.home, cls:'bar-home'},
-        {label:'Draw', val:game.prob.draw, cls:'bar-draw'},
-        {label:'Away', val:game.prob.away, cls:'bar-away'},
-        {label:'Over 2.5', val:game.prob.over25, cls:'bar-over'},
-        {label:'BTTS', val:game.btts, cls:'bar-btts'}
-      ];
-      bars.forEach(b=>{
-        const wrap = document.createElement('div');
-        wrap.className = 'bar-container';
-        const bar = document.createElement('div');
-        bar.className = 'bar '+b.cls;
-        const pct = Math.round(b.val*100);
-        bar.style.width = pct+'%';
-        bar.textContent = `${b.label} ${pct}%`;
-        wrap.appendChild(bar);
-        container.appendChild(wrap);
-      });
-      return container;
-    }
+    <section class="two-column">
+      <div>
+        <h2>Top 7 Value</h2>
+        <div id="top7Value" class="list"></div>
+      </div>
+      <div>
+        <h2>Top 5 Over 2.5</h2>
+        <div id="top5Over25" class="list"></div>
+      </div>
+    </section>
 
-    function computeMaxProb(game) {
-      const {prob} = game;
-      const entries = [
-        {type:'Home', val:prob.home},
-        {type:'Draw', val:prob.draw},
-        {type:'Away', val:prob.away},
-        {type:'Over 2.5', val:prob.over25},
-        {type:'BTTS', val:game.btts}
-      ];
-      entries.sort((a,b)=>b.val-a.val);
-      return entries[0];
-    }
+    <section>
+      <h2>Top 10 Wahrscheinlichkeiten</h2>
+      <table class="top10-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Datum</th><th>Liga</th><th>Home</th><th>Away</th><th>Wahrscheinlichkeiten</th><th>Trend</th>
+          </tr>
+        </thead>
+        <tbody id="top10Body"></tbody>
+      </table>
+    </section>
 
-    async function loadGames() {
-      if(!dateInput.value) return;
-      const res = await fetch(`/api/games?date=${dateInput.value}`);
-      let games = (await res.json()).response || [];
+    <section>
+      <h2>Alle Spiele</h2>
+      <div id="games" class="games"></div>
+    </section>
+  </main>
 
-      // Filter Liga
-      if(leagueSelect.value) games = games.filter(g => g.league === leagueSelect.value);
-      // Filter Team
-      if(teamInput.value){
-        const q = teamInput.value.toLowerCase();
-        games = games.filter(g => g.home.toLowerCase().includes(q) || g.away.toLowerCase().includes(q));
-      }
+  <footer>
+    <small>Benötigt FOOTBALL_DATA_API_KEY in Render / Environment</small>
+  </footer>
+</div>
 
-      // --- Top 10 Wahrscheinlichkeiten ---
-      games.sort((a,b)=>computeMaxProb(b).val - computeMaxProb(a).val);
-      const top10 = games.slice(0,10);
-      top10Body.innerHTML = '';
-      top10.forEach((g,i)=>{
-        const maxProb = computeMaxProb(g);
-        const row = document.createElement('tr');
-        row.className = "hover:bg-gray-100";
-        row.innerHTML = `
-          <td class="p-2 border">${i+1}</td>
-          <td class="p-2 border">${new Date(g.date).toLocaleString()}</td>
-          <td class="p-2 border">${g.league}</td>
-          <td class="p-2 border flex items-center gap-2">
-            <img src="${g.homeLogo}" alt="" class="w-6 h-4"> ${g.home}
-          </td>
-          <td class="p-2 border flex items-center gap-2">
-            <img src="${g.awayLogo}" alt="" class="w-6 h-4"> ${g.away}
-          </td>
-          <td class="p-2 border"></td>
-        `;
-        const barCell = row.querySelector('td:last-child');
-        barCell.appendChild(createBars(g));
-        top10Body.appendChild(row);
-      });
+<script src="app.js"></script>
+<script>
+const top10Body = document.getElementById('top10Body');
 
-      // --- Top 3 Spiele ---
-      const top3 = games.slice(0,3);
-      top3Div.innerHTML = '';
-      top3.forEach(g=>{
-        const div = document.createElement('div');
-        div.className = 'p-3 bg-white rounded shadow';
-        div.innerHTML = `<div class="font-semibold">${g.home} vs ${g.away} (${g.league})</div>
-          <div>${new Date(g.date).toLocaleString()}</div>`;
-        div.appendChild(createBars(g));
-        top3Div.appendChild(div);
-      });
+function createBars(game){
+  const wrap = document.createElement('div');
+  ['home','draw','away','over25','btts'].forEach(key=>{
+    const val = game.prob[key] || (key==='btts'?game.btts:0);
+    const bar = document.createElement('div');
+    bar.className='bar '+key+'-bar';
+    bar.style.width = (val*100)+'%';
+    bar.textContent = key==='btts'?'BTTS':key==='over25'?'Over2.5':key.charAt(0).toUpperCase()+key.slice(1);
+    wrap.appendChild(bar);
+  });
+  return wrap;
+}
 
-      // --- Top 7 Value ---
-      const top7 = games.slice(0,7);
-      top7ValueDiv.innerHTML = '';
-      top7.forEach(g=>{
-        const div = document.createElement('div');
-        div.className = 'p-2 bg-white rounded shadow';
-        const bestVal = Math.max(g.value.home,g.value.draw,g.value.away);
-        div.textContent = `${g.home} vs ${g.away} → Value ${bestVal.toFixed(2)}`;
-        top7ValueDiv.appendChild(div);
-      });
-
-      // --- Top 5 Over 2.5 ---
-      const top5Over = games.slice().sort((a,b)=>b.value.over25 - a.value.over25).slice(0,5);
-      top5OverDiv.innerHTML = '';
-      top5Over.forEach(g=>{
-        const div = document.createElement('div');
-        div.className = 'p-2 bg-white rounded shadow';
-        div.textContent = `${g.home} vs ${g.away} → Over2.5 ${(g.prob?.over25 ?? g.value.over25).toFixed(2)}`;
-        top5OverDiv.appendChild(div);
-      });
-    }
-
-    loadBtn.addEventListener('click', loadGames);
-    window.addEventListener('load', ()=>{
-      dateInput.value = new Date().toISOString().split('T')[0];
-      loadGames();
-    });
-  </script>
+function trendColor(trend){
+  switch(trend){
+    case 'Home': return 'bg-green-500';
+    case 'Away': return 'bg-red-500';
+    case 'Draw': return 'bg-yellow-500';
+    case 'Over2.5': return 'bg-blue-500';
+    case 'BTTS': return 'bg-purple-500';
+    default: return 'bg-gray-400';
+  }
+}
+</script>
 </body>
 </html>
