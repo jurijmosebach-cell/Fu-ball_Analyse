@@ -6,6 +6,7 @@ const loadBtn = document.getElementById("loadBtn");
 const dateInput = document.getElementById("date");
 const leagueSelect = document.getElementById("league");
 const teamInput = document.getElementById("team");
+const top10List = document.getElementById("top10"); // neues Element für Top10
 
 function createBar(label, value, color){
   const wrap = document.createElement("div");
@@ -21,9 +22,16 @@ function createBar(label, value, color){
 }
 
 function getTrafficColor(value, trend){
-  if(value > 0.15 && (trend === 'home' || trend === 'away')) return '#16a34a'; // stark grün
-  if(value > 0) return '#f59e0b'; // gelb
-  return '#ef4444'; // rot
+  if(value > 0.15 && (trend === 'home' || trend === 'away')) return '#16a34a';
+  if(value > 0) return '#f59e0b';
+  return '#ef4444';
+}
+
+function getTrendClass(trend){
+  if(trend==="home") return "home-chip";
+  if(trend==="away") return "away-chip";
+  if(trend==="draw") return "draw-chip";
+  return "neutral-chip";
 }
 
 async function loadGames(){
@@ -39,25 +47,17 @@ async function loadGames(){
     }
 
     let games = data.response.slice();
-
-    // Filter Liga
     if(leagueSelect.value) games = games.filter(g => g.league === leagueSelect.value);
-    // Filter Team
     if(teamInput.value){
       const q = teamInput.value.toLowerCase();
       games = games.filter(g => g.home.toLowerCase().includes(q) || g.away.toLowerCase().includes(q));
     }
 
-    // Sortiere nach maximalem Value (1X2)
     games.sort((a,b) => Math.max(b.value.home,b.value.draw,b.value.away) - Math.max(a.value.home,a.value.draw,a.value.away));
 
-    const topGames = games.slice(0,3);
-    const otherGames = games.slice(3);
-
-    // Top3
+    // Top 3 Spiele
     top3Div.innerHTML = "";
-    topGames.forEach(g => {
-      g.btts = g.btts ?? 0;
+    games.slice(0,3).forEach(g=>{
       const div = document.createElement("div");
       div.className = "game top3";
       const dateObj = g.date ? new Date(g.date) : new Date();
@@ -65,26 +65,23 @@ async function loadGames(){
       const color = getTrafficColor(bestVal, g.trend);
       div.style.borderLeft = `6px solid ${color}`;
       div.innerHTML = `<div><strong>${g.home}</strong> vs <strong>${g.away}</strong> (${g.league}) - <span class="date">${dateObj.toLocaleString()}</span></div>
-        <div class="team"><img src="${g.homeLogo}" alt=""> ${g.home} xG:${g.homeXG} | Trend:${g.trend}</div>
-        <div class="team"><img src="${g.awayLogo}" alt=""> ${g.away} xG:${g.awayXG} | Trend:${g.trend}</div>
+      <div class="team"><img src="${g.homeLogo}" alt=""> ${g.home} xG:${g.homeXG} | Trend:${g.trend}</div>
+      <div class="team"><img src="${g.awayLogo}" alt=""> ${g.away} xG:${g.awayXG} | Trend:${g.trend}</div>
       `;
-      // Balken
       div.appendChild(createBar("Home", g.prob?.home ?? g.value.home, "#4caf50"));
       div.appendChild(createBar("Draw", g.prob?.draw ?? g.value.draw, "#f59e0b"));
       div.appendChild(createBar("Away", g.prob?.away ?? g.value.away, "#ef4444"));
       div.appendChild(createBar("Over 2.5", g.prob?.over25 ?? g.value.over25, "#2196f3"));
       div.appendChild(createBar("Under 2.5", g.prob ? (1 - g.prob.over25) : g.value.under25, "#8b5cf6"));
       div.appendChild(createBar("BTTS", g.btts ?? 0, "#ff7a00"));
-
       top3Div.appendChild(div);
     });
 
-    // Top7 Value
+    // Top 7 Value
     top7ValueDiv.innerHTML = "";
-    const top7 = games.slice(0,7);
-    top7.forEach(g => {
+    games.slice(0,7).forEach(g=>{
       const div = document.createElement("div");
-      div.className = "game";
+      div.className="game";
       const dateObj = g.date ? new Date(g.date) : new Date();
       const bestVal = Math.max(g.value.home, g.value.draw, g.value.away);
       const color = getTrafficColor(bestVal, g.trend);
@@ -93,46 +90,73 @@ async function loadGames(){
       top7ValueDiv.appendChild(div);
     });
 
-    // Top5 Over
+    // Top 5 Over 2.5
     top5OverDiv.innerHTML = "";
-    const top5Over = games.slice().sort((a,b) => b.value.over25 - a.value.over25).slice(0,5);
-    top5Over.forEach(g => {
+    games.slice().sort((a,b)=>b.value.over25 - a.value.over25).slice(0,5).forEach(g=>{
       const div = document.createElement("div");
-      div.className = "game";
+      div.className="game";
       div.style.borderLeft = `6px solid #2196f3`;
       div.textContent = `${g.home} vs ${g.away} (${g.league}) → Over2.5 ${(g.prob?.over25 ?? g.value.over25).toFixed(2)} | Trend: ${g.trend}`;
       top5OverDiv.appendChild(div);
     });
 
+    // Top 10 nach höchster Wahrscheinlichkeit aller Ereignisse
+    const top10 = games.map(g=>{
+      const probs = [
+        {type:"Home", val:g.prob.home},
+        {type:"Draw", val:g.prob.draw},
+        {type:"Away", val:g.prob.away},
+        {type:"Over2.5", val:g.prob.over25},
+        {type:"BTTS", val:g.btts}
+      ];
+      const best = probs.reduce((a,b)=>a.val>b.val?a:b);
+      return {...g, bestEvent:best.type, bestProb:best.val};
+    }).sort((a,b)=>b.bestProb - a.bestProb).slice(0,10);
+
+    renderTop10(top10);
+
     // Alle anderen Spiele
-    gamesDiv.innerHTML = "";
-    otherGames.forEach(g => {
-      g.btts = g.btts ?? 0;
+    gamesDiv.innerHTML="";
+    games.slice(3).forEach(g=>{
       const div = document.createElement("div");
-      div.className = "game";
+      div.className="game";
       const dateObj = g.date ? new Date(g.date) : new Date();
-      const bestVal = Math.max(g.value.home, g.value.draw, g.value.away);
-      const color = getTrafficColor(bestVal, g.trend);
+      const bestVal = Math.max(g.value.home,g.value.draw,g.value.away);
+      const color = getTrafficColor(bestVal,g.trend);
       div.style.borderLeft = `6px solid ${color}`;
       div.innerHTML = `<div><strong>${g.home}</strong> vs <strong>${g.away}</strong> (${g.league}) - <span class="date">${dateObj.toLocaleString()}</span></div>
-        <div class="team"><img src="${g.homeLogo}" alt=""> ${g.home} xG:${g.homeXG} | Trend:${g.trend}</div>
-        <div class="team"><img src="${g.awayLogo}" alt=""> ${g.away} xG:${g.awayXG} | Trend:${g.trend}</div>
+      <div class="team"><img src="${g.homeLogo}" alt=""> ${g.home} xG:${g.homeXG} | Trend:${g.trend}</div>
+      <div class="team"><img src="${g.awayLogo}" alt=""> ${g.away} xG:${g.awayXG} | Trend:${g.trend}</div>
       `;
       div.appendChild(createBar("Home", g.prob?.home ?? g.value.home, "#4caf50"));
       div.appendChild(createBar("Draw", g.prob?.draw ?? g.value.draw, "#f59e0b"));
       div.appendChild(createBar("Away", g.prob?.away ?? g.value.away, "#ef4444"));
       div.appendChild(createBar("Over 2.5", g.prob?.over25 ?? g.value.over25, "#2196f3"));
-      div.appendChild(createBar("Under 2.5", g.prob ? (1 - g.prob.over25) : g.value.under25, "#8b5cf6"));
+      div.appendChild(createBar("Under 2.5", g.prob ? (1-g.prob.over25) : g.value.under25, "#8b5cf6"));
       div.appendChild(createBar("BTTS", g.btts ?? 0, "#ff7a00"));
-
       gamesDiv.appendChild(div);
     });
 
-  } catch (err) {
-    console.error("Fehler beim Laden:", err);
-    gamesDiv.innerHTML = "<p>Fehler beim Laden der Spiele. Siehe Konsole.</p>";
+  } catch(err){
+    console.error("Fehler beim Laden:",err);
+    gamesDiv.innerHTML="<p>Fehler beim Laden der Spiele. Siehe Konsole.</p>";
   }
 }
 
-loadBtn.addEventListener("click", loadGames);
-window.addEventListener("load", loadGames);
+function renderTop10(list){
+  if(!top10List) return;
+  top10List.innerHTML="";
+  list.forEach(g=>{
+    const li=document.createElement("li");
+    const left = document.createElement("div"); left.className="top10-team";
+    const chip = document.createElement("span"); chip.className=`chip ${getTrendClass(g.trend)}`; chip.textContent=g.bestEvent;
+    const teams = document.createElement("span"); teams.textContent=`${g.home} — ${g.away}`;
+    left.appendChild(chip); left.appendChild(teams);
+    const right=document.createElement("div"); right.className="top10-prob"; right.textContent=(g.bestProb*100).toFixed(1)+"%";
+    li.appendChild(left); li.appendChild(right);
+    top10List.appendChild(li);
+  });
+}
+
+loadBtn.addEventListener("click",loadGames);
+window.addEventListener("load",loadGames);
