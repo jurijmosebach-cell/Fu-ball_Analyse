@@ -1,259 +1,115 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>xG Value Dashboard</title>
-<link rel="stylesheet" href="style.css" />
-<style>
-  .form-chart {
-    display: inline-block;
-    vertical-align: middle;
-    margin-right: 4px;
-  }
-  .form-label {
-    font-size: 0.75rem;
-    color: #6b7280;
-    margin-bottom: 2px;
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Top 10 Wahrscheinlichkeiten</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/dist/tailwind.min.css">
 </head>
-<body>
-<div class="container">
-  <header>
-    <h1>xG Value Dashboard</h1>
-    <p class="subtitle">Top 3, Top 7 Value, Top 5 Over — Datum / Liga / Team filtern</p>
+<body class="bg-gray-50 font-sans">
+  <header class="bg-white shadow p-4 text-center">
+    <h1 class="text-2xl font-bold text-gray-800">Top 10 Spiele nach Wahrscheinlichkeit</h1>
   </header>
 
-  <div class="controls">
-    <label>Datum
-      <input type="date" id="date" />
-    </label>
-
-    <label>Liga
-      <select id="league">
-        <option value="">Alle</option>
-        <option>Premier League</option>
-        <option>Bundesliga</option>
-        <option>La Liga</option>
-        <option>Serie A</option>
-        <option>Ligue 1</option>
-        <option>Champions League</option>
-        <option>Eredivisie</option>
-        <option>Campeonato Brasileiro Série A</option>
-        <option>Primera Division</option>
-        <option>Championship</option>
-        <option>Primeira Liga</option>
-        <option>European Championship</option>
-      </select>
-    </label>
-
-    <label>Team
-      <input type="text" id="team" placeholder="Teamname" />
-    </label>
-
-    <button id="loadBtn">Spiele laden</button>
-  </div>
-
-  <main>
-    <section>
-      <h2>Top 3 Spiele</h2>
-      <div id="top3" class="games"></div>
-    </section>
-
-    <section class="two-column">
-      <div>
-        <h2>Top 7 Value</h2>
-        <div id="top7Value" class="list"></div>
-      </div>
-      <div>
-        <h2>Top 5 Over 2.5</h2>
-        <div id="top5Over25" class="list"></div>
-      </div>
-    </section>
+  <main class="max-w-6xl mx-auto p-4">
+    <div class="mb-4">
+      <label for="date" class="block mb-2 font-semibold">Datum auswählen:</label>
+      <input type="date" id="date" class="p-2 border rounded shadow-sm">
+    </div>
 
     <section>
-      <h2>Alle Spiele</h2>
-      <div id="games" class="games"></div>
+      <table class="w-full table-auto border-collapse border border-gray-300 shadow-sm">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="p-2 border">#</th>
+            <th class="p-2 border">Datum</th>
+            <th class="p-2 border">Liga</th>
+            <th class="p-2 border">Home</th>
+            <th class="p-2 border">Away</th>
+            <th class="p-2 border">Home %</th>
+            <th class="p-2 border">Draw %</th>
+            <th class="p-2 border">Away %</th>
+            <th class="p-2 border">Over 2.5 %</th>
+            <th class="p-2 border">BTTS %</th>
+          </tr>
+        </thead>
+        <tbody id="top10" class="bg-white text-center">
+          <tr><td colspan="10" class="p-4">Lade Daten...</td></tr>
+        </tbody>
+      </table>
     </section>
   </main>
 
-  <footer>
-    <small>Benötigt FOOTBALL_DATA_API_KEY in Render / Environment</small>
-  </footer>
-</div>
+  <script>
+    const dateInput = document.getElementById('date');
+    const top10Body = document.getElementById('top10');
 
-<script>
-const top3Div = document.getElementById("top3");
-const top7ValueDiv = document.getElementById("top7Value");
-const top5OverDiv = document.getElementById("top5Over25");
-const gamesDiv = document.getElementById("games");
-const loadBtn = document.getElementById("loadBtn");
-const dateInput = document.getElementById("date");
-const leagueSelect = document.getElementById("league");
-const teamInput = document.getElementById("team");
-
-function createBar(label, value, color){
-  const wrap = document.createElement("div");
-  wrap.className = "bar-container";
-  const bar = document.createElement("div");
-  bar.className = "bar";
-  const pct = Math.round((value || 0) * 100);
-  bar.style.width = `${pct}%`;
-  bar.style.background = color;
-  bar.textContent = `${label} ${pct}%`;
-  wrap.appendChild(bar);
-  return wrap;
-}
-
-function getTrafficColor(value, trend){
-  if(value > 0.15 && (trend === 'home' || trend === 'away')) return '#16a34a';
-  if(value > 0) return '#f59e0b';
-  return '#ef4444';
-}
-
-// Mini-XG Chart
-function createMiniXGChart(teamStats){
-  const canvas = document.createElement('canvas');
-  canvas.width = 100;
-  canvas.height = 40;
-  canvas.className = 'form-chart';
-  const ctx = canvas.getContext('2d');
-  if(!teamStats || !teamStats.lastGoals || teamStats.lastGoals.length === 0) return canvas;
-  const values = teamStats.lastGoals.slice(-5); // letzte 5 Spiele
-  const maxVal = Math.max(...values, 2.5);
-  ctx.beginPath();
-  ctx.strokeStyle = '#4caf50';
-  ctx.lineWidth = 2;
-  values.forEach((v,i)=>{
-    const x = i * (canvas.width/4);
-    const y = canvas.height - (v/maxVal)*canvas.height;
-    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-  });
-  ctx.stroke();
-  ctx.fillStyle = '#4caf50';
-  values.forEach((v,i)=>{
-    const x = i * (canvas.width/4);
-    const y = canvas.height - (v/maxVal)*canvas.height;
-    ctx.beginPath();
-    ctx.arc(x,y,2,0,Math.PI*2);
-    ctx.fill();
-  });
-  return canvas;
-}
-
-async function loadGames(){
-  try {
-    let url = "/api/games";
-    if(dateInput.value) url += "?date=" + dateInput.value;
-    const res = await fetch(url);
-    const data = await res.json();
-    if(!data || !Array.isArray(data.response)){
-      gamesDiv.innerHTML = "<p>Fehler: keine Spieldaten erhalten.</p>";
-      return;
+    async function fetchGames(date) {
+      const res = await fetch(`/api/games?date=${date}`);
+      const data = await res.json();
+      return data.response || [];
     }
-    let games = data.response.slice();
-    if(leagueSelect.value) games = games.filter(g => g.league === leagueSelect.value);
-    if(teamInput.value){
-      const q = teamInput.value.toLowerCase();
-      games = games.filter(g => g.home.toLowerCase().includes(q) || g.away.toLowerCase().includes(q));
+
+    function computeMaxProb(game) {
+      const {prob} = game;
+      const entries = [
+        {type:'Home', val:prob.home},
+        {type:'Draw', val:prob.draw},
+        {type:'Away', val:prob.away},
+        {type:'Over 2.5', val:prob.over25},
+        {type:'BTTS', val:game.btts}
+      ];
+      entries.sort((a,b)=>b.val-a.val);
+      return entries[0]; // höchste Wahrscheinlichkeit
     }
-    games.sort((a,b)=>Math.max(b.value.home,b.value.draw,b.value.away)-Math.max(a.value.home,a.value.draw,a.value.away));
 
-    const topGames = games.slice(0,3);
-    const otherGames = games.slice(3);
+    async function updateTop10() {
+      const date = dateInput.value;
+      if(!date) return;
+      top10Body.innerHTML = '<tr><td colspan="10" class="p-4">Lade Daten...</td></tr>';
+      let games = await fetchGames(date);
 
-    // Top3
-    top3Div.innerHTML="";
-    topGames.forEach(g=>{
-      const div = document.createElement("div");
-      div.className="game top3";
-      const dateObj = g.date?new Date(g.date):new Date();
-      const bestVal = Math.max(g.value.home,g.value.draw,g.value.away);
-      const color = getTrafficColor(bestVal,g.trend);
-      div.style.borderLeft=`6px solid ${color}`;
-      div.innerHTML=`<div><strong>${g.home}</strong> vs <strong>${g.away}</strong> (${g.league}) - <span class="date">${dateObj.toLocaleString()}</span></div>
-        <div class="team"><img src="${g.homeLogo}" alt=""> ${g.home} xG:${g.homeXG} | Trend:${g.trend}</div>
-        <div class="team"><img src="${g.awayLogo}" alt=""> ${g.away} xG:${g.awayXG} | Trend:${g.trend}</div>
-        <div class="team">
-          <span class="form-label">Form Heim</span>
-        </div>
-        <div class="team">
-          <span class="form-label">Form Auswärts</span>
-        </div>
-      `;
-      if(g.homeStats) div.querySelectorAll('.team')[2].appendChild(createMiniXGChart(g.homeStats));
-      if(g.awayStats) div.querySelectorAll('.team')[3].appendChild(createMiniXGChart(g.awayStats));
+      // Sortiere nach höchster Wahrscheinlichkeit
+      games.sort((a,b)=>{
+        const aMax = computeMaxProb(a).val;
+        const bMax = computeMaxProb(b).val;
+        return bMax - aMax;
+      });
 
-      div.appendChild(createBar("Home", g.prob?.home ?? g.value.home, "#4caf50"));
-      div.appendChild(createBar("Draw", g.prob?.draw ?? g.value.draw, "#f59e0b"));
-      div.appendChild(createBar("Away", g.prob?.away ?? g.value.away, "#ef4444"));
-      div.appendChild(createBar("Over 2.5", g.prob?.over25 ?? g.value.over25, "#2196f3"));
-      div.appendChild(createBar("Under 2.5", g.prob ? (1-g.prob.over25):g.value.under25, "#8b5cf6"));
-      div.appendChild(createBar("BTTS", g.btts ?? 0, "#ff7a00"));
+      const top10 = games.slice(0,10);
+      top10Body.innerHTML = '';
+      top10.forEach((g,i)=>{
+        const maxProb = computeMaxProb(g);
+        const row = document.createElement('tr');
+        row.className = "hover:bg-gray-100";
+        row.innerHTML = `
+          <td class="p-2 border">${i+1}</td>
+          <td class="p-2 border">${new Date(g.date).toLocaleString()}</td>
+          <td class="p-2 border">${g.league}</td>
+          <td class="p-2 border flex items-center gap-2">
+            <img src="${g.homeLogo}" alt="" class="w-6 h-4"> ${g.home}
+          </td>
+          <td class="p-2 border flex items-center gap-2">
+            <img src="${g.awayLogo}" alt="" class="w-6 h-4"> ${g.away}
+          </td>
+          <td class="p-2 border">${(g.prob.home*100).toFixed(1)}%</td>
+          <td class="p-2 border">${(g.prob.draw*100).toFixed(1)}%</td>
+          <td class="p-2 border">${(g.prob.away*100).toFixed(1)}%</td>
+          <td class="p-2 border">${(g.prob.over25*100).toFixed(1)}%</td>
+          <td class="p-2 border">${(g.btts*100).toFixed(1)}%</td>
+        `;
+        if(maxProb.type==='Home') row.classList.add('bg-green-50');
+        else if(maxProb.type==='Away') row.classList.add('bg-red-50');
+        else if(maxProb.type==='Draw') row.classList.add('bg-yellow-50');
+        else row.classList.add('bg-blue-50');
+        top10Body.appendChild(row);
+      });
+    }
 
-      top3Div.appendChild(div);
-    });
-
-    // Top7 Value
-    top7ValueDiv.innerHTML="";
-    const top7 = games.slice(0,7);
-    top7.forEach(g=>{
-      const div = document.createElement("div");
-      div.className="game";
-      const dateObj = g.date?new Date(g.date):new Date();
-      const bestVal = Math.max(g.value.home,g.value.draw,g.value.away);
-      const color = getTrafficColor(bestVal,g.trend);
-      div.style.borderLeft=`6px solid ${color}`;
-      div.textContent=`${g.home} vs ${g.away} (${g.league}) → Value ${bestVal.toFixed(2)} | Trend: ${g.trend}`;
-      top7ValueDiv.appendChild(div);
-    });
-
-    // Top5 Over
-    top5OverDiv.innerHTML="";
-    const top5Over = games.slice().sort((a,b)=>b.value.over25-a.value.over25).slice(0,5);
-    top5Over.forEach(g=>{
-      const div = document.createElement("div");
-      div.className="game";
-      div.style.borderLeft=`6px solid #2196f3`;
-      div.textContent=`${g.home} vs ${g.away} (${g.league}) → Over2.5 ${(g.prob?.over25 ?? g.value.over25).toFixed(2)} | Trend: ${g.trend}`;
-      top5OverDiv.appendChild(div);
-    });
-
-    // Alle anderen Spiele
-    gamesDiv.innerHTML="";
-    otherGames.forEach(g=>{
-      const div = document.createElement("div");
-      div.className="game";
-      const dateObj = g.date?new Date(g.date):new Date();
-      const bestVal = Math.max(g.value.home,g.value.draw,g.value.away);
-      const color = getTrafficColor(bestVal,g.trend);
-      div.style.borderLeft=`6px solid ${color}`;
-      div.innerHTML=`<div><strong>${g.home}</strong> vs <strong>${g.away}</strong> (${g.league}) - <span class="date">${dateObj.toLocaleString()}</span></div>
-        <div class="team"><img src="${g.homeLogo}" alt=""> ${g.home} xG:${g.homeXG} | Trend:${g.trend}</div>
-        <div class="team"><img src="${g.awayLogo}" alt=""> ${g.away} xG:${g.awayXG} | Trend:${g.trend}</div>
-      `;
-      if(g.homeStats) div.querySelectorAll('.team')[0].appendChild(createMiniXGChart(g.homeStats));
-      if(g.awayStats) div.querySelectorAll('.team')[1].appendChild(createMiniXGChart(g.awayStats));
-
-      div.appendChild(createBar("Home", g.prob?.home ?? g.value.home, "#4caf50"));
-      div.appendChild(createBar("Draw", g.prob?.draw ?? g.value.draw, "#f59e0b"));
-      div.appendChild(createBar("Away", g.prob?.away ?? g.value.away, "#ef4444"));
-      div.appendChild(createBar("Over 2.5", g.prob?.over25 ?? g.value.over25, "#2196f3"));
-      div.appendChild(createBar("Under 2.5", g.prob ? (1-g.prob.over25):g.value.under25, "#8b5cf6"));
-      div.appendChild(createBar("BTTS", g.btts ?? 0, "#ff7a00"));
-
-      gamesDiv.appendChild(div);
-    });
-
-  } catch(err) {
-    console.error("Fehler beim Laden:",err);
-    gamesDiv.innerHTML="<p>Fehler beim Laden der Spiele. Siehe Konsole.</p>";
-  }
-}
-
-loadBtn.addEventListener("click",loadGames);
-window.addEventListener("load",loadGames);
-</script>
+    dateInput.addEventListener('change', updateTop10);
+    // Standard: heutiges Datum
+    dateInput.value = new Date().toISOString().split('T')[0];
+    updateTop10();
+  </script>
 </body>
 </html>
