@@ -1,4 +1,4 @@
-// server.js — Korrigierte Version mit aktuellen Daten
+// server.js — Mit echten Football-Data.org API Daten
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -18,6 +18,8 @@ const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_API_KEY;
 
 if (!FOOTBALL_DATA_KEY) {
     console.warn("⚠️ WARNING: FOOTBALL_DATA_API_KEY nicht gesetzt!");
+} else {
+    console.log("✅ API Key ist gesetzt");
 }
 
 // Konfiguration
@@ -137,7 +139,8 @@ function getFlag(teamName) {
         "Real": "es", "Barcelona": "es", "Atletico": "es", "Sevilla": "es", "Valencia": "es",
         "Juventus": "it", "Inter": "it", "Milan": "it", "Napoli": "it", "Roma": "it", "Lazio": "it",
         "PSG": "fr", "Marseille": "fr", "Monaco": "fr", "Lyon": "fr", "Rennes": "fr", "Nice": "fr",
-        "Ajax": "nl", "PSV": "nl", "Feyenoord": "nl"
+        "Ajax": "nl", "PSV": "nl", "Feyenoord": "nl",
+        "Portugal": "pt", "Benfica": "pt", "Porto": "pt", "Sporting": "pt"
     };
     
     for (const [key, value] of Object.entries(flags)) {
@@ -146,132 +149,17 @@ function getFlag(teamName) {
     return "eu";
 }
 
-// Demo-Daten für Fallback
-function getDemoGames(date = null) {
-    const baseDate = date ? new Date(date) : new Date();
-    
-    const demoMatches = [
-        { 
-            home: "Manchester City", 
-            away: "Liverpool", 
-            league: "Premier League"
-        },
-        { 
-            home: "Bayern Munich", 
-            away: "Borussia Dortmund", 
-            league: "Bundesliga"
-        },
-        { 
-            home: "Real Madrid", 
-            away: "Barcelona", 
-            league: "La Liga"
-        },
-        { 
-            home: "PSG", 
-            away: "Marseille", 
-            league: "Ligue 1"
-        },
-        { 
-            home: "Inter Milan", 
-            away: "Juventus", 
-            league: "Serie A"
-        },
-        { 
-            home: "Arsenal", 
-            away: "Chelsea", 
-            league: "Premier League"
-        },
-        { 
-            home: "AC Milan", 
-            away: "Napoli", 
-            league: "Serie A"
-        },
-        { 
-            home: "Atletico Madrid", 
-            away: "Sevilla", 
-            league: "La Liga"
-        }
-    ];
-    
-    return demoMatches.map((match, index) => {
-        const homeXG = estimateXG(match.home, true, match.league);
-        const awayXG = estimateXG(match.away, false, match.league);
-        const prob = computeMatchOutcomeProbs(homeXG, awayXG);
-        const over25 = computeOver25Prob(homeXG, awayXG);
-        const btts = computeBTTS(homeXG, awayXG);
-        const trend = computeTrend(prob, homeXG, awayXG);
-        
-        // Realistische Odds
-        const odds = {
-            home: +(1 / prob.home * (0.92 + Math.random() * 0.1)).toFixed(2),
-            draw: +(1 / prob.draw * (0.92 + Math.random() * 0.1)).toFixed(2),
-            away: +(1 / prob.away * (0.92 + Math.random() * 0.1)).toFixed(2),
-            over25: +(1 / over25 * (0.92 + Math.random() * 0.1)).toFixed(2)
-        };
-        
-        const value = {
-            home: calculateValue(prob.home, odds.home),
-            draw: calculateValue(prob.draw, odds.draw),
-            away: calculateValue(prob.away, odds.away),
-            over25: calculateValue(over25, odds.over25),
-            under25: calculateValue(1 - over25, 1.9)
-        };
-        
-        // Match-Datum
-        const matchDate = new Date(baseDate);
-        matchDate.setDate(matchDate.getDate() + index);
-        matchDate.setHours(15 + index, 0, 0, 0); // Verschiedene Uhrzeiten
-        
-        return {
-            id: index + 1,
-            home: match.home,
-            away: match.away,
-            league: match.league,
-            date: matchDate.toISOString(),
-            homeLogo: `https://flagcdn.com/w40/${getFlag(match.home)}.png`,
-            awayLogo: `https://flagcdn.com/w40/${getFlag(match.away)}.png`,
-            homeXG,
-            awayXG,
-            prob,
-            value,
-            odds,
-            btts,
-            trend,
-            over25,
-            under25: 1 - over25
-        };
-    });
-}
-
-// Haupt-API Route mit Fallback
+// Haupt-API Route mit echten Daten
 app.get("/api/games", async (req, res) => {
     try {
         console.log("📥 API Request received:", req.query);
         
         let date = req.query.date;
         
-        // Wenn kein Datum, nimm heute
+        // Wenn kein Datum, nimm heute + nächste 3 Tage
         if (!date) {
-            date = new Date().toISOString().split('T')[0];
-        }
-        
-        // Prüfe ob Datum in der Zukunft liegt (mehr als 7 Tage)
-        const requestDate = new Date(date);
-        const today = new Date();
-        const diffTime = requestDate - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        if (diffDays > 7) {
-            console.log(`📅 Date ${date} is too far in future, using demo data`);
-            const demoGames = getDemoGames(date);
-            return res.json({ 
-                response: demoGames,
-                info: {
-                    date: date,
-                    total: demoGames.length,
-                    source: "demo_data_future"
-                }
-            });
+            const today = new Date();
+            date = today.toISOString().split('T')[0];
         }
         
         const cacheKey = `games-${date}`;
@@ -284,106 +172,121 @@ app.get("/api/games", async (req, res) => {
         }
         
         if (!FOOTBALL_DATA_KEY) {
-            console.log("🔑 No API key, using demo data");
-            const demoGames = getDemoGames(date);
-            return res.json({ 
-                response: demoGames,
-                info: {
-                    date: date,
-                    total: demoGames.length,
-                    source: "demo_data_no_key"
-                }
+            return res.status(500).json({ 
+                error: "API Key nicht konfiguriert",
+                response: []
             });
         }
         
         console.log("🔄 Fetching from Football-Data.org API...");
         
-        // Spiele von der API abrufen
-        const apiUrl = `https://api.football-data.org/v4/matches?dateFrom=${date}&dateTo=${date}`;
+        // WICHTIG: Für kostenlose API - nur bestimmte Ligen verfügbar
+        // Wir holen Daten für einen Zeitraum (nicht nur ein Tag)
+        const dateObj = new Date(date);
+        const dateFrom = new Date(dateObj);
+        const dateTo = new Date(dateObj);
+        dateTo.setDate(dateTo.getDate() + 3); // Nächste 3 Tage
+        
+        const dateFromStr = dateFrom.toISOString().split('T')[0];
+        const dateToStr = dateTo.toISOString().split('T')[0];
+        
+        console.log(`📅 Fetching from ${dateFromStr} to ${dateToStr}`);
+        
+        const apiUrl = `https://api.football-data.org/v4/matches?dateFrom=${dateFromStr}&dateTo=${dateToStr}`;
+        console.log("🔗 API URL:", apiUrl);
+        
         const response = await fetch(apiUrl, {
-            headers: { "X-Auth-Token": FOOTBALL_DATA_KEY }
+            headers: { 
+                "X-Auth-Token": FOOTBALL_DATA_KEY,
+                "Content-Type": "application/json"
+            }
         });
         
+        console.log("📡 API Response Status:", response.status);
+        
         if (!response.ok) {
-            throw new Error(`API responded with status: ${response.status}`);
+            throw new Error(`API responded with status: ${response.status} - ${response.statusText}`);
         }
         
         const data = await response.json();
         console.log(`✅ Received ${data.matches?.length || 0} matches from API`);
         
-        let games = [];
-        
         if (!data.matches || data.matches.length === 0) {
-            console.log("📭 No matches found from API, using demo data");
-            games = getDemoGames(date);
-        } else {
-            // Echte Spiele verarbeiten
-            for (const match of data.matches.slice(0, 20)) { // Limit auf 20 Spiele
-                try {
-                    if (match.status === "FINISHED" || match.status === "SCHEDULED" || match.status === "LIVE") {
-                        const homeTeam = match.homeTeam?.name || "Unknown";
-                        const awayTeam = match.awayTeam?.name || "Unknown";
-                        const league = match.competition?.name || "Unknown";
-                        
-                        // xG schätzen
-                        const homeXG = estimateXG(homeTeam, true, league);
-                        const awayXG = estimateXG(awayTeam, false, league);
-                        
-                        // Wahrscheinlichkeiten berechnen
-                        const prob = computeMatchOutcomeProbs(homeXG, awayXG);
-                        const over25 = computeOver25Prob(homeXG, awayXG);
-                        const btts = computeBTTS(homeXG, awayXG);
-                        const trend = computeTrend(prob, homeXG, awayXG);
-                        
-                        // Odds simulieren
-                        const odds = {
-                            home: +(1 / prob.home * (0.92 + Math.random() * 0.1)).toFixed(2),
-                            draw: +(1 / prob.draw * (0.92 + Math.random() * 0.1)).toFixed(2),
-                            away: +(1 / prob.away * (0.92 + Math.random() * 0.1)).toFixed(2),
-                            over25: +(1 / over25 * (0.92 + Math.random() * 0.1)).toFixed(2)
-                        };
-                        
-                        // Value berechnen
-                        const value = {
-                            home: calculateValue(prob.home, odds.home),
-                            draw: calculateValue(prob.draw, odds.draw),
-                            away: calculateValue(prob.away, odds.away),
-                            over25: calculateValue(over25, odds.over25),
-                            under25: calculateValue(1 - over25, 1.9)
-                        };
-                        
-                        const gameData = {
-                            id: match.id,
-                            home: homeTeam,
-                            away: awayTeam,
-                            league: league,
-                            date: match.utcDate,
-                            homeLogo: match.homeTeam?.crest || `https://flagcdn.com/w40/${getFlag(homeTeam)}.png`,
-                            awayLogo: match.awayTeam?.crest || `https://flagcdn.com/w40/${getFlag(awayTeam)}.png`,
-                            homeXG,
-                            awayXG,
-                            prob,
-                            value,
-                            odds,
-                            btts,
-                            trend,
-                            over25,
-                            under25: 1 - over25,
-                            status: match.status
-                        };
-                        
-                        games.push(gameData);
-                    }
-                } catch (matchError) {
-                    console.warn(`Error processing match ${match.id}:`, matchError.message);
+            console.log("📭 No matches found from API");
+            return res.json({ response: [] });
+        }
+        
+        // Spiele verarbeiten - nur geplante oder live Spiele
+        const processedGames = [];
+        
+        for (const match of data.matches) {
+            try {
+                // Nur SCHEDULED, LIVE, oder IN_PLAY Spiele
+                if (match.status === "SCHEDULED" || match.status === "LIVE" || match.status === "IN_PLAY" || match.status === "TIMED") {
+                    const homeTeam = match.homeTeam?.name || "Unknown";
+                    const awayTeam = match.awayTeam?.name || "Unknown";
+                    const league = match.competition?.name || "Unknown";
+                    
+                    // xG schätzen
+                    const homeXG = estimateXG(homeTeam, true, league);
+                    const awayXG = estimateXG(awayTeam, false, league);
+                    
+                    // Wahrscheinlichkeiten berechnen
+                    const prob = computeMatchOutcomeProbs(homeXG, awayXG);
+                    const over25 = computeOver25Prob(homeXG, awayXG);
+                    const btts = computeBTTS(homeXG, awayXG);
+                    const trend = computeTrend(prob, homeXG, awayXG);
+                    
+                    // Odds simulieren (basierend auf Wahrscheinlichkeiten)
+                    const odds = {
+                        home: +(1 / prob.home * (0.92 + Math.random() * 0.1)).toFixed(2),
+                        draw: +(1 / prob.draw * (0.92 + Math.random() * 0.1)).toFixed(2),
+                        away: +(1 / prob.away * (0.92 + Math.random() * 0.1)).toFixed(2),
+                        over25: +(1 / over25 * (0.92 + Math.random() * 0.1)).toFixed(2)
+                    };
+                    
+                    // Value berechnen
+                    const value = {
+                        home: calculateValue(prob.home, odds.home),
+                        draw: calculateValue(prob.draw, odds.draw),
+                        away: calculateValue(prob.away, odds.away),
+                        over25: calculateValue(over25, odds.over25),
+                        under25: calculateValue(1 - over25, 1.9)
+                    };
+                    
+                    const gameData = {
+                        id: match.id,
+                        home: homeTeam,
+                        away: awayTeam,
+                        league: league,
+                        date: match.utcDate,
+                        homeLogo: match.homeTeam?.crest || `https://flagcdn.com/w40/${getFlag(homeTeam)}.png`,
+                        awayLogo: match.awayTeam?.crest || `https://flagcdn.com/w40/${getFlag(awayTeam)}.png`,
+                        homeXG,
+                        awayXG,
+                        prob,
+                        value,
+                        odds,
+                        btts,
+                        trend,
+                        over25,
+                        under25: 1 - over25,
+                        status: match.status,
+                        matchday: match.matchday,
+                        area: match.area?.name
+                    };
+                    
+                    processedGames.push(gameData);
                 }
+            } catch (matchError) {
+                console.warn(`Error processing match ${match.id}:`, matchError.message);
             }
         }
         
-        console.log(`✅ Total games to display: ${games.length}`);
+        console.log(`✅ Successfully processed ${processedGames.length} games`);
         
         // Nach bestem Value sortieren
-        const sortedGames = games.sort((a, b) => {
+        const sortedGames = processedGames.sort((a, b) => {
             const maxValueA = Math.max(a.value.home, a.value.draw, a.value.away, a.value.over25);
             const maxValueB = Math.max(b.value.home, b.value.draw, b.value.away, b.value.over25);
             return maxValueB - maxValueA;
@@ -395,28 +298,78 @@ app.get("/api/games", async (req, res) => {
             data: sortedGames
         });
         
+        // Cache bereinigen
+        if (cache.size > 50) {
+            const firstKey = cache.keys().next().value;
+            cache.delete(firstKey);
+        }
+        
         res.json({ 
             response: sortedGames,
             info: {
                 date: date,
                 total: sortedGames.length,
-                source: games.length > 0 && games[0].id > 1000 ? "football-data.org" : "demo_data"
+                source: "football-data.org",
+                period: `${dateFromStr} to ${dateToStr}`
             }
         });
         
     } catch (error) {
         console.error("❌ Error in /api/games:", error);
         
-        // Fallback zu Demo-Daten
-        const demoGames = getDemoGames(req.query.date);
+        res.status(500).json({ 
+            error: "Failed to fetch data from Football-Data.org",
+            message: error.message,
+            response: []
+        });
+    }
+});
+
+// API Test Route
+app.get("/api/debug", async (req, res) => {
+    try {
+        if (!FOOTBALL_DATA_KEY) {
+            return res.json({ error: "No API key configured" });
+        }
+        
+        const today = new Date();
+        const dateFrom = today.toISOString().split('T')[0];
+        const dateTo = new Date(today);
+        dateTo.setDate(dateTo.getDate() + 7);
+        const dateToStr = dateTo.toISOString().split('T')[0];
+        
+        const apiUrl = `https://api.football-data.org/v4/matches?dateFrom=${dateFrom}&dateTo=${dateToStr}`;
+        
+        const response = await fetch(apiUrl, {
+            headers: { 'X-Auth-Token': FOOTBALL_DATA_KEY }
+        });
+        
+        const data = await response.json();
+        
+        res.json({
+            status: response.status,
+            url: apiUrl,
+            matchesCount: data.matches?.length || 0,
+            matchesSample: data.matches?.slice(0, 5).map(m => ({
+                id: m.id,
+                home: m.homeTeam?.name,
+                away: m.awayTeam?.name,
+                league: m.competition?.name,
+                date: m.utcDate,
+                status: m.status
+            })) || [],
+            allMatches: data.matches?.map(m => ({
+                home: m.homeTeam?.name,
+                away: m.awayTeam?.name,
+                league: m.competition?.name,
+                status: m.status
+            })) || []
+        });
+        
+    } catch (error) {
         res.json({ 
-            response: demoGames,
-            error: "API failed, using demo data",
-            info: {
-                date: req.query.date || new Date().toISOString().split('T')[0],
-                total: demoGames.length,
-                source: "demo_data_fallback"
-            }
+            error: error.message,
+            stack: error.stack
         });
     }
 });
@@ -438,6 +391,7 @@ app.use((req, res) => {
 // Server Start
 app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`🔑 API Key: ${FOOTBALL_DATA_KEY ? 'Configured' : 'MISSING - Using demo data'}`);
-    console.log(`📊 Ready to serve football data!`);
+    console.log(`🔑 API Key: ${FOOTBALL_DATA_KEY ? 'Configured ✅' : 'MISSING ❌'}`);
+    console.log(`📊 Using REAL data from Football-Data.org`);
+    console.log(`🔗 Debug: https://your-app.onrender.com/api/debug`);
 });
