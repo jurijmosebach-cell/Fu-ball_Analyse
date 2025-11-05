@@ -1,4 +1,4 @@
-// server.js — Mit echten Football-Data.org API Daten
+// server.js — Korrigiert für das gewählte Datum
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -149,20 +149,19 @@ function getFlag(teamName) {
     return "eu";
 }
 
-// Haupt-API Route mit echten Daten
+// Haupt-API Route - Korrigiert für das gewählte Datum
 app.get("/api/games", async (req, res) => {
     try {
         console.log("📥 API Request received:", req.query);
         
-        let date = req.query.date;
+        let requestedDate = req.query.date;
         
-        // Wenn kein Datum, nimm heute + nächste 3 Tage
-        if (!date) {
-            const today = new Date();
-            date = today.toISOString().split('T')[0];
+        // Wenn kein Datum, nimm heute
+        if (!requestedDate) {
+            requestedDate = new Date().toISOString().split('T')[0];
         }
         
-        const cacheKey = `games-${date}`;
+        const cacheKey = `games-${requestedDate}`;
         
         // Cache prüfen
         const cached = cache.get(cacheKey);
@@ -178,21 +177,10 @@ app.get("/api/games", async (req, res) => {
             });
         }
         
-        console.log("🔄 Fetching from Football-Data.org API...");
+        console.log("🔄 Fetching from Football-Data.org API for date:", requestedDate);
         
-        // WICHTIG: Für kostenlose API - nur bestimmte Ligen verfügbar
-        // Wir holen Daten für einen Zeitraum (nicht nur ein Tag)
-        const dateObj = new Date(date);
-        const dateFrom = new Date(dateObj);
-        const dateTo = new Date(dateObj);
-        dateTo.setDate(dateTo.getDate() + 3); // Nächste 3 Tage
-        
-        const dateFromStr = dateFrom.toISOString().split('T')[0];
-        const dateToStr = dateTo.toISOString().split('T')[0];
-        
-        console.log(`📅 Fetching from ${dateFromStr} to ${dateToStr}`);
-        
-        const apiUrl = `https://api.football-data.org/v4/matches?dateFrom=${dateFromStr}&dateTo=${dateToStr}`;
+        // WICHTIG: Jetzt nur das gewünschte Datum abfragen!
+        const apiUrl = `https://api.football-data.org/v4/matches?dateFrom=${requestedDate}&dateTo=${requestedDate}`;
         console.log("🔗 API URL:", apiUrl);
         
         const response = await fetch(apiUrl, {
@@ -209,35 +197,218 @@ app.get("/api/games", async (req, res) => {
         }
         
         const data = await response.json();
-        console.log(`✅ Received ${data.matches?.length || 0} matches from API`);
+        console.log(`✅ Received ${data.matches?.length || 0} matches from API for date ${requestedDate}`);
+        
+        let processedGames = [];
         
         if (!data.matches || data.matches.length === 0) {
-            console.log("📭 No matches found from API");
-            return res.json({ response: [] });
+            console.log("📭 No matches found for the selected date");
+        } else {
+            // Spiele verarbeiten - nur für das gewählte Datum
+            for (const match of data.matches) {
+                try {
+                    // Nur SCHEDULED, LIVE, oder IN_PLAY Spiele
+                    if (match.status === "SCHEDULED" || match.status === "LIVE" || match.status === "IN_PLAY" || match.status === "TIMED") {
+                        const homeTeam = match.homeTeam?.name || "Unknown";
+                        const awayTeam = match.awayTeam?.name || "Unknown";
+                        const league = match.competition?.name || "Unknown";
+                        
+                        // Prüfe ob das Spiel am gewählten Datum ist
+                        const matchDate = new Date(match.utcDate).toISOString().split('T')[0];
+                        if (matchDate !== requestedDate) {
+                            console.log(`🔄 Skipping match - date mismatch: ${matchDate} vs ${requestedDate}`);
+                            continue;
+                        }
+                        
+                        // xG schätzen
+                        const homeXG = estimateXG(homeTeam, true, league);
+                        const awayXG = estimateXG(awayTeam, false, league);
+                        
+                        // Wahrscheinlichkeiten berechnen
+                        const prob = computeMatchOutcomeProbs(homeXG, awayXG);
+                        const over25 = computeOver25Prob(homeXG, awayXG);
+                        const btts = computeBTTS(homeXG, awayXG);
+                        const trend = computeTrend(prob, homeXG, awayXG);
+                        
+                        // Odds simulieren (basierend auf Wahrscheinlichkeiten)
+                        const odds = {
+                            home: +(1 / prob.home * (0.92 + Math.random() * 0.1)).toFixed(2),
+                            draw: +(1 / prob.draw * (0.92 + Math.random() * 0.1)).toFixed(2),
+                            away: +(1 / prob.away * (0.92 + Math.random() * 0.1)).toFixed(2),
+                            over25: +(1 / over25 * (0.92 + Math.random() * 0.1)).toFixed(2)
+                        };
+                        
+                        // Value berechnen
+                        const value = {
+                            home: calculateValue(prob.home, odds.home),
+                            draw: calculateValue(prob.draw, odds.draw),
+                            away: calculateValue(prob.away, odds.away),
+                            over25: calculateValue(over25, odds.over25),
+                            under25: calculateValue(1 - over25, 1.9)
+                        };
+                        
+                        const gameData = {
+                            id: match.id,
+                            home: homeTeam,
+                            away: awayTeam,
+                            league: league,
+                            date: match.utcDate,
+                            homeLogo: match.homeTeam?.crest || `https://flagcdn.com/w40/${getFlag(homeTeam)}.png`,
+                            awayLogo: match.awayTeam?.crest || `https://flagcdn.com/w40/${getFlag(awayTeam)}.png`,
+                            homeXG,
+                            awayXG,
+                            prob,
+                            value,
+                            odds,
+                            btts,
+                            trend,
+                            over25,
+                            under25: 1 - over25,
+                            status: match.status,
+                            matchday: match.matchday
+                        };
+                        
+                        processedGames.push(gameData);
+                    }
+                } catch (matchError) {
+                    console.warn(`Error processing match ${match.id}:`, matchError.message);
+                }
+            }
         }
         
-        // Spiele verarbeiten - nur geplante oder live Spiele
+        console.log(`✅ Filtered to ${processedGames.length} games for date ${requestedDate}`);
+        
+        // Nach bestem Value sortieren
+        const sortedGames = processedGames.sort((a, b) => {
+            const maxValueA = Math.max(a.value.home, a.value.draw, a.value.away, a.value.over25);
+            const maxValueB = Math.max(b.value.home, b.value.draw, b.value.away, b.value.over25);
+            return maxValueB - maxValueA;
+        });
+        
+        // Im Cache speichern
+        cache.set(cacheKey, {
+            timestamp: Date.now(),
+            data: sortedGames
+        });
+        
+        res.json({ 
+            response: sortedGames,
+            info: {
+                date: requestedDate,
+                total: sortedGames.length,
+                source: "football-data.org",
+                matchesFound: data.matches?.length || 0
+            }
+        });
+        
+    } catch (error) {
+        console.error("❌ Error in /api/games:", error);
+        
+        res.status(500).json({ 
+            error: "Failed to fetch data from Football-Data.org",
+            message: error.message,
+            response: []
+        });
+    }
+});
+
+// API Test Route für ein bestimmtes Datum
+app.get("/api/debug-date", async (req, res) => {
+    try {
+        if (!FOOTBALL_DATA_KEY) {
+            return res.json({ error: "No API key configured" });
+        }
+        
+        const testDate = req.query.date || new Date().toISOString().split('T')[0];
+        const apiUrl = `https://api.football-data.org/v4/matches?dateFrom=${testDate}&dateTo=${testDate}`;
+        
+        console.log("🔗 Testing API URL:", apiUrl);
+        
+        const response = await fetch(apiUrl, {
+            headers: { 'X-Auth-Token': FOOTBALL_DATA_KEY }
+        });
+        
+        const data = await response.json();
+        
+        // Zeige alle verfügbaren Spiele mit Details
+        const allMatches = data.matches?.map(m => ({
+            id: m.id,
+            home: m.homeTeam?.name,
+            away: m.awayTeam?.name,
+            league: m.competition?.name,
+            date: m.utcDate,
+            status: m.status,
+            matchDate: new Date(m.utcDate).toISOString().split('T')[0]
+        })) || [];
+        
+        res.json({
+            status: response.status,
+            requestedDate: testDate,
+            apiUrl: apiUrl,
+            totalMatches: data.matches?.length || 0,
+            scheduledMatches: allMatches.filter(m => m.status === "SCHEDULED" || m.status === "TIMED").length,
+            allMatches: allMatches,
+            scheduledMatchesDetails: allMatches.filter(m => m.status === "SCHEDULED" || m.status === "TIMED")
+        });
+        
+    } catch (error) {
+        res.json({ 
+            error: error.message,
+            stack: error.stack
+        });
+    }
+});
+
+// Alternative Route für mehrere Tage (falls gewünscht)
+app.get("/api/games-range", async (req, res) => {
+    try {
+        let dateFrom = req.query.dateFrom;
+        let dateTo = req.query.dateTo;
+        
+        if (!dateFrom) {
+            dateFrom = new Date().toISOString().split('T')[0];
+        }
+        if (!dateTo) {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 3);
+            dateTo = tomorrow.toISOString().split('T')[0];
+        }
+        
+        const cacheKey = `games-${dateFrom}-${dateTo}`;
+        
+        // Cache prüfen
+        const cached = cache.get(cacheKey);
+        if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+            return res.json({ response: cached.data });
+        }
+        
+        if (!FOOTBALL_DATA_KEY) {
+            return res.status(500).json({ error: "API Key nicht konfiguriert", response: [] });
+        }
+        
+        const apiUrl = `https://api.football-data.org/v4/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`;
+        const response = await fetch(apiUrl, {
+            headers: { "X-Auth-Token": FOOTBALL_DATA_KEY }
+        });
+        
+        const data = await response.json();
+        
         const processedGames = [];
         
-        for (const match of data.matches) {
-            try {
-                // Nur SCHEDULED, LIVE, oder IN_PLAY Spiele
-                if (match.status === "SCHEDULED" || match.status === "LIVE" || match.status === "IN_PLAY" || match.status === "TIMED") {
+        if (data.matches && data.matches.length > 0) {
+            for (const match of data.matches) {
+                if (match.status === "SCHEDULED" || match.status === "LIVE" || match.status === "TIMED") {
                     const homeTeam = match.homeTeam?.name || "Unknown";
                     const awayTeam = match.awayTeam?.name || "Unknown";
                     const league = match.competition?.name || "Unknown";
                     
-                    // xG schätzen
                     const homeXG = estimateXG(homeTeam, true, league);
                     const awayXG = estimateXG(awayTeam, false, league);
-                    
-                    // Wahrscheinlichkeiten berechnen
                     const prob = computeMatchOutcomeProbs(homeXG, awayXG);
                     const over25 = computeOver25Prob(homeXG, awayXG);
                     const btts = computeBTTS(homeXG, awayXG);
                     const trend = computeTrend(prob, homeXG, awayXG);
                     
-                    // Odds simulieren (basierend auf Wahrscheinlichkeiten)
                     const odds = {
                         home: +(1 / prob.home * (0.92 + Math.random() * 0.1)).toFixed(2),
                         draw: +(1 / prob.draw * (0.92 + Math.random() * 0.1)).toFixed(2),
@@ -245,7 +416,6 @@ app.get("/api/games", async (req, res) => {
                         over25: +(1 / over25 * (0.92 + Math.random() * 0.1)).toFixed(2)
                     };
                     
-                    // Value berechnen
                     const value = {
                         home: calculateValue(prob.home, odds.home),
                         draw: calculateValue(prob.draw, odds.draw),
@@ -254,7 +424,7 @@ app.get("/api/games", async (req, res) => {
                         under25: calculateValue(1 - over25, 1.9)
                     };
                     
-                    const gameData = {
+                    processedGames.push({
                         id: match.id,
                         home: homeTeam,
                         away: awayTeam,
@@ -271,106 +441,33 @@ app.get("/api/games", async (req, res) => {
                         trend,
                         over25,
                         under25: 1 - over25,
-                        status: match.status,
-                        matchday: match.matchday,
-                        area: match.area?.name
-                    };
-                    
-                    processedGames.push(gameData);
+                        status: match.status
+                    });
                 }
-            } catch (matchError) {
-                console.warn(`Error processing match ${match.id}:`, matchError.message);
             }
         }
         
-        console.log(`✅ Successfully processed ${processedGames.length} games`);
-        
-        // Nach bestem Value sortieren
         const sortedGames = processedGames.sort((a, b) => {
             const maxValueA = Math.max(a.value.home, a.value.draw, a.value.away, a.value.over25);
             const maxValueB = Math.max(b.value.home, b.value.draw, b.value.away, b.value.over25);
             return maxValueB - maxValueA;
         });
         
-        // Im Cache speichern
-        cache.set(cacheKey, {
-            timestamp: Date.now(),
-            data: sortedGames
-        });
-        
-        // Cache bereinigen
-        if (cache.size > 50) {
-            const firstKey = cache.keys().next().value;
-            cache.delete(firstKey);
-        }
+        cache.set(cacheKey, { timestamp: Date.now(), data: sortedGames });
         
         res.json({ 
             response: sortedGames,
             info: {
-                date: date,
+                dateFrom: dateFrom,
+                dateTo: dateTo,
                 total: sortedGames.length,
-                source: "football-data.org",
-                period: `${dateFromStr} to ${dateToStr}`
+                source: "football-data.org-range"
             }
         });
         
     } catch (error) {
-        console.error("❌ Error in /api/games:", error);
-        
-        res.status(500).json({ 
-            error: "Failed to fetch data from Football-Data.org",
-            message: error.message,
-            response: []
-        });
-    }
-});
-
-// API Test Route
-app.get("/api/debug", async (req, res) => {
-    try {
-        if (!FOOTBALL_DATA_KEY) {
-            return res.json({ error: "No API key configured" });
-        }
-        
-        const today = new Date();
-        const dateFrom = today.toISOString().split('T')[0];
-        const dateTo = new Date(today);
-        dateTo.setDate(dateTo.getDate() + 7);
-        const dateToStr = dateTo.toISOString().split('T')[0];
-        
-        const apiUrl = `https://api.football-data.org/v4/matches?dateFrom=${dateFrom}&dateTo=${dateToStr}`;
-        
-        const response = await fetch(apiUrl, {
-            headers: { 'X-Auth-Token': FOOTBALL_DATA_KEY }
-        });
-        
-        const data = await response.json();
-        
-        res.json({
-            status: response.status,
-            url: apiUrl,
-            matchesCount: data.matches?.length || 0,
-            matchesSample: data.matches?.slice(0, 5).map(m => ({
-                id: m.id,
-                home: m.homeTeam?.name,
-                away: m.awayTeam?.name,
-                league: m.competition?.name,
-                date: m.utcDate,
-                status: m.status
-            })) || [],
-            allMatches: data.matches?.map(m => ({
-                home: m.homeTeam?.name,
-                away: m.awayTeam?.name,
-                league: m.competition?.name,
-                status: m.status
-            })) || []
-        });
-        
-    } catch (error) {
-        res.json({ 
-            error: error.message,
-            stack: error.stack
-        });
+        console.error("Error in /api/games-range:", error);
+        res.status(500).json({ error: error.message, response: [] });
     }
 });
 
@@ -393,5 +490,6 @@ app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`🔑 API Key: ${FOOTBALL_DATA_KEY ? 'Configured ✅' : 'MISSING ❌'}`);
     console.log(`📊 Using REAL data from Football-Data.org`);
-    console.log(`🔗 Debug: https://your-app.onrender.com/api/debug`);
+    console.log(`🔗 Debug: https://your-app.onrender.com/api/debug-date`);
+    console.log(`🔗 Range: https://your-app.onrender.com/api/games-range`);
 });
