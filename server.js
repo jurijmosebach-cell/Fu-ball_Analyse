@@ -1,4 +1,4 @@
-// server.js — Erweiterte Version mit SportsAPI 360 Integration
+// server.js — Korrigierte Version mit richtigen SportsAPI360 Endpoints
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -20,26 +20,30 @@ const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_API_KEY;
 const SPORTSAPI360_KEY = process.env.SPORTSAPI360_API_KEY;
 
 // API Key Validation
-if (!FOOTBALL_DATA_KEY) console.warn("⚠️ WARNING: FOOTBALL_DATA_API_KEY nicht gesetzt!");
-if (!SPORTSAPI360_KEY) console.warn("⚠️ WARNING: SPORTSAPI360_API_KEY nicht gesetzt!");
+console.log("🔑 API Keys:", {
+    footballData: FOOTBALL_DATA_KEY ? "✅ Configured" : "❌ Missing",
+    sportsAPI360: SPORTSAPI360_KEY ? "✅ Configured" : "❌ Missing"
+});
 
 // Konfiguration
 const CACHE_DURATION = 10 * 60 * 1000;
 const cache = new Map();
 
-// SportsAPI 360 Konfiguration
+// Korrigierte SportsAPI360 Konfiguration basierend auf der Dokumentation
 const SPORTSAPI360_CONFIG = {
-    baseURL: "https://api.sportsapi360.com/v1",
+    baseURL: "https://api.sportsapi360.com",
     endpoints: {
         matches: "/matches",
         odds: "/odds",
-        statistics: "/statistics",
-        leagues: "/leagues"
+        statistics: "/statistics", 
+        leagues: "/leagues",
+        teams: "/teams"
     },
     sports: {
         football: 1,
         basketball: 2,
-        tennis: 3
+        tennis: 3,
+        hockey: 4
     }
 };
 
@@ -60,7 +64,7 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// SportsAPI 360 Service Funktionen
+// Korrigierte SportsAPI360 Service Klasse
 class SportsAPI360Service {
     constructor(apiKey) {
         this.apiKey = apiKey;
@@ -73,72 +77,112 @@ class SportsAPI360Service {
         }
 
         const url = new URL(`${this.baseURL}${endpoint}`);
+        
+        // API Key als Query Parameter (laut Dokumentation)
         url.searchParams.append('api_key', this.apiKey);
         
-        // Parameter hinzufügen
+        // Andere Parameter hinzufügen
         Object.keys(params).forEach(key => {
-            if (params[key] !== undefined && params[key] !== null) {
+            if (params[key] !== undefined && params[key] !== null && params[key] !== "") {
                 url.searchParams.append(key, params[key]);
             }
         });
 
+        console.log(`🔗 SportsAPI360 Request: ${url.toString().replace(this.apiKey, '***')}`);
+
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+
             const response = await fetch(url.toString(), {
+                method: 'GET',
                 headers: {
                     'Accept': 'application/json',
                     'User-Agent': 'WettAnalyseTool/1.0'
                 },
-                timeout: 15000
+                signal: controller.signal
             });
 
+            clearTimeout(timeoutId);
+
+            console.log(`📡 Response Status: ${response.status} ${response.statusText}`);
+
             if (!response.ok) {
-                throw new Error(`SportsAPI360 Error: ${response.status} ${response.statusText}`);
+                throw new Error(`HTTP ${response.status}: ${await response.text()}`);
             }
 
-            return await response.json();
+            const data = await response.json();
+            console.log(`✅ SportsAPI360 Response received with ${Object.keys(data).length} keys`);
+            return data;
+            
         } catch (error) {
-            console.error(`SportsAPI360 API Fehler (${endpoint}):`, error.message);
+            if (error.name === 'AbortError') {
+                throw new Error('SportsAPI360 Timeout after 15 seconds');
+            }
+            console.error(`❌ SportsAPI360 API Fehler: ${error.message}`);
             throw error;
         }
     }
 
-    // Spiele für ein bestimmtes Datum abrufen
+    // Korrigierte Methode basierend auf Dokumentation
     async getMatchesByDate(date, sportId = SPORTSAPI360_CONFIG.sports.football) {
         try {
-            const data = await this.makeRequest(SPORTSAPI360_CONFIG.endpoints.matches, {
+            console.log(`📅 Fetching SportsAPI360 matches for: ${date}, sport: ${sportId}`);
+            
+            // Laut Dokumentation: /matches mit sport_id und date Parametern
+            const data = await this.makeRequest('/matches', {
                 sport_id: sportId,
-                date: date,
-                include: 'odds,statistics'
+                date: date
+                // 'include' Parameter gibt es in der Dokumentation nicht
             });
-            return data;
+            
+            console.log(`✅ Received ${data?.matches?.length || 0} matches from SportsAPI360`);
+            return data || { matches: [] };
+            
         } catch (error) {
-            console.error("Fehler beim Abrufen der Spiele:", error);
-            return null;
+            console.error("❌ Failed to get matches from SportsAPI360:", error.message);
+            return { matches: [] };
         }
     }
 
-    // Odds für bestimmte Spiele abrufen
-    async getOdds(matchId) {
+    // Odds für ein bestimmtes Match abrufen
+    async getMatchOdds(matchId) {
         try {
-            const data = await this.makeRequest(SPORTSAPI360_CONFIG.endpoints.odds, {
+            console.log(`💰 Fetching odds for match: ${matchId}`);
+            const data = await this.makeRequest('/odds', {
                 match_id: matchId
             });
             return data;
         } catch (error) {
-            console.error(`Fehler beim Abrufen der Odds für Match ${matchId}:`, error);
+            console.error(`❌ Failed to get odds for match ${matchId}:`, error.message);
             return null;
         }
     }
 
-    // Statistiken für Spiele abrufen
-    async getStatistics(matchId) {
+    // Statistiken für ein Match abrufen
+    async getMatchStatistics(matchId) {
         try {
-            const data = await this.makeRequest(SPORTSAPI360_CONFIG.endpoints.statistics, {
+            console.log(`📊 Fetching statistics for match: ${matchId}`);
+            const data = await this.makeRequest('/statistics', {
                 match_id: matchId
             });
             return data;
         } catch (error) {
-            console.error(`Fehler beim Abrufen der Statistiken für Match ${matchId}:`, error);
+            console.error(`❌ Failed to get statistics for match ${matchId}:`, error.message);
+            return null;
+        }
+    }
+
+    // Ligen abrufen
+    async getLeagues(sportId = SPORTSAPI360_CONFIG.sports.football) {
+        try {
+            console.log(`🏆 Fetching leagues for sport: ${sportId}`);
+            const data = await this.makeRequest('/leagues', {
+                sport_id: sportId
+            });
+            return data;
+        } catch (error) {
+            console.error(`❌ Failed to get leagues:`, error.message);
             return null;
         }
     }
@@ -160,17 +204,9 @@ function poisson(k, lambda) {
     return Math.pow(lambda, k) * Math.exp(-lambda) / factorial(k);
 }
 
-// xG-Schätzung (erweitert mit SportsAPI360 Daten)
+// xG-Schätzung
 function estimateXG(teamName, isHome = true, league = "", statistics = null) {
     let base = isHome ? 1.45 : 1.10;
-    
-    // Wenn Statistics von SportsAPI360 verfügbar, verwende diese für genauere xG-Berechnung
-    if (statistics) {
-        const avgXG = calculateXGFromStatistics(statistics);
-        if (avgXG > 0) {
-            base = avgXG;
-        }
-    }
     
     const LEAGUE_FACTORS = {
         "Premier League": 1.05, "Bundesliga": 1.10, "La Liga": 1.00, 
@@ -182,7 +218,6 @@ function estimateXG(teamName, isHome = true, league = "", statistics = null) {
     const leagueFactor = LEAGUE_FACTORS[league] || 1.0;
     const homeAdvantage = isHome ? 0.15 : -0.10;
     
-    // Team-basierte Anpassung
     const strongTeams = ["Man City", "Liverpool", "Arsenal", "Bayern", "Real Madrid", "Barcelona", "PSG", "Inter", "Juventus", "Dortmund"];
     const weakTeams = ["Bochum", "Luton", "Sheffield", "Burnley", "Mainz", "Cadiz", "Salernitana", "Clermont", "Empoli"];
     
@@ -192,27 +227,6 @@ function estimateXG(teamName, isHome = true, league = "", statistics = null) {
     
     const raw = (base + homeAdvantage + teamAdjustment) * leagueFactor;
     return +Math.max(0.4, Math.min(3.5, raw)).toFixed(2);
-}
-
-// xG aus SportsAPI360 Statistiken berechnen
-function calculateXGFromStatistics(statistics) {
-    if (!statistics) return 0;
-    
-    try {
-        // Beispiel: Verwende Torschüsse, Torschussgenauigkeit, Ballbesitz
-        const shots = statistics.shots_total || 0;
-        const shotsOnTarget = statistics.shots_on_target || 0;
-        const possession = statistics.possession || 50;
-        
-        // Einfache xG-Formel basierend auf Statistiken
-        const accuracy = shots > 0 ? shotsOnTarget / shots : 0.35;
-        const xg = (shots * accuracy * (possession / 100) * 0.15);
-        
-        return Math.min(3.0, xg);
-    } catch (error) {
-        console.error("Fehler bei xG-Berechnung aus Statistiken:", error);
-        return 0;
-    }
 }
 
 // Wahrscheinlichkeits-Berechnungen (unverändert)
@@ -287,48 +301,48 @@ function getFlag(teamName) {
     return "eu";
 }
 
-// SportsAPI360 Daten zu Spielen verarbeiten
+// SportsAPI360 Daten verarbeiten
 async function processSportsAPI360Games(apiData, requestedDate) {
     const games = [];
     
-    if (!apiData || !apiData.matches) {
+    if (!apiData || !apiData.matches || !Array.isArray(apiData.matches)) {
+        console.log('⚠️ No valid matches array from SportsAPI360');
         return games;
     }
     
+    console.log(`🔢 Processing ${apiData.matches.length} matches from SportsAPI360`);
+    
     for (const match of apiData.matches) {
         try {
-            // Basis Match-Informationen
-            const homeTeam = match.home_team?.name || "Unknown";
-            const awayTeam = match.away_team?.name || "Unknown";
-            const league = match.league?.name || "Unknown";
+            // Datenstruktur laut SportsAPI360 Dokumentation
+            const homeTeam = match.home_team?.name || match.home_team_name || "Home Team";
+            const awayTeam = match.away_team?.name || match.away_team_name || "Away Team";
+            const league = match.league?.name || match.league_name || "Unknown League";
             
-            // Statistiken von SportsAPI360 verwenden falls verfügbar
-            const homeStats = match.home_statistics;
-            const awayStats = match.away_statistics;
+            console.log(`⚽ Processing: ${homeTeam} vs ${awayTeam}`);
             
-            // xG mit SportsAPI360 Statistiken berechnen
-            const homeXG = estimateXG(homeTeam, true, league, homeStats);
-            const awayXG = estimateXG(awayTeam, false, league, awayStats);
+            // xG berechnen
+            const homeXG = estimateXG(homeTeam, true, league);
+            const awayXG = estimateXG(awayTeam, false, league);
             
             const prob = computeMatchOutcomeProbs(homeXG, awayXG);
             const over25 = computeOver25Prob(homeXG, awayXG);
             const btts = computeBTTS(homeXG, awayXG);
             const trend = computeTrend(prob, homeXG, awayXG);
             
-            // Odds von SportsAPI360 verwenden falls verfügbar
+            // Odds - versuche echte Odds von der API zu bekommen
             let odds = {
-                home: +(1 / prob.home * (0.92 + Math.random() * 0.1)).toFixed(2),
-                draw: +(1 / prob.draw * (0.92 + Math.random() * 0.1)).toFixed(2),
-                away: +(1 / prob.away * (0.92 + Math.random() * 0.1)).toFixed(2),
-                over25: +(1 / over25 * (0.92 + Math.random() * 0.1)).toFixed(2)
+                home: +(1 / prob.home * 0.95).toFixed(2),
+                draw: +(1 / prob.draw * 0.95).toFixed(2),
+                away: +(1 / prob.away * 0.95).toFixed(2),
+                over25: +(1 / over25 * 0.95).toFixed(2)
             };
             
-            // Falls Odds von SportsAPI360 verfügbar, diese verwenden
-            if (match.odds && match.odds.main) {
-                const apiOdds = match.odds.main;
-                if (apiOdds.home_win) odds.home = parseFloat(apiOdds.home_win);
-                if (apiOdds.draw) odds.draw = parseFloat(apiOdds.draw);
-                if (apiOdds.away_win) odds.away = parseFloat(apiOdds.away_win);
+            // Falls die API Odds liefert, diese verwenden
+            if (match.odds && typeof match.odds === 'object') {
+                if (match.odds.home_win) odds.home = parseFloat(match.odds.home_win);
+                if (match.odds.draw) odds.draw = parseFloat(match.odds.draw);
+                if (match.odds.away_win) odds.away = parseFloat(match.odds.away_win);
             }
             
             const value = {
@@ -340,11 +354,11 @@ async function processSportsAPI360Games(apiData, requestedDate) {
             };
             
             games.push({
-                id: match.id || Date.now() + Math.random(),
+                id: match.match_id || match.id || `s360-${Date.now()}-${Math.random()}`,
                 home: homeTeam,
                 away: awayTeam,
                 league: league,
-                date: match.date || new Date().toISOString(),
+                date: match.date || match.match_date || new Date().toISOString(),
                 homeLogo: match.home_team?.logo || `https://flagcdn.com/w40/${getFlag(homeTeam)}.png`,
                 awayLogo: match.away_team?.logo || `https://flagcdn.com/w40/${getFlag(awayTeam)}.png`,
                 homeXG,
@@ -358,28 +372,88 @@ async function processSportsAPI360Games(apiData, requestedDate) {
                 under25: 1 - over25,
                 status: match.status || "SCHEDULED",
                 source: "sportsapi360",
-                // Zusätzliche Daten von SportsAPI360
-                statistics: {
-                    home: homeStats,
-                    away: awayStats
+                // Zusätzliche Daten
+                match_data: {
+                    match_id: match.match_id,
+                    season: match.season,
+                    round: match.round
                 }
             });
             
         } catch (matchError) {
-            console.warn("Error processing SportsAPI360 match:", matchError.message);
+            console.warn("❌ Error processing SportsAPI360 match:", matchError.message);
         }
     }
     
     return games;
 }
 
-// Demo-Daten (unverändert)
+// Demo-Daten (Fallback)
 function getDemoGames(date = null) {
-    // ... (deine bestehende getDemoGames Funktion)
-    // Kürze hier aus Platzgründen - deine ursprüngliche Funktion bleibt gleich
+    const baseDate = date ? new Date(date) : new Date();
+    
+    const demoMatches = [
+        { home: "Manchester City", away: "Liverpool", league: "Premier League" },
+        { home: "Bayern Munich", away: "Borussia Dortmund", league: "Bundesliga" },
+        { home: "Real Madrid", away: "Barcelona", league: "La Liga" },
+        { home: "PSG", away: "Marseille", league: "Ligue 1" },
+        { home: "Inter Milan", away: "Juventus", league: "Serie A" }
+    ];
+    
+    const games = demoMatches.map((match, index) => {
+        const homeXG = estimateXG(match.home, true, match.league);
+        const awayXG = estimateXG(match.away, false, match.league);
+        const prob = computeMatchOutcomeProbs(homeXG, awayXG);
+        const over25 = computeOver25Prob(homeXG, awayXG);
+        const btts = computeBTTS(homeXG, awayXG);
+        const trend = computeTrend(prob, homeXG, awayXG);
+        
+        const odds = {
+            home: +(1 / prob.home * 0.95).toFixed(2),
+            draw: +(1 / prob.draw * 0.95).toFixed(2),
+            away: +(1 / prob.away * 0.95).toFixed(2),
+            over25: +(1 / over25 * 0.95).toFixed(2)
+        };
+        
+        const value = {
+            home: calculateValue(prob.home, odds.home),
+            draw: calculateValue(prob.draw, odds.draw),
+            away: calculateValue(prob.away, odds.away),
+            over25: calculateValue(over25, odds.over25),
+            under25: calculateValue(1 - over25, 1.9)
+        };
+        
+        const matchDate = new Date(baseDate);
+        matchDate.setDate(matchDate.getDate() + index);
+        matchDate.setHours(15 + (index % 6), 0, 0, 0);
+        
+        return {
+            id: `demo-${Date.now()}-${index}`,
+            home: match.home,
+            away: match.away,
+            league: match.league,
+            date: matchDate.toISOString(),
+            homeLogo: `https://flagcdn.com/w40/${getFlag(match.home)}.png`,
+            awayLogo: `https://flagcdn.com/w40/${getFlag(match.away)}.png`,
+            homeXG,
+            awayXG,
+            prob,
+            value,
+            odds,
+            btts,
+            trend,
+            over25,
+            under25: 1 - over25,
+            status: "SCHEDULED",
+            source: "demo"
+        };
+    });
+    
+    console.log(`🎯 Generated ${games.length} demo games`);
+    return games;
 }
 
-// Haupt-API Route - ERWEITERT mit SportsAPI360
+// Haupt-API Route
 app.get("/api/games", async (req, res) => {
     try {
         console.log("📥 API Request received:", req.query);
@@ -394,46 +468,36 @@ app.get("/api/games", async (req, res) => {
             return res.json({ response: cached.data });
         }
         
-        let apiGames = [];
         let sportsAPI360Games = [];
         let apiErrors = [];
         
-        // VERSUCH 1: SportsAPI 360 Daten
+        // VERSUCH: SportsAPI 360 Daten
         if (SPORTSAPI360_KEY) {
             try {
                 console.log("🔄 Trying SportsAPI360...");
                 const sportsData = await sportsAPI360.getMatchesByDate(requestedDate);
-                if (sportsData) {
-                    sportsAPI360Games = await processSportsAPI360Games(sportsData, requestedDate);
-                    console.log(`✅ SportsAPI360: ${sportsAPI360Games.length} games`);
-                }
+                sportsAPI360Games = await processSportsAPI360Games(sportsData, requestedDate);
+                console.log(`✅ SportsAPI360: ${sportsAPI360Games.length} games processed`);
             } catch (sportsError) {
                 apiErrors.push(`SportsAPI360: ${sportsError.message}`);
                 console.warn("❌ SportsAPI360 call failed:", sportsError.message);
             }
         }
         
-        // VERSUCH 2: Football-Data.org API (deine ursprüngliche Integration)
-        if (FOOTBALL_DATA_KEY) {
-            try {
-                console.log("🔄 Trying Football-Data.org API...");
-                // ... (deine bestehende Football-Data.org Integration)
-            } catch (apiErr) {
-                apiErrors.push(`Football-Data: ${apiErr.message}`);
-            }
-        }
-        
         let finalGames = [];
         
-        // Priorität: SportsAPI360 > Football-Data > Demo
+        // Datenquelle auswählen
         if (sportsAPI360Games.length > 0) {
             console.log(`✅ Using ${sportsAPI360Games.length} games from SportsAPI360`);
             finalGames = sportsAPI360Games;
-        } else if (apiGames.length > 0) {
-            console.log(`✅ Using ${apiGames.length} games from Football-Data`);
-            finalGames = apiGames;
         } else {
             console.log("📋 Using demo games (no API data available)");
+            finalGames = getDemoGames(requestedDate);
+        }
+        
+        // Sicherstellen dass finalGames ein Array ist
+        if (!Array.isArray(finalGames)) {
+            console.warn('⚠️ finalGames is not an array, using demo games');
             finalGames = getDemoGames(requestedDate);
         }
         
@@ -457,13 +521,8 @@ app.get("/api/games", async (req, res) => {
             info: {
                 date: requestedDate,
                 total: sortedGames.length,
-                sources: {
-                    sportsapi360: sportsAPI360Games.length,
-                    football_data: apiGames.length,
-                    demo: finalGames === getDemoGames(requestedDate) ? finalGames.length : 0
-                },
-                primary_source: sportsAPI360Games.length > 0 ? "sportsapi360" : 
-                              apiGames.length > 0 ? "football-data.org" : "demo_data",
+                source: sportsAPI360Games.length > 0 ? "sportsapi360" : "demo_data",
+                sportsapi360_games: sportsAPI360Games.length,
                 errors: apiErrors.length > 0 ? apiErrors : null
             }
         });
@@ -471,101 +530,27 @@ app.get("/api/games", async (req, res) => {
     } catch (error) {
         console.error("❌ Error in /api/games:", error);
         
-        // Fallback
-        const fallbackGames = getDemoGames(req.query.date);
-        res.json({ 
-            response: fallbackGames,
-            info: {
-                date: req.query.date || new Date().toISOString().split('T')[0],
-                total: fallbackGames.length,
-                source: "fallback",
-                error: error.message
-            }
-        });
-    }
-});
-
-// Neue Route: SportsAPI360 Test
-app.get("/api/test-sportsapi360", async (req, res) => {
-    try {
-        if (!SPORTSAPI360_KEY) {
-            return res.json({ 
-                error: "SportsAPI360 API Key nicht konfiguriert",
-                hint: "Setze SPORTSAPI360_API_KEY Environment Variable"
+        // SICHERER Fallback
+        try {
+            const fallbackGames = getDemoGames(req.query.date);
+            res.json({ 
+                response: fallbackGames,
+                info: {
+                    date: req.query.date || new Date().toISOString().split('T')[0],
+                    total: fallbackGames.length,
+                    source: "fallback",
+                    error: error.message
+                }
+            });
+        } catch (fallbackError) {
+            console.error("❌ Even fallback failed:", fallbackError);
+            res.status(500).json({ 
+                error: "Internal Server Error",
+                message: "Please try again later"
             });
         }
-        
-        const today = new Date().toISOString().split('T')[0];
-        const testData = await sportsAPI360.getMatchesByDate(today);
-        
-        res.json({
-            status: "success",
-            date: today,
-            api_configured: true,
-            total_matches: testData?.matches?.length || 0,
-            sample_matches: testData?.matches?.slice(0, 3).map(m => ({
-                home: m.home_team?.name,
-                away: m.away_team?.name,
-                league: m.league?.name,
-                date: m.date,
-                status: m.status,
-                has_odds: !!m.odds,
-                has_stats: !!(m.home_statistics || m.away_statistics)
-            })) || []
-        });
-        
-    } catch (error) {
-        res.json({ 
-            error: error.message,
-            api_configured: !!SPORTSAPI360_KEY
-        });
     }
 });
 
-// API Status Route
-app.get("/api/status", (req, res) => {
-    res.json({
-        apis: {
-            sportsapi360: {
-                configured: !!SPORTSAPI360_KEY,
-                status: SPORTSAPI360_KEY ? "active" : "missing_key"
-            },
-            football_data: {
-                configured: !!FOOTBALL_DATA_KEY,
-                status: FOOTBALL_DATA_KEY ? "active" : "missing_key"
-            }
-        },
-        cache: {
-            size: cache.size,
-            keys: Array.from(cache.keys())
-        }
-    });
-});
-
-// Bestehende Routes beibehalten
-app.get("/api/test", async (req, res) => {
-    // ... (deine bestehende Test-Route)
-});
-
-// Error Handling (unverändert)
-app.use((error, req, res, next) => {
-    console.error("Unhandled Error:", error);
-    res.status(500).json({ 
-        error: "Internal Server Error",
-        message: "Please try again later"
-    });
-});
-
-// 404 Handler
-app.use((req, res) => {
-    res.status(404).json({ error: "Route not found" });
-});
-
-// Server Start
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`🔑 Football-Data API: ${FOOTBALL_DATA_KEY ? 'Configured ✅' : 'MISSING ❌'}`);
-    console.log(`🔑 SportsAPI360 API: ${SPORTSAPI360_KEY ? 'Configured ✅' : 'MISSING ❌'}`);
-    console.log(`📊 Multi-API mode: SportsAPI360 + Football-Data + Demo Fallback`);
-    console.log(`🔗 Test: https://your-app.onrender.com/api/test-sportsapi360`);
-});
+// Neue Debug Route für SportsAPI360
+app.get("/api/debug-sportsapi360", async (req, res) => {
