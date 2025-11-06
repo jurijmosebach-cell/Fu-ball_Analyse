@@ -212,7 +212,7 @@ function estimateXG(homeTeam, awayTeam, isHome = true, league = "") {
 function computeMatchOutcomeProbs(homeXG, awayXG) {
     let homeProb = 0, drawProb = 0, awayProb = 0;
     
-    // Erweiterte Poisson-Berechnung für genauere Ergebnisse
+    // Erweitered Poisson-Berechnung für genauere Ergebnisse
     for (let i = 0; i <= 8; i++) {
         for (let j = 0; j <= 8; j++) {
             const p = poisson(i, homeXG) * poisson(j, awayXG);
