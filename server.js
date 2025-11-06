@@ -1,4 +1,4 @@
-// server.js — Korrigierte Sortierung für Siegwahrscheinlichkeit
+// server.js — Überarbeitete Analyse mit besseren Berechnungen
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -88,7 +88,8 @@ class FootballDataService {
 
 const footballDataService = new FootballDataService(FOOTBALL_DATA_KEY);
 
-// Mathematische Funktionen
+// VERBESSERTE MATHEMATISCHE FUNKTIONEN
+
 function factorial(n) {
     if (n <= 1) return 1;
     let f = 1;
@@ -101,116 +102,288 @@ function poisson(k, lambda) {
     return Math.pow(lambda, k) * Math.exp(-lambda) / factorial(k);
 }
 
-function estimateXG(teamName, isHome = true, league = "") {
-    let base = isHome ? 1.45 : 1.10;
+// VERBESSERTE xG-SCHÄTZUNG mit Team-Stärken-Datenbank
+const TEAM_STRENGTHS = {
+    // Premier League
+    "Manchester City": { attack: 2.4, defense: 0.8 },
+    "Liverpool": { attack: 2.3, defense: 0.9 },
+    "Arsenal": { attack: 2.1, defense: 0.9 },
+    "Chelsea": { attack: 1.8, defense: 1.2 },
+    "Tottenham": { attack: 1.9, defense: 1.3 },
+    "Manchester United": { attack: 1.7, defense: 1.4 },
+    "Newcastle": { attack: 1.8, defense: 1.2 },
+    "Brighton": { attack: 1.9, defense: 1.4 },
+    "West Ham": { attack: 1.6, defense: 1.5 },
+    "Aston Villa": { attack: 1.8, defense: 1.3 },
     
+    // Bundesliga
+    "Bayern Munich": { attack: 2.5, defense: 0.7 },
+    "Borussia Dortmund": { attack: 2.2, defense: 1.1 },
+    "RB Leipzig": { attack: 2.0, defense: 1.2 },
+    "Bayer Leverkusen": { attack: 2.1, defense: 1.0 },
+    "Eintracht Frankfurt": { attack: 1.7, defense: 1.4 },
+    
+    // La Liga
+    "Real Madrid": { attack: 2.3, defense: 0.8 },
+    "Barcelona": { attack: 2.2, defense: 0.9 },
+    "Atletico Madrid": { attack: 1.8, defense: 0.9 },
+    "Sevilla": { attack: 1.6, defense: 1.3 },
+    
+    // Serie A
+    "Inter Milan": { attack: 2.1, defense: 0.9 },
+    "Juventus": { attack: 1.9, defense: 1.0 },
+    "AC Milan": { attack: 1.9, defense: 1.1 },
+    "Napoli": { attack: 1.8, defense: 1.2 },
+    
+    // Ligue 1
+    "PSG": { attack: 2.4, defense: 0.9 },
+    "Marseille": { attack: 1.8, defense: 1.3 },
+    "Monaco": { attack: 1.9, defense: 1.4 },
+    
+    // Standardwerte für unbekannte Teams
+    "default": { attack: 1.5, defense: 1.5 }
+};
+
+function getTeamStrength(teamName) {
+    for (const [team, strength] of Object.entries(TEAM_STRENGTHS)) {
+        if (teamName.includes(team)) {
+            return strength;
+        }
+    }
+    return TEAM_STRENGTHS.default;
+}
+
+function estimateXG(homeTeam, awayTeam, isHome = true, league = "") {
+    const homeStrength = getTeamStrength(homeTeam);
+    const awayStrength = getTeamStrength(awayTeam);
+    
+    // Basis xG basierend auf Team-Stärken
+    let homeXG = homeStrength.attack * (1 - awayStrength.defense / 3);
+    let awayXG = awayStrength.attack * (1 - homeStrength.defense / 3);
+    
+    // Heimvorteil anpassen
+    const homeAdvantage = isHome ? 0.25 : -0.15;
+    homeXG += homeAdvantage;
+    awayXG -= homeAdvantage;
+    
+    // Liga-Faktoren
     const LEAGUE_FACTORS = {
-        "Premier League": 1.05, "Bundesliga": 1.10, "La Liga": 1.00, 
-        "Serie A": 0.95, "Ligue 1": 1.02, "Champions League": 1.08,
-        "Europa League": 1.06, "Eredivisie": 1.12, "Primeira Liga": 0.94
+        "Premier League": 1.0,
+        "Bundesliga": 1.05,  // Mehr Tore
+        "La Liga": 0.95,     // Weniger Tore
+        "Serie A": 0.90,     // Defensiver
+        "Ligue 1": 1.0,
+        "Champions League": 1.1,
+        "Europa League": 1.05
     };
     
     const leagueFactor = LEAGUE_FACTORS[league] || 1.0;
-    const homeAdvantage = isHome ? 0.15 : -0.10;
+    homeXG *= leagueFactor;
+    awayXG *= leagueFactor;
     
-    const strongTeams = [
-        "Man City", "Liverpool", "Arsenal", "Bayern", "Real Madrid", 
-        "Barcelona", "PSG", "Inter", "Juventus", "Dortmund"
-    ];
-    const weakTeams = [
-        "Bochum", "Luton", "Sheffield", "Burnley", "Mainz", 
-        "Cadiz", "Salernitana", "Clermont", "Empoli"
-    ];
+    // Sicherstellen, dass Werte im realistischen Bereich bleiben
+    homeXG = Math.max(0.3, Math.min(3.5, homeXG));
+    awayXG = Math.max(0.3, Math.min(3.0, awayXG));
     
-    let teamAdjustment = 0;
-    if (strongTeams.some(team => teamName.includes(team))) teamAdjustment += 0.3;
-    if (weakTeams.some(team => teamName.includes(team))) teamAdjustment -= 0.3;
-    
-    const raw = (base + homeAdvantage + teamAdjustment) * leagueFactor;
-    return +Math.max(0.4, Math.min(3.5, raw)).toFixed(2);
+    return {
+        home: +homeXG.toFixed(2),
+        away: +awayXG.toFixed(2)
+    };
 }
 
-function computeMatchOutcomeProbs(homeLambda, awayLambda) {
+// VERBESSERTE WAHRSCHEINLICHKEITSBERECHNUNG
+function computeMatchOutcomeProbs(homeXG, awayXG) {
     let homeProb = 0, drawProb = 0, awayProb = 0;
     
-    for (let i = 0; i <= 6; i++) {
-        for (let j = 0; j <= 6; j++) {
-            const p = poisson(i, homeLambda) * poisson(j, awayLambda);
+    // Erweiterte Poisson-Berechnung für genauere Ergebnisse
+    for (let i = 0; i <= 8; i++) {
+        for (let j = 0; j <= 8; j++) {
+            const p = poisson(i, homeXG) * poisson(j, awayXG);
             if (i > j) homeProb += p;
             else if (i === j) drawProb += p;
             else awayProb += p;
         }
     }
     
+    // Korrektur für extreme Fälle
     const total = homeProb + drawProb + awayProb;
+    if (total < 0.99) {
+        const correction = 1 / total;
+        homeProb *= correction;
+        drawProb *= correction;
+        awayProb *= correction;
+    }
+    
     return {
-        home: +(homeProb / total).toFixed(4),
-        draw: +(drawProb / total).toFixed(4),
-        away: +(awayProb / total).toFixed(4)
+        home: +homeProb.toFixed(4),
+        draw: +drawProb.toFixed(4),
+        away: +awayProb.toFixed(4)
     };
 }
 
-function computeOver25Prob(homeLambda, awayLambda) {
-    let pLe2 = 0;
-    for (let i = 0; i <= 2; i++) {
-        for (let j = 0; j <= (2 - i); j++) {
-            pLe2 += poisson(i, homeLambda) * poisson(j, awayLambda);
+// VERBESSERTE OVER/UNDER BERECHNUNG
+function computeGoalProbabilities(homeXG, awayXG) {
+    const totalXG = homeXG + awayXG;
+    
+    // Wahrscheinlichkeiten für verschiedene Toranzahlen
+    const probabilities = {
+        over05: 0, over15: 0, over25: 0, over35: 0,
+        exact0: 0, exact1: 0, exact2: 0, exact3: 0, exact4: 0
+    };
+    
+    // Berechne exakte Torwahrscheinlichkeiten
+    for (let i = 0; i <= 6; i++) {
+        for (let j = 0; j <= 6; j++) {
+            const p = poisson(i, homeXG) * poisson(j, awayXG);
+            const totalGoals = i + j;
+            
+            if (totalGoals === 0) probabilities.exact0 += p;
+            if (totalGoals === 1) probabilities.exact1 += p;
+            if (totalGoals === 2) probabilities.exact2 += p;
+            if (totalGoals === 3) probabilities.exact3 += p;
+            if (totalGoals === 4) probabilities.exact4 += p;
+            
+            if (totalGoals > 0.5) probabilities.over05 += p;
+            if (totalGoals > 1.5) probabilities.over15 += p;
+            if (totalGoals > 2.5) probabilities.over25 += p;
+            if (totalGoals > 3.5) probabilities.over35 += p;
         }
     }
-    return +(1 - pLe2).toFixed(4);
+    
+    return probabilities;
 }
 
-function computeBTTS(homeLambda, awayLambda) {
-    const pHomeScore = 1 - poisson(0, homeLambda);
-    const pAwayScore = 1 - poisson(0, awayLambda);
-    return +(pHomeScore * pAwayScore).toFixed(4);
-}
-
-function computeTrend(prob, homeXG, awayXG) {
-    const { home, draw, away } = prob;
-    
-    const xgDiff = homeXG - awayXG;
-    const homeStrength = home + (xgDiff * 0.1);
-    const awayStrength = away - (xgDiff * 0.1);
-    
-    if (draw > homeStrength && draw > awayStrength) {
-        return "Draw";
-    } else if (homeStrength > awayStrength) {
-        return "Home";
-    } else {
-        return "Away";
-    }
-}
-
-function calculateValue(probability, odds) {
-    if (!odds || odds <= 1) return 0;
-    return +((probability * odds) - 1).toFixed(4);
-}
-
-// NEUE FUNKTION: Beste Wett-Option finden
-function findBestBet(prob, value, odds) {
-    const options = [
-        { type: 'home', probability: prob.home, value: value.home, odds: odds.home },
-        { type: 'draw', probability: prob.draw, value: value.draw, odds: odds.draw },
-        { type: 'away', probability: prob.away, value: value.away, odds: odds.away },
-        { type: 'over25', probability: prob.over25, value: value.over25, odds: odds.over25 },
-        { type: 'under25', probability: 1 - prob.over25, value: value.under25, odds: 2.0 }
-    ];
-    
-    // Finde die Option mit dem höchsten Value
-    const bestValueOption = options.reduce((best, current) => 
-        current.value > best.value ? current : best
-    );
-    
-    // Finde die Option mit der höchsten Wahrscheinlichkeit
-    const bestProbOption = options.reduce((best, current) => 
-        current.probability > best.probability ? current : best
-    );
+// VERBESSERTE BTTS BERECHNUNG
+function computeBTTS(homeXG, awayXG) {
+    // Wahrscheinlichkeit, dass beide Teams mindestens 1 Tor schießen
+    const pHomeScores = 1 - poisson(0, homeXG);
+    const pAwayScores = 1 - poisson(0, awayXG);
+    const bttsYes = pHomeScores * pAwayScores;
     
     return {
-        bestValue: bestValueOption,
-        bestProbability: bestProbOption,
-        allOptions: options
+        yes: +bttsYes.toFixed(4),
+        no: +(1 - bttsYes).toFixed(4)
+    };
+}
+
+// VERBESSERTE TREND-ANALYSE
+function computeAdvancedTrend(homeXG, awayXG, homeProb, awayProb, drawProb) {
+    const xgDifference = homeXG - awayXG;
+    const probDifference = homeProb - awayProb;
+    const totalXG = homeXG + awayXG;
+    
+    // Stärke-Indikatoren
+    const homeDominance = homeXG / (homeXG + awayXG);
+    const expectedGoals = totalXG;
+    
+    // Trend-Bestimmung basierend auf mehreren Faktoren
+    let trend = "";
+    let confidence = 0;
+    let reasoning = [];
+    
+    if (homeDominance > 0.6) {
+        trend = "Strong Home";
+        confidence = homeDominance;
+        reasoning.push(`Heimstark (${(homeDominance * 100).toFixed(0)}% xG Dominanz)`);
+    } else if (homeDominance > 0.55) {
+        trend = "Home";
+        confidence = homeDominance;
+        reasoning.push(`Leichter Heimvorteil (${(homeDominance * 100).toFixed(0)}% xG Dominanz)`);
+    } else if (homeDominance < 0.4) {
+        trend = "Strong Away";
+        confidence = 1 - homeDominance;
+        reasoning.push(`Auswärtsstark (${((1 - homeDominance) * 100).toFixed(0)}% xG Dominanz)`);
+    } else if (homeDominance < 0.45) {
+        trend = "Away";
+        confidence = 1 - homeDominance;
+        reasoning.push(`Leichter Auswärtsvorteil (${((1 - homeDominance) * 100).toFixed(0)}% xG Dominanz)`);
+    } else {
+        trend = "Balanced";
+        confidence = 0.5;
+        reasoning.push("Ausgeglichene Mannschaftsstärken");
+    }
+    
+    // Torreichheit hinzufügen
+    if (expectedGoals > 3.5) {
+        reasoning.push("Torreich erwartet");
+    } else if (expectedGoals < 2.0) {
+        reasoning.push("Wenige Tore erwartet");
+    }
+    
+    return {
+        trend,
+        confidence: +confidence.toFixed(3),
+        reasoning: reasoning.join(", "),
+        homeDominance: +homeDominance.toFixed(3),
+        expectedGoals: +expectedGoals.toFixed(2)
+    };
+}
+
+// REALISTISCHE ODDS BERECHNUNG
+function calculateRealisticOdds(probabilities, goalProbabilities, btts) {
+    // Buchmacher-Marge (typisch 5-8%)
+    const margin = 0.05; // 5% Marge
+    
+    // 1X2 Odds
+    const homeOdds = 1 / (probabilities.home * (1 - margin));
+    const drawOdds = 1 / (probabilities.draw * (1 - margin));
+    const awayOdds = 1 / (probabilities.away * (1 - margin));
+    
+    // Over/Under Odds
+    const over25Odds = 1 / (goalProbabilities.over25 * (1 - margin));
+    const under25Odds = 1 / (goalProbabilities.under25 * (1 - margin));
+    
+    // BTTS Odds
+    const bttsYesOdds = 1 / (btts.yes * (1 - margin));
+    const bttsNoOdds = 1 / (btts.no * (1 - margin));
+    
+    return {
+        home: +Math.max(1.1, Math.min(50, homeOdds)).toFixed(2),
+        draw: +Math.max(1.1, Math.min(50, drawOdds)).toFixed(2),
+        away: +Math.max(1.1, Math.min(50, awayOdds)).toFixed(2),
+        over25: +Math.max(1.1, Math.min(10, over25Odds)).toFixed(2),
+        under25: +Math.max(1.1, Math.min(10, under25Odds)).toFixed(2),
+        bttsYes: +Math.max(1.1, Math.min(10, bttsYesOdds)).toFixed(2),
+        bttsNo: +Math.max(1.1, Math.min(10, bttsNoOdds)).toFixed(2)
+    };
+}
+
+// VALUE BERECHNUNG
+function calculateValue(probability, odds) {
+    if (!odds || odds <= 1) return 0;
+    const value = (probability * odds) - 1;
+    return +Math.max(-1, Math.min(2, value)).toFixed(4);
+}
+
+// BESTE WETT-OPTIONEN FINDEN
+function findBestBets(probabilities, goalProbabilities, btts, odds) {
+    const betOptions = [
+        { type: 'home', probability: probabilities.home, odds: odds.home, market: '1X2' },
+        { type: 'draw', probability: probabilities.draw, odds: odds.draw, market: '1X2' },
+        { type: 'away', probability: probabilities.away, odds: odds.away, market: '1X2' },
+        { type: 'over25', probability: goalProbabilities.over25, odds: odds.over25, market: 'Goals' },
+        { type: 'under25', probability: goalProbabilities.under25, odds: odds.under25, market: 'Goals' },
+        { type: 'btts_yes', probability: btts.yes, odds: odds.bttsYes, market: 'BTTS' },
+        { type: 'btts_no', probability: btts.no, odds: odds.bttsNo, market: 'BTTS' }
+    ];
+    
+    // Berechne Value für jede Option
+    betOptions.forEach(bet => {
+        bet.value = calculateValue(bet.probability, bet.odds);
+    });
+    
+    // Finde beste Optionen
+    const bestValue = [...betOptions].sort((a, b) => b.value - a.value)[0];
+    const bestProbability = [...betOptions].sort((a, b) => b.probability - a.probability)[0];
+    
+    // Positive Value Wetten
+    const positiveValueBets = betOptions.filter(bet => bet.value > 0.05);
+    
+    return {
+        bestValue,
+        bestProbability,
+        positiveValueBets,
+        allBets: betOptions
     };
 }
 
@@ -237,7 +410,7 @@ function getFlag(teamName) {
     return "eu";
 }
 
-// Haupt-API Route mit verbesserter Sortierung
+// HAUPT-API ROUTE MIT VERBESSERTEN BERECHNUNGEN
 app.get('/api/games', async (req, res) => {
     try {
         const requestedDate = req.query.date || new Date().toISOString().split('T')[0];
@@ -281,30 +454,36 @@ app.get('/api/games', async (req, res) => {
             const awayTeam = match.awayTeam?.name || 'Unknown Away';
             const league = match.competition?.name || 'Unknown League';
             
-            const homeXG = estimateXG(homeTeam, true, league);
-            const awayXG = estimateXG(awayTeam, false, league);
-            const prob = computeMatchOutcomeProbs(homeXG, awayXG);
-            const over25 = computeOver25Prob(homeXG, awayXG);
-            const btts = computeBTTS(homeXG, awayXG);
-            const trend = computeTrend(prob, homeXG, awayXG);
+            // VERBESSERTE xG-BERECHNUNG
+            const xg = estimateXG(homeTeam, awayTeam, true, league);
             
-            const odds = {
-                home: +(1 / prob.home * 0.92).toFixed(2),
-                draw: +(1 / prob.draw * 0.92).toFixed(2),
-                away: +(1 / prob.away * 0.92).toFixed(2),
-                over25: +(1 / over25 * 0.92).toFixed(2)
-            };
+            // VERBESSERTE WAHRSCHEINLICHKEITEN
+            const probabilities = computeMatchOutcomeProbs(xg.home, xg.away);
+            const goalProbabilities = computeGoalProbabilities(xg.home, xg.away);
+            const btts = computeBTTS(xg.home, xg.away);
             
+            // VERBESSERTE TREND-ANALYSE
+            const trendAnalysis = computeAdvancedTrend(
+                xg.home, xg.away, 
+                probabilities.home, probabilities.away, probabilities.draw
+            );
+            
+            // REALISTISCHE ODDS
+            const odds = calculateRealisticOdds(probabilities, goalProbabilities, btts);
+            
+            // VALUE BERECHNUNG
             const value = {
-                home: calculateValue(prob.home, odds.home),
-                draw: calculateValue(prob.draw, odds.draw),
-                away: calculateValue(prob.away, odds.away),
-                over25: calculateValue(over25, odds.over25),
-                under25: calculateValue(1 - over25, 2.0)
+                home: calculateValue(probabilities.home, odds.home),
+                draw: calculateValue(probabilities.draw, odds.draw),
+                away: calculateValue(probabilities.away, odds.away),
+                over25: calculateValue(goalProbabilities.over25, odds.over25),
+                under25: calculateValue(goalProbabilities.under25, odds.under25),
+                bttsYes: calculateValue(btts.yes, odds.bttsYes),
+                bttsNo: calculateValue(btts.no, odds.bttsNo)
             };
             
-            // BESTE WETT-OPTION BERECHNEN
-            const bestBet = findBestBet(prob, value, odds);
+            // BESTE WETT-OPTIONEN
+            const bestBets = findBestBets(probabilities, goalProbabilities, btts, odds);
             
             return {
                 id: match.id,
@@ -314,63 +493,32 @@ app.get('/api/games', async (req, res) => {
                 date: match.utcDate,
                 homeLogo: match.homeTeam?.crest || `https://flagcdn.com/w40/${getFlag(homeTeam)}.png`,
                 awayLogo: match.awayTeam?.crest || `https://flagcdn.com/w40/${getFlag(awayTeam)}.png`,
-                homeXG,
-                awayXG,
-                prob,
-                value,
-                odds,
-                btts,
-                trend,
-                over25,
-                under25: 1 - over25,
+                
+                // VERBESSERTE DATEN
+                xg: xg,
+                probabilities: probabilities,
+                goalProbabilities: goalProbabilities,
+                btts: btts,
+                trend: trendAnalysis,
+                odds: odds,
+                value: value,
+                bestBets: bestBets,
+                
                 status: match.status,
                 source: "football_data",
                 competition: match.competition?.name,
-                matchday: match.matchday,
-                season: match.season?.currentMatchday,
-                // NEUE FELDER FÜR BESSERE ANALYSE
-                bestBet: bestBet.bestValue,
-                highestProbability: bestBet.bestProbability,
-                analysis: {
-                    homeWinProbability: prob.home,
-                    awayWinProbability: prob.away,
-                    drawProbability: prob.draw,
-                    expectedGoals: homeXG + awayXG,
-                    goalExpectancy: `${homeXG}-${awayXG}`
-                }
+                matchday: match.matchday
             };
         });
         
-        // MEHRERE SORTIERUNGSOPTIONEN
-        const sortBy = req.query.sortBy || 'value'; // 'value', 'probability', 'goals'
+        // SORTIERUNG NACH BESTER VALUE-WETTE
+        processedGames.sort((a, b) => {
+            const bestValueA = a.bestBets.bestValue.value;
+            const bestValueB = b.bestBets.bestValue.value;
+            return bestValueB - bestValueA;
+        });
         
-        if (sortBy === 'probability') {
-            // Nach höchster Siegwahrscheinlichkeit sortieren
-            processedGames.sort((a, b) => {
-                const maxProbA = Math.max(a.prob.home, a.prob.away, a.prob.draw);
-                const maxProbB = Math.max(b.prob.home, b.prob.away, b.prob.draw);
-                return maxProbB - maxProbA;
-            });
-            console.log('📊 Sorted by highest probability');
-        } else if (sortBy === 'goals') {
-            // Nach erwarteten Toren sortieren
-            processedGames.sort((a, b) => {
-                const goalsA = a.homeXG + a.awayXG;
-                const goalsB = b.homeXG + b.awayXG;
-                return goalsB - goalsA;
-            });
-            console.log('📊 Sorted by expected goals');
-        } else {
-            // Standard: Nach bestem Value sortieren
-            processedGames.sort((a, b) => {
-                const maxValueA = Math.max(a.value.home, a.value.draw, a.value.away, a.value.over25);
-                const maxValueB = Math.max(b.value.home, b.value.draw, b.value.away, b.value.over25);
-                return maxValueB - maxValueA;
-            });
-            console.log('📊 Sorted by best value');
-        }
-        
-        console.log(`📊 Processed ${processedGames.length} real matches (sorted by: ${sortBy})`);
+        console.log(`📊 Processed ${processedGames.length} matches with enhanced analysis`);
         
         cache.set(cacheKey, {
             timestamp: Date.now(),
@@ -383,8 +531,8 @@ app.get('/api/games', async (req, res) => {
                 date: requestedDate,
                 total: processedGames.length,
                 source: "football_data",
-                sort_by: sortBy,
-                message: `Echte Spiele sortiert nach: ${sortBy === 'probability' ? 'Siegwahrscheinlichkeit' : sortBy === 'goals' ? 'erwarteten Toren' : 'Best Value'}`
+                analysis: "enhanced_v2",
+                message: "Verbesserte Analyse mit realistischen Berechnungen"
             }
         });
         
@@ -397,56 +545,6 @@ app.get('/api/games', async (req, res) => {
     }
 });
 
-// API Test Route
-app.get('/api/test', async (req, res) => {
-    try {
-        if (!FOOTBALL_DATA_KEY) {
-            return res.json({ 
-                error: 'API Key nicht konfiguriert',
-                hint: 'Setze FOOTBALL_DATA_API_KEY Environment Variable'
-            });
-        }
-        
-        const today = new Date().toISOString().split('T')[0];
-        const testData = await footballDataService.getMatchesByDate(today);
-        
-        res.json({
-            status: 'success',
-            api_configured: true,
-            test_date: today,
-            total_matches: testData.length,
-            sample_matches: testData.slice(0, 3).map(match => ({
-                home: match.homeTeam?.name,
-                away: match.awayTeam?.name,
-                league: match.competition?.name,
-                date: match.utcDate,
-                status: match.status
-            }))
-        });
-        
-    } catch (error) {
-        res.json({ 
-            error: error.message,
-            api_configured: !!FOOTBALL_DATA_KEY
-        });
-    }
-});
-
-// Status Route
-app.get('/api/status', (req, res) => {
-    res.json({
-        status: 'running',
-        api: {
-            football_data: {
-                configured: !!FOOTBALL_DATA_KEY,
-                status: FOOTBALL_DATA_KEY ? 'active' : 'missing_key'
-            }
-        },
-        sorting_options: ['value', 'probability', 'goals'],
-        version: 'enhanced_sorting_v1'
-    });
-});
-
 // Start Server
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
@@ -454,17 +552,9 @@ app.listen(PORT, '0.0.0.0', () => {
     
     if (FOOTBALL_DATA_KEY) {
         console.log(`🌐 App verfügbar: https://your-app.onrender.com`);
-        console.log(`🔗 Test: https://your-app.onrender.com/api/test`);
-        console.log(`📊 Sortierung: value (default), probability, goals`);
-        console.log(`💡 Tipp: Verwende ?sortBy=probability für Siegwahrscheinlichkeit`);
-    }
-});
-
-// Error Handling
-process.on('uncaughtException', (error) => {
-    console.error('Uncaught Exception:', error);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-});
+        console.log(`📊 ENHANCED ANALYSIS aktiviert:`);
+        console.log(`   ✅ Realistische xG Berechnung`);
+        console.log(`   ✅ Verbesserte Poisson-Wahrscheinlichkeiten`);
+        console.log(`   ✅ Genauere Over/Under Berechnungen`);
+        console.log(`   ✅ Erweiterte Trend-Analyse`);
+        console.log(`   ✅ Realistis
