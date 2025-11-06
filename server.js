@@ -1,4 +1,4 @@
-// server.js — Optimierte Berechnungen MIT KORREKTIERTER TREND-ANALYSE
+// server.js — Korrigierte Berechnungen MIT RICHTIGER TREND-ANALYSE
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -178,7 +178,7 @@ function estimateXG(homeTeam, awayTeam, isHome = true, league = "") {
     let awayXG = awayStrength.attack * (1 - homeStrength.defense / 3);
     
     // KORRIGIERT: Realistischeren Heimvorteil (reduziert)
-    const homeAdvantage = isHome ? 0.15 : -0.10;
+    const homeAdvantage = isHome ? 0.12 : -0.08;
     homeXG += homeAdvantage;
     awayXG -= homeAdvantage;
     
@@ -260,31 +260,31 @@ function computeBTTS(homeXG, awayXG) {
     return +(bttsYes.toFixed(4));
 }
 
-// KORRIGIERTE TREND-ANALYSE - REALISTISCH
+// KORRIGIERTE TREND-ANALYSE - JETZT RICHTIG
 function computeTrend(prob, homeXG, awayXG, homeTeam, awayTeam) {
     const { home, draw, away } = prob;
     
-    // 1. Primär nach höchster Wahrscheinlichkeit entscheiden
-    const maxProb = Math.max(home, draw, away);
+    // Debug-Log
+    console.log(`🔍 Trend-Analyse: ${homeTeam} vs ${awayTeam}`);
+    console.log(`   Wahrscheinlichkeiten: Home ${(home*100).toFixed(1)}%, Draw ${(draw*100).toFixed(1)}%, Away ${(away*100).toFixed(1)}%`);
     
-    if (maxProb === home) {
-        // Heimstärke basierend auf Wahrscheinlichkeit und xG-Verhältnis
-        const homeDominance = homeXG / awayXG;
-        if (home > 0.6 && homeDominance > 1.8) return "Strong Home";
-        if (home > 0.5 && homeDominance > 1.3) return "Home";
-        return "Slight Home";
-    } 
-    else if (maxProb === away) {
-        // Auswärtsstärke basierend auf Wahrscheinlichkeit und xG-Verhältnis
-        const awayDominance = awayXG / homeXG;
-        if (away > 0.6 && awayDominance > 1.8) return "Strong Away";
-        if (away > 0.5 && awayDominance > 1.3) return "Away";
-        return "Slight Away";
-    }
-    else {
-        // Unentschieden Tendenz
-        if (draw > 0.35) return "Draw";
+    // Klare Favoriten-Bestimmung basierend auf Wahrscheinlichkeiten
+    if (home > 0.65) {
+        return "Strong Home";
+    } else if (away > 0.65) {
+        return "Strong Away";
+    } else if (home > 0.55 && home > away + 0.1) {
+        return "Home";
+    } else if (away > 0.55 && away > home + 0.1) {
+        return "Away";
+    } else if (draw > 0.35 && draw > home && draw > away) {
+        return "Draw";
+    } else if (Math.abs(home - away) < 0.08) {
         return "Balanced";
+    } else if (home > away) {
+        return "Slight Home";
+    } else {
+        return "Slight Away";
     }
 }
 
@@ -547,7 +547,7 @@ app.get('/api/status', (req, res) => {
             }
         },
         sorting_options: ['value', 'probability', 'goals'],
-        version: 'korrigierte_trend_analyse_v2'
+        version: 'korrigierte_trend_analyse_v3'
     });
 });
 
@@ -560,6 +560,7 @@ app.listen(PORT, '0.0.0.0', () => {
         console.log(`🌐 App verfügbar: https://your-app.onrender.com`);
         console.log(`🔗 Test: https://your-app.onrender.com/api/test`);
         console.log(`📊 KORRIGIERTE BERECHNUNGEN aktiviert:`);
+        console.log(`  BERECHNUNGEN aktiviert:`);
         console.log(`   ✅ Realistische xG mit Team-Stärken`);
         console.log(`   ✅ Korrigierte Trend-Analyse (keine falschen Home-Favoriten mehr)`);
         console.log(`   ✅ Reduzierter Heimvorteil für realistischere Ergebnisse`);
