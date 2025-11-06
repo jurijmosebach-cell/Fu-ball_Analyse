@@ -1,4 +1,4 @@
-// server.js — Mit computeTrend Funktion
+// server.js — Korrigierte Sortierung für Siegwahrscheinlichkeit
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -166,20 +166,13 @@ function computeBTTS(homeLambda, awayLambda) {
     return +(pHomeScore * pAwayScore).toFixed(4);
 }
 
-// FEHLENDE TREND FUNKTION - JETZT HINZUGEFÜGT
 function computeTrend(prob, homeXG, awayXG) {
     const { home, draw, away } = prob;
     
-    // xG Differenz für zusätzliche Analyse
     const xgDiff = homeXG - awayXG;
-    
-    // Home Strength unter Berücksichtigung von xG
     const homeStrength = home + (xgDiff * 0.1);
-    
-    // Away Strength unter Berücksichtigung von xG  
     const awayStrength = away - (xgDiff * 0.1);
     
-    // Trend basierend auf Wahrscheinlichkeiten und xG
     if (draw > homeStrength && draw > awayStrength) {
         return "Draw";
     } else if (homeStrength > awayStrength) {
@@ -192,6 +185,33 @@ function computeTrend(prob, homeXG, awayXG) {
 function calculateValue(probability, odds) {
     if (!odds || odds <= 1) return 0;
     return +((probability * odds) - 1).toFixed(4);
+}
+
+// NEUE FUNKTION: Beste Wett-Option finden
+function findBestBet(prob, value, odds) {
+    const options = [
+        { type: 'home', probability: prob.home, value: value.home, odds: odds.home },
+        { type: 'draw', probability: prob.draw, value: value.draw, odds: odds.draw },
+        { type: 'away', probability: prob.away, value: value.away, odds: odds.away },
+        { type: 'over25', probability: prob.over25, value: value.over25, odds: odds.over25 },
+        { type: 'under25', probability: 1 - prob.over25, value: value.under25, odds: 2.0 }
+    ];
+    
+    // Finde die Option mit dem höchsten Value
+    const bestValueOption = options.reduce((best, current) => 
+        current.value > best.value ? current : best
+    );
+    
+    // Finde die Option mit der höchsten Wahrscheinlichkeit
+    const bestProbOption = options.reduce((best, current) => 
+        current.probability > best.probability ? current : best
+    );
+    
+    return {
+        bestValue: bestValueOption,
+        bestProbability: bestProbOption,
+        allOptions: options
+    };
 }
 
 function getFlag(teamName) {
@@ -217,7 +237,7 @@ function getFlag(teamName) {
     return "eu";
 }
 
-// Haupt-API Route
+// Haupt-API Route mit verbesserter Sortierung
 app.get('/api/games', async (req, res) => {
     try {
         const requestedDate = req.query.date || new Date().toISOString().split('T')[0];
@@ -266,8 +286,6 @@ app.get('/api/games', async (req, res) => {
             const prob = computeMatchOutcomeProbs(homeXG, awayXG);
             const over25 = computeOver25Prob(homeXG, awayXG);
             const btts = computeBTTS(homeXG, awayXG);
-            
-            // TREND BERECHNUNG - JETZT MIT computeTrend
             const trend = computeTrend(prob, homeXG, awayXG);
             
             const odds = {
@@ -285,6 +303,9 @@ app.get('/api/games', async (req, res) => {
                 under25: calculateValue(1 - over25, 2.0)
             };
             
+            // BESTE WETT-OPTION BERECHNEN
+            const bestBet = findBestBet(prob, value, odds);
+            
             return {
                 id: match.id,
                 home: homeTeam,
@@ -299,24 +320,57 @@ app.get('/api/games', async (req, res) => {
                 value,
                 odds,
                 btts,
-                trend, // ← JETZT MIT TREND!
+                trend,
                 over25,
                 under25: 1 - over25,
                 status: match.status,
                 source: "football_data",
                 competition: match.competition?.name,
                 matchday: match.matchday,
-                season: match.season?.currentMatchday
+                season: match.season?.currentMatchday,
+                // NEUE FELDER FÜR BESSERE ANALYSE
+                bestBet: bestBet.bestValue,
+                highestProbability: bestBet.bestProbability,
+                analysis: {
+                    homeWinProbability: prob.home,
+                    awayWinProbability: prob.away,
+                    drawProbability: prob.draw,
+                    expectedGoals: homeXG + awayXG,
+                    goalExpectancy: `${homeXG}-${awayXG}`
+                }
             };
         });
         
-        processedGames.sort((a, b) => {
-            const maxValueA = Math.max(a.value.home, a.value.draw, a.value.away, a.value.over25);
-            const maxValueB = Math.max(b.value.home, b.value.draw, b.value.away, b.value.over25);
-            return maxValueB - maxValueA;
-        });
+        // MEHRERE SORTIERUNGSOPTIONEN
+        const sortBy = req.query.sortBy || 'value'; // 'value', 'probability', 'goals'
         
-        console.log(`📊 Processed ${processedGames.length} real matches`);
+        if (sortBy === 'probability') {
+            // Nach höchster Siegwahrscheinlichkeit sortieren
+            processedGames.sort((a, b) => {
+                const maxProbA = Math.max(a.prob.home, a.prob.away, a.prob.draw);
+                const maxProbB = Math.max(b.prob.home, b.prob.away, b.prob.draw);
+                return maxProbB - maxProbA;
+            });
+            console.log('📊 Sorted by highest probability');
+        } else if (sortBy === 'goals') {
+            // Nach erwarteten Toren sortieren
+            processedGames.sort((a, b) => {
+                const goalsA = a.homeXG + a.awayXG;
+                const goalsB = b.homeXG + b.awayXG;
+                return goalsB - goalsA;
+            });
+            console.log('📊 Sorted by expected goals');
+        } else {
+            // Standard: Nach bestem Value sortieren
+            processedGames.sort((a, b) => {
+                const maxValueA = Math.max(a.value.home, a.value.draw, a.value.away, a.value.over25);
+                const maxValueB = Math.max(b.value.home, b.value.draw, b.value.away, b.value.over25);
+                return maxValueB - maxValueA;
+            });
+            console.log('📊 Sorted by best value');
+        }
+        
+        console.log(`📊 Processed ${processedGames.length} real matches (sorted by: ${sortBy})`);
         
         cache.set(cacheKey, {
             timestamp: Date.now(),
@@ -329,7 +383,8 @@ app.get('/api/games', async (req, res) => {
                 date: requestedDate,
                 total: processedGames.length,
                 source: "football_data",
-                message: "Echte Spiele von Football-Data.org"
+                sort_by: sortBy,
+                message: `Echte Spiele sortiert nach: ${sortBy === 'probability' ? 'Siegwahrscheinlichkeit' : sortBy === 'goals' ? 'erwarteten Toren' : 'Best Value'}`
             }
         });
         
@@ -387,7 +442,8 @@ app.get('/api/status', (req, res) => {
                 status: FOOTBALL_DATA_KEY ? 'active' : 'missing_key'
             }
         },
-        version: 'football_data_v2_with_trend'
+        sorting_options: ['value', 'probability', 'goals'],
+        version: 'enhanced_sorting_v1'
     });
 });
 
@@ -399,7 +455,8 @@ app.listen(PORT, '0.0.0.0', () => {
     if (FOOTBALL_DATA_KEY) {
         console.log(`🌐 App verfügbar: https://your-app.onrender.com`);
         console.log(`🔗 Test: https://your-app.onrender.com/api/test`);
-        console.log(`📊 Features: Poisson Model, xG, Value Betting, Trend Analysis`);
+        console.log(`📊 Sortierung: value (default), probability, goals`);
+        console.log(`💡 Tipp: Verwende ?sortBy=probability für Siegwahrscheinlichkeit`);
     }
 });
 
