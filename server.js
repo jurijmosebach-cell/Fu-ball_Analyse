@@ -396,16 +396,26 @@ function computeMatchOutcomeProbs(homeXG, awayXG) {
     };
 }
 
-// OPTIMIERTE OVER/UNDER BERECHNUNG
+// KORRIGIERTE OVER/UNDER BERECHNUNG - FIXED!
 function computeOver25Prob(homeXG, awayXG) {
     let pLe2 = 0;
-    // Genauere Berechnung für 2 oder weniger Tore
-    for (let i = 0; i <= 2; i++) {
-        for (let j = 0; j <= (2 - i); j++) {
-            pLe2 += poisson(i, homeXG) * poisson(j, awayXG);
+    
+    // ✅ KORRIGIERT: Berechne Wahrscheinlichkeit für 2 oder weniger Tore
+    for (let homeGoals = 0; homeGoals <= 10; homeGoals++) {
+        for (let awayGoals = 0; awayGoals <= 10; awayGoals++) {
+            const totalGoals = homeGoals + awayGoals;
+            if (totalGoals <= 2) {
+                pLe2 += poisson(homeGoals, homeXG) * poisson(awayGoals, awayXG);
+            }
         }
     }
-    return +(1 - pLe2).toFixed(4);
+    
+    const over25Prob = 1 - pLe2;
+    
+    // Debug log
+    console.log(`🎯 Over/Under Calculation: ${homeXG}-${awayXG} = Over: ${(over25Prob*100).toFixed(1)}%, Under: ${((1-over25Prob)*100).toFixed(1)}%`);
+    
+    return +(over25Prob.toFixed(4));
 }
 
 // OPTIMIERTE BTTS BERECHNUNG
@@ -418,26 +428,25 @@ function computeBTTS(homeXG, awayXG) {
     return +(bttsYes.toFixed(4));
 }
 
-// KORRIGIERTE TREND-ANALYSE - REALISTISCH
+// VERBESSERTE TREND-ANALYSE
 function computeTrend(prob, homeXG, awayXG, homeTeam, awayTeam) {
     const { home, draw, away } = prob;
     
-    // Debug-Log
     console.log(`🔍 Trend-Analyse: ${homeTeam} vs ${awayTeam}`);
     console.log(`   Wahrscheinlichkeiten: Home ${(home*100).toFixed(1)}%, Draw ${(draw*100).toFixed(1)}%, Away ${(away*100).toFixed(1)}%`);
     
-    // Klare Favoriten-Bestimmung basierend auf Wahrscheinlichkeiten
-    if (home > 0.65) {
+    // REALISTISCHE Trend-Bestimmung
+    if (home > 0.60) {
         return "Strong Home";
-    } else if (away > 0.65) {
+    } else if (away > 0.60) {
         return "Strong Away";
-    } else if (home > 0.55 && home > away + 0.1) {
+    } else if (home > 0.50 && home > away + 0.08) {
         return "Home";
-    } else if (away > 0.55 && away > home + 0.1) {
+    } else if (away > 0.50 && away > home + 0.08) {
         return "Away";
-    } else if (draw > 0.35 && draw > home && draw > away) {
+    } else if (draw > 0.40 && draw > home && draw > away) {
         return "Draw";
-    } else if (Math.abs(home - away) < 0.08) {
+    } else if (Math.abs(home - away) < 0.05) {
         return "Balanced";
     } else if (home > away) {
         return "Slight Home";
