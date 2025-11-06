@@ -1,4 +1,4 @@
-// server.js — Optimierte Berechnungen
+// server.js — Optimierte Berechnungen MIT KORREKTIERTER TREND-ANALYSE
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -115,27 +115,47 @@ const TEAM_STRENGTHS = {
     "Brighton": { attack: 1.9, defense: 1.4 },
     "West Ham": { attack: 1.6, defense: 1.5 },
     "Aston Villa": { attack: 1.8, defense: 1.3 },
+    "Sunderland": { attack: 1.2, defense: 1.8 },
+    "Burnley": { attack: 1.1, defense: 1.9 },
+    "Wolverhampton": { attack: 1.4, defense: 1.6 },
+    "Hull City": { attack: 1.3, defense: 1.7 },
+    "Portsmouth": { attack: 1.2, defense: 1.8 },
     
-    // Bundesliga
-    "Bayern Munich": { attack: 2.5, defense: 0.7 },
+    // Bundesliga - KORRIGIERT mit besseren Differenzierungen
+    "Bayern Munich": { attack: 2.6, defense: 0.7 },
     "Borussia Dortmund": { attack: 2.2, defense: 1.1 },
     "RB Leipzig": { attack: 2.0, defense: 1.2 },
     "Bayer Leverkusen": { attack: 2.1, defense: 1.0 },
+    "Union Berlin": { attack: 1.3, defense: 1.6 },
+    "Heidenheim": { attack: 1.2, defense: 1.7 },
+    "Mönchengladbach": { attack: 1.5, defense: 1.5 },
+    "Köln": { attack: 1.3, defense: 1.6 },
+    "Frankfurt": { attack: 1.7, defense: 1.3 },
     
     // La Liga
     "Real Madrid": { attack: 2.3, defense: 0.8 },
     "Barcelona": { attack: 2.2, defense: 0.9 },
     "Atletico Madrid": { attack: 1.8, defense: 0.9 },
+    "Villarreal": { attack: 1.7, defense: 1.4 },
+    "Espanyol": { attack: 1.4, defense: 1.5 },
+    "Sevilla": { attack: 1.6, defense: 1.3 },
     
     // Serie A
     "Inter Milan": { attack: 2.1, defense: 0.9 },
     "Juventus": { attack: 1.9, defense: 1.0 },
     "AC Milan": { attack: 1.9, defense: 1.1 },
     "Napoli": { attack: 1.8, defense: 1.2 },
+    "Roma": { attack: 1.7, defense: 1.3 },
+    "Torino": { attack: 1.4, defense: 1.4 },
+    "Parma": { attack: 1.3, defense: 1.5 },
+    "Lazio": { attack: 1.6, defense: 1.2 },
     
     // Ligue 1
     "PSG": { attack: 2.4, defense: 0.9 },
     "Marseille": { attack: 1.8, defense: 1.3 },
+    "Brest": { attack: 1.5, defense: 1.4 },
+    "Monaco": { attack: 1.9, defense: 1.2 },
+    "Lyon": { attack: 1.7, defense: 1.4 },
     
     "default": { attack: 1.5, defense: 1.5 }
 };
@@ -157,18 +177,19 @@ function estimateXG(homeTeam, awayTeam, isHome = true, league = "") {
     let homeXG = homeStrength.attack * (1 - awayStrength.defense / 3);
     let awayXG = awayStrength.attack * (1 - homeStrength.defense / 3);
     
-    // Heimvorteil anpassen
-    const homeAdvantage = isHome ? 0.25 : -0.15;
+    // KORRIGIERT: Realistischeren Heimvorteil (reduziert)
+    const homeAdvantage = isHome ? 0.15 : -0.10;
     homeXG += homeAdvantage;
     awayXG -= homeAdvantage;
     
     // Liga-Faktoren für realistischere Werte
     const LEAGUE_FACTORS = {
         "Premier League": 1.0,
-        "Bundesliga": 1.05,  // Mehr Tore
-        "La Liga": 0.95,     // Weniger Tore
-        "Serie A": 0.90,     // Defensiver
+        "Bundesliga": 1.05,
+        "La Liga": 0.95,
+        "Serie A": 0.90,
         "Ligue 1": 1.0,
+        "Championship": 0.95,
         "Champions League": 1.1,
         "Europa League": 1.05
     };
@@ -239,35 +260,32 @@ function computeBTTS(homeXG, awayXG) {
     return +(bttsYes.toFixed(4));
 }
 
-// OPTIMIERTE TREND-ANALYSE
-function computeTrend(prob, homeXG, awayXG) {
+// KORRIGIERTE TREND-ANALYSE - REALISTISCH
+function computeTrend(prob, homeXG, awayXG, homeTeam, awayTeam) {
     const { home, draw, away } = prob;
     
-    const xgDifference = homeXG - awayXG;
-    const totalXG = homeXG + awayXG;
+    // 1. Primär nach höchster Wahrscheinlichkeit entscheiden
+    const maxProb = Math.max(home, draw, away);
     
-    // Verbesserte Trend-Bestimmung
-    let trend = "";
-    
-    // Stärke basierend auf xG Differenz und Wahrscheinlichkeiten
-    const homeStrength = home + (xgDifference * 0.15);
-    const awayStrength = away - (xgDifference * 0.15);
-    
-    if (homeStrength > awayStrength + 0.1) {
-        trend = "Strong Home";
-    } else if (homeStrength > awayStrength + 0.05) {
-        trend = "Home";
-    } else if (awayStrength > homeStrength + 0.1) {
-        trend = "Strong Away";
-    } else if (awayStrength > homeStrength + 0.05) {
-        trend = "Away";
-    } else if (draw > home && draw > away) {
-        trend = "Draw";
-    } else {
-        trend = "Balanced";
+    if (maxProb === home) {
+        // Heimstärke basierend auf Wahrscheinlichkeit und xG-Verhältnis
+        const homeDominance = homeXG / awayXG;
+        if (home > 0.6 && homeDominance > 1.8) return "Strong Home";
+        if (home > 0.5 && homeDominance > 1.3) return "Home";
+        return "Slight Home";
+    } 
+    else if (maxProb === away) {
+        // Auswärtsstärke basierend auf Wahrscheinlichkeit und xG-Verhältnis
+        const awayDominance = awayXG / homeXG;
+        if (away > 0.6 && awayDominance > 1.8) return "Strong Away";
+        if (away > 0.5 && awayDominance > 1.3) return "Away";
+        return "Slight Away";
     }
-    
-    return trend;
+    else {
+        // Unentschieden Tendenz
+        if (draw > 0.35) return "Draw";
+        return "Balanced";
+    }
 }
 
 function calculateValue(probability, odds) {
@@ -304,15 +322,17 @@ function getFlag(teamName) {
     const flags = {
         "Manchester": "gb", "Liverpool": "gb", "Chelsea": "gb", "Arsenal": "gb", 
         "Tottenham": "gb", "Newcastle": "gb", "Brighton": "gb", "West Ham": "gb",
-        "Crystal Palace": "gb", "Aston Villa": "gb",
+        "Crystal Palace": "gb", "Aston Villa": "gb", "Sunderland": "gb", "Burnley": "gb",
+        "Wolverhampton": "gb", "Hull City": "gb", "Portsmouth": "gb",
         "Bayern": "de", "Dortmund": "de", "Leipzig": "de", "Leverkusen": "de", 
         "Frankfurt": "de", "Wolfsburg": "de", "Stuttgart": "de", "Bremen": "de",
+        "Union Berlin": "de", "Heidenheim": "de", "Mönchengladbach": "de", "Köln": "de",
         "Real": "es", "Barcelona": "es", "Atletico": "es", "Sevilla": "es", 
-        "Valencia": "es", "Villarreal": "es", "Athletic": "es",
+        "Valencia": "es", "Villarreal": "es", "Athletic": "es", "Espanyol": "es",
         "Juventus": "it", "Inter": "it", "Milan": "it", "Napoli": "it", 
-        "Roma": "it", "Lazio": "it", "Fiorentina": "it",
+        "Roma": "it", "Lazio": "it", "Fiorentina": "it", "Torino": "it", "Parma": "it",
         "PSG": "fr", "Marseille": "fr", "Monaco": "fr", "Lyon": "fr", 
-        "Lille": "fr", "Nice": "fr", "Rennes": "fr",
+        "Lille": "fr", "Nice": "fr", "Rennes": "fr", "Brest": "fr",
         "Ajax": "nl", "PSV": "nl", "Feyenoord": "nl",
         "Benfica": "pt", "Porto": "pt", "Sporting": "pt"
     };
@@ -375,8 +395,8 @@ app.get('/api/games', async (req, res) => {
             const over25 = computeOver25Prob(xg.home, xg.away);
             const btts = computeBTTS(xg.home, xg.away);
             
-            // OPTIMIERTE TREND-ANALYSE
-            const trend = computeTrend(prob, xg.home, xg.away);
+            // KORRIGIERTE TREND-ANALYSE
+            const trend = computeTrend(prob, xg.home, xg.away, homeTeam, awayTeam);
             
             const odds = {
                 home: +(1 / prob.home * 0.92).toFixed(2),
@@ -527,7 +547,7 @@ app.get('/api/status', (req, res) => {
             }
         },
         sorting_options: ['value', 'probability', 'goals'],
-        version: 'optimized_calculations_v1'
+        version: 'korrigierte_trend_analyse_v2'
     });
 });
 
@@ -539,10 +559,4 @@ app.listen(PORT, '0.0.0.0', () => {
     if (FOOTBALL_DATA_KEY) {
         console.log(`🌐 App verfügbar: https://your-app.onrender.com`);
         console.log(`🔗 Test: https://your-app.onrender.com/api/test`);
-        console.log(`📊 OPTIMIERTE BERECHNUNGEN aktiviert:`);
-        console.log(`   ✅ Realistische xG mit Team-Stärken`);
-        console.log(`   ✅ Verbesserte Poisson-Wahrscheinlichkeiten`);
-        console.log(`   ✅ Genauere Over/Under & BTTS Berechnungen`);
-        console.log(`   ✅ Erweiterte Trend-Analyse`);
-    }
-});
+        console.log(`📊 KORRIGIERTE 
