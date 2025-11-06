@@ -1,4 +1,4 @@
-// server.js — Korrigierte Version mit richtigen SportsAPI360 Endpoints
+// server.js — Vollständige korrigierte Version
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -29,13 +29,13 @@ console.log("🔑 API Keys:", {
 const CACHE_DURATION = 10 * 60 * 1000;
 const cache = new Map();
 
-// Korrigierte SportsAPI360 Konfiguration basierend auf der Dokumentation
+// SportsAPI360 Konfiguration
 const SPORTSAPI360_CONFIG = {
     baseURL: "https://api.sportsapi360.com",
     endpoints: {
         matches: "/matches",
         odds: "/odds",
-        statistics: "/statistics", 
+        statistics: "/statistics",
         leagues: "/leagues",
         teams: "/teams"
     },
@@ -64,7 +64,7 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// Korrigierte SportsAPI360 Service Klasse
+// SportsAPI360 Service Klasse
 class SportsAPI360Service {
     constructor(apiKey) {
         this.apiKey = apiKey;
@@ -77,11 +77,8 @@ class SportsAPI360Service {
         }
 
         const url = new URL(`${this.baseURL}${endpoint}`);
-        
-        // API Key als Query Parameter (laut Dokumentation)
         url.searchParams.append('api_key', this.apiKey);
         
-        // Andere Parameter hinzufügen
         Object.keys(params).forEach(key => {
             if (params[key] !== undefined && params[key] !== null && params[key] !== "") {
                 url.searchParams.append(key, params[key]);
@@ -108,11 +105,11 @@ class SportsAPI360Service {
             console.log(`📡 Response Status: ${response.status} ${response.statusText}`);
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
             const data = await response.json();
-            console.log(`✅ SportsAPI360 Response received with ${Object.keys(data).length} keys`);
+            console.log(`✅ SportsAPI360 Response received`);
             return data;
             
         } catch (error) {
@@ -124,16 +121,13 @@ class SportsAPI360Service {
         }
     }
 
-    // Korrigierte Methode basierend auf Dokumentation
     async getMatchesByDate(date, sportId = SPORTSAPI360_CONFIG.sports.football) {
         try {
             console.log(`📅 Fetching SportsAPI360 matches for: ${date}, sport: ${sportId}`);
             
-            // Laut Dokumentation: /matches mit sport_id und date Parametern
             const data = await this.makeRequest('/matches', {
                 sport_id: sportId,
                 date: date
-                // 'include' Parameter gibt es in der Dokumentation nicht
             });
             
             console.log(`✅ Received ${data?.matches?.length || 0} matches from SportsAPI360`);
@@ -144,54 +138,12 @@ class SportsAPI360Service {
             return { matches: [] };
         }
     }
-
-    // Odds für ein bestimmtes Match abrufen
-    async getMatchOdds(matchId) {
-        try {
-            console.log(`💰 Fetching odds for match: ${matchId}`);
-            const data = await this.makeRequest('/odds', {
-                match_id: matchId
-            });
-            return data;
-        } catch (error) {
-            console.error(`❌ Failed to get odds for match ${matchId}:`, error.message);
-            return null;
-        }
-    }
-
-    // Statistiken für ein Match abrufen
-    async getMatchStatistics(matchId) {
-        try {
-            console.log(`📊 Fetching statistics for match: ${matchId}`);
-            const data = await this.makeRequest('/statistics', {
-                match_id: matchId
-            });
-            return data;
-        } catch (error) {
-            console.error(`❌ Failed to get statistics for match ${matchId}:`, error.message);
-            return null;
-        }
-    }
-
-    // Ligen abrufen
-    async getLeagues(sportId = SPORTSAPI360_CONFIG.sports.football) {
-        try {
-            console.log(`🏆 Fetching leagues for sport: ${sportId}`);
-            const data = await this.makeRequest('/leagues', {
-                sport_id: sportId
-            });
-            return data;
-        } catch (error) {
-            console.error(`❌ Failed to get leagues:`, error.message);
-            return null;
-        }
-    }
 }
 
 // SportsAPI360 Service initialisieren
 const sportsAPI360 = new SportsAPI360Service(SPORTSAPI360_KEY);
 
-// Mathematische Funktionen (unverändert)
+// Mathematische Funktionen
 function factorial(n) {
     if (n <= 1) return 1;
     let f = 1;
@@ -205,7 +157,7 @@ function poisson(k, lambda) {
 }
 
 // xG-Schätzung
-function estimateXG(teamName, isHome = true, league = "", statistics = null) {
+function estimateXG(teamName, isHome = true, league = "") {
     let base = isHome ? 1.45 : 1.10;
     
     const LEAGUE_FACTORS = {
@@ -229,7 +181,7 @@ function estimateXG(teamName, isHome = true, league = "", statistics = null) {
     return +Math.max(0.4, Math.min(3.5, raw)).toFixed(2);
 }
 
-// Wahrscheinlichkeits-Berechnungen (unverändert)
+// Wahrscheinlichkeits-Berechnungen
 function computeMatchOutcomeProbs(homeLambda, awayLambda) {
     let homeProb = 0, drawProb = 0, awayProb = 0;
     
@@ -282,7 +234,7 @@ function calculateValue(probability, odds) {
     return +((probability * odds) - 1).toFixed(4);
 }
 
-// Flag-Funktion (unverändert)
+// Flag-Funktion
 function getFlag(teamName) {
     const flags = {
         "Manchester": "gb", "Liverpool": "gb", "Chelsea": "gb", "Arsenal": "gb", "Tottenham": "gb",
@@ -314,23 +266,19 @@ async function processSportsAPI360Games(apiData, requestedDate) {
     
     for (const match of apiData.matches) {
         try {
-            // Datenstruktur laut SportsAPI360 Dokumentation
             const homeTeam = match.home_team?.name || match.home_team_name || "Home Team";
             const awayTeam = match.away_team?.name || match.away_team_name || "Away Team";
             const league = match.league?.name || match.league_name || "Unknown League";
             
             console.log(`⚽ Processing: ${homeTeam} vs ${awayTeam}`);
             
-            // xG berechnen
             const homeXG = estimateXG(homeTeam, true, league);
             const awayXG = estimateXG(awayTeam, false, league);
-            
             const prob = computeMatchOutcomeProbs(homeXG, awayXG);
             const over25 = computeOver25Prob(homeXG, awayXG);
             const btts = computeBTTS(homeXG, awayXG);
             const trend = computeTrend(prob, homeXG, awayXG);
             
-            // Odds - versuche echte Odds von der API zu bekommen
             let odds = {
                 home: +(1 / prob.home * 0.95).toFixed(2),
                 draw: +(1 / prob.draw * 0.95).toFixed(2),
@@ -338,7 +286,6 @@ async function processSportsAPI360Games(apiData, requestedDate) {
                 over25: +(1 / over25 * 0.95).toFixed(2)
             };
             
-            // Falls die API Odds liefert, diese verwenden
             if (match.odds && typeof match.odds === 'object') {
                 if (match.odds.home_win) odds.home = parseFloat(match.odds.home_win);
                 if (match.odds.draw) odds.draw = parseFloat(match.odds.draw);
@@ -371,13 +318,7 @@ async function processSportsAPI360Games(apiData, requestedDate) {
                 over25,
                 under25: 1 - over25,
                 status: match.status || "SCHEDULED",
-                source: "sportsapi360",
-                // Zusätzliche Daten
-                match_data: {
-                    match_id: match.match_id,
-                    season: match.season,
-                    round: match.round
-                }
+                source: "sportsapi360"
             });
             
         } catch (matchError) {
@@ -552,5 +493,90 @@ app.get("/api/games", async (req, res) => {
     }
 });
 
-// Neue Debug Route für SportsAPI360
+// Debug Route für SportsAPI360
 app.get("/api/debug-sportsapi360", async (req, res) => {
+    try {
+        if (!SPORTSAPI360_KEY) {
+            return res.json({ error: "API Key nicht konfiguriert" });
+        }
+
+        const testDate = new Date().toISOString().split('T')[0];
+        
+        const results = [];
+
+        try {
+            const url = `${SPORTSAPI360_CONFIG.baseURL}/matches?api_key=${SPORTSAPI360_KEY}&sport_id=1&date=${testDate}`;
+            console.log(`🔗 Testing: ${url.replace(SPORTSAPI360_KEY, '***')}`);
+            
+            const response = await fetch(url, { timeout: 10000 });
+            const text = await response.text();
+            
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                data = { raw: text.substring(0, 200) };
+            }
+
+            results.push({
+                endpoint: 'matches',
+                status: response.status,
+                statusText: response.statusText,
+                data: data
+            });
+            
+        } catch (error) {
+            results.push({
+                endpoint: 'matches',
+                error: error.message
+            });
+        }
+
+        res.json({
+            api_key: SPORTSAPI360_KEY ? `Configured (${SPORTSAPI360_KEY.substring(0, 10)}...)` : 'Missing',
+            test_date: testDate,
+            results: results
+        });
+        
+    } catch (error) {
+        console.error("❌ Debug Error:", error);
+        res.json({
+            error: error.message
+        });
+    }
+});
+
+// API Status Route
+app.get("/api/status", (req, res) => {
+    res.json({
+        apis: {
+            sportsapi360: {
+                configured: !!SPORTSAPI360_KEY,
+                status: SPORTSAPI360_KEY ? "active" : "missing_key"
+            },
+            football_data: {
+                configured: !!FOOTBALL_DATA_KEY,
+                status: FOOTBALL_DATA_KEY ? "active" : "missing_key"
+            }
+        },
+        cache: {
+            size: cache.size
+        }
+    });
+});
+
+// Error Handling
+app.use((error, req, res, next) => {
+    console.error("Unhandled Error:", error);
+    res.status(500).json({ 
+        error: "Internal Server Error",
+        message: "Please try again later"
+    });
+});
+
+// 404 Handler
+app.use((req, res) => {
+    res.status(404).json({ error: "Route not found" });
+});
+
+// Server Start
