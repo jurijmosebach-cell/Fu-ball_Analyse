@@ -1,4 +1,4 @@
-// server.js — Mit korrigiertem API Key Namen
+// server.js — Vollständige korrigierte Version
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 10000;
 
 // API Keys mit korrigierten Namen
 const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_API_KEY;
-const SPORTSAPI360_KEY = process.env.FOOTBALL_API_V1_KEY; // ← GEÄNDERT
+const SPORTSAPI360_KEY = process.env.FOOTBALL_API_V1_KEY;
 
 // Middleware
 app.use(express.static(__dirname));
@@ -37,7 +37,7 @@ app.get('/health', (req, res) => {
 const cache = new Map();
 const CACHE_DURATION = 10 * 60 * 1000;
 
-// Mathematical functions (unverändert)
+// Mathematical functions
 function factorial(n) {
     if (n <= 1) return 1;
     let f = 1;
@@ -128,7 +128,7 @@ function getFlag(teamName) {
     return "eu";
 }
 
-// SportsAPI360 Service mit korrekter v3 API
+// SportsAPI360 Service
 class SportsAPI360Service {
     constructor(apiKey) {
         this.apiKey = apiKey;
@@ -183,7 +183,6 @@ class SportsAPI360Service {
     async getMatchesByDate(date) {
         console.log('📅 Getting matches for date:', date);
         
-        // Für v3 API verwenden wir live matches
         const liveData = await this.getLiveMatches();
         
         if (liveData && liveData.response) {
@@ -283,7 +282,7 @@ class FootballDataService {
 const sportsAPI360 = new SportsAPI360Service(SPORTSAPI360_KEY);
 const footballDataService = new FootballDataService(FOOTBALL_DATA_KEY);
 
-// Debug Route für beide APIs
+// Debug Route
 app.get('/api/debug', async (req, res) => {
     try {
         console.log('🔍 DEBUG Both APIs');
@@ -334,7 +333,7 @@ app.get('/api/debug', async (req, res) => {
     }
 });
 
-// Haupt-API Route - Beide APIs versuchen
+// Haupt-API Route
 app.get('/api/games', async (req, res) => {
     try {
         const requestedDate = req.query.date || new Date().toISOString().split('T')[0];
@@ -420,7 +419,7 @@ app.get('/api/games', async (req, res) => {
             }
         }
         
-        // VERSUCH 2: Football-Data.org (falls SportsAPI360 keine Spiele liefert)
+        // VERSUCH 2: Football-Data.org
         if (apiGames.length === 0 && FOOTBALL_DATA_KEY) {
             console.log('🔄 Trying Football-Data.org...');
             try {
@@ -539,4 +538,10 @@ app.get('/api/status', (req, res) => {
                 configured: !!SPORTSAPI360_KEY,
                 key_name: 'FOOTBALL_API_V1_KEY'
             },
-           
+            football_data: {
+                configured: !!FOOTBALL_DATA_KEY, 
+                key_name: 'FOOTBALL_DATA_API_KEY'
+            }
+        },
+        version: 'multi_api_v2'
+ 
