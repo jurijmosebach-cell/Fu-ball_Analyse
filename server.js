@@ -559,4 +559,11 @@ app.listen(PORT, '0.0.0.0', () => {
     if (FOOTBALL_DATA_KEY) {
         console.log(`🌐 App verfügbar: https://your-app.onrender.com`);
         console.log(`🔗 Test: https://your-app.onrender.com/api/test`);
-        console.log(`📊 KORRIGIERTE 
+        console.log(`📊 KORRIGIERTE BERECHNUNGEN aktiviert:`);
+        console.log(`   ✅ Realistische xG mit Team-Stärken`);
+        console.log(`   ✅ Korrigierte Trend-Analyse (keine falschen Home-Favoriten mehr)`);
+        console.log(`   ✅ Reduzierter Heimvorteil für realistischere Ergebnisse`);
+        console.log(`   ✅ Verbesserte Team-Stärken-Differenzierung`);
+    }
+});
+```
