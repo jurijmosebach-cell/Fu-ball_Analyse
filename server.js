@@ -1,4 +1,4 @@
-// server.js — Korrigierte Berechnungen MIT RICHTIGER TREND-ANALYSE
+// server.js — Mit The Sports DB Integration - TEIL 1/4
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -9,8 +9,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// API Key
+// API Keys
 const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_API_KEY;
+const SPORTS_DB_KEY = process.env.THE_SPORTS_DB_KEY || '3'; // Free tier key
 
 // Middleware
 app.use(express.static(__dirname));
@@ -25,13 +26,14 @@ app.get('/health', (req, res) => {
     res.json({ 
         status: 'OK', 
         timestamp: new Date().toISOString(),
-        api: 'football-data.org'
+        api: 'football-data.org + The Sports DB'
     });
 });
 
 // Cache
 const cache = new Map();
 const CACHE_DURATION = 10 * 60 * 1000;
+// TEIL 2/4: Services und Team-Stärken
 
 // Football-Data.org Service
 class FootballDataService {
@@ -86,21 +88,86 @@ class FootballDataService {
     }
 }
 
+// The Sports DB Service
+class SportsDBService {
+    constructor(apiKey) {
+        this.apiKey = apiKey;
+        this.baseURL = 'https://www.thesportsdb.com/api/v1/json';
+    }
+
+    async searchTeam(teamName) {
+        try {
+            // The Sports DB Team-Suche
+            const searchUrl = `${this.baseURL}/${this.apiKey}/searchteams.php?t=${encodeURIComponent(teamName)}`;
+            console.log(`🔍 Searching SportsDB for: ${teamName}`);
+            
+            const response = await fetch(searchUrl, { timeout: 8000 });
+            const data = await response.json();
+            
+            return data.teams?.[0] || null;
+        } catch (error) {
+            console.log(`❌ SportsDB search error for ${teamName}:`, error.message);
+            return null;
+        }
+    }
+
+    async getTeamLastMatches(teamId, count = 5) {
+        try {
+            // Letzte Spiele eines Teams
+            const matchesUrl = `${this.baseURL}/${this.apiKey}/eventslast.php?id=${teamId}&limit=${count}`;
+            const response = await fetch(matchesUrl, { timeout: 8000 });
+            const data = await response.json();
+            
+            return data.results || [];
+        } catch (error) {
+            console.log(`❌ SportsDB matches error for team ${teamId}:`, error.message);
+            return [];
+        }
+    }
+
+    async getTeamForm(teamName) {
+        try {
+            const team = await this.searchTeam(teamName);
+            if (!team) return null;
+            
+            const lastMatches = await this.getTeamLastMatches(team.idTeam, 5);
+            
+            // Analysiere Form der letzten 5 Spiele
+            let points = 0;
+            let goalsFor = 0;
+            let goalsAgainst = 0;
+            
+            lastMatches.forEach(match => {
+                const teamScore = parseInt(match.intHomeScore) || 0;
+                const opponentScore = parseInt(match.intAwayScore) || 0;
+                
+                goalsFor += teamScore;
+                goalsAgainst += opponentScore;
+                
+                if (teamScore > opponentScore) points += 3;
+                else if (teamScore === opponentScore) points += 1;
+            });
+            
+            return {
+                teamId: team.idTeam,
+                teamName: team.strTeam,
+                last5Matches: lastMatches.length,
+                points: points,
+                maxPoints: lastMatches.length * 3,
+                form: points / (lastMatches.length * 3) || 0.5, // 0-1 Skala
+                goalsFor: goalsFor,
+                goalsAgainst: goalsAgainst,
+                goalDifference: goalsFor - goalsAgainst
+            };
+        } catch (error) {
+            console.log(`❌ SportsDB form analysis error for ${teamName}:`, error.message);
+            return null;
+        }
+    }
+}
+
 const footballDataService = new FootballDataService(FOOTBALL_DATA_KEY);
-
-// OPTIMIERTE MATHEMATISCHE FUNKTIONEN
-
-function factorial(n) {
-    if (n <= 1) return 1;
-    let f = 1;
-    for (let i = 2; i <= n; i++) f *= i;
-    return f;
-}
-
-function poisson(k, lambda) {
-    if (lambda <= 0) return k === 0 ? 1 : 0;
-    return Math.pow(lambda, k) * Math.exp(-lambda) / factorial(k);
-}
+const sportsDBService = new SportsDBService(SPORTS_DB_KEY);
 
 // OPTIMIERTE xG-SCHÄTZUNG mit Team-Stärken
 const TEAM_STRENGTHS = {
@@ -168,7 +235,22 @@ function getTeamStrength(teamName) {
     }
     return TEAM_STRENGTHS.default;
 }
+// TEIL 3/4: xG-Berechnung und mathematische Funktionen
 
+// OPTIMIERTE MATHEMATISCHE FUNKTIONEN
+function factorial(n) {
+    if (n <= 1) return 1;
+    let f = 1;
+    for (let i = 2; i <= n; i++) f *= i;
+    return f;
+}
+
+function poisson(k, lambda) {
+    if (lambda <= 0) return k === 0 ? 1 : 0;
+    return Math.pow(lambda, k) * Math.exp(-lambda) / factorial(k);
+}
+
+// BASIS xG-BERECHNUNG
 function estimateXG(homeTeam, awayTeam, isHome = true, league = "") {
     const homeStrength = getTeamStrength(homeTeam);
     const awayStrength = getTeamStrength(awayTeam);
@@ -198,14 +280,90 @@ function estimateXG(homeTeam, awayTeam, isHome = true, league = "") {
     homeXG *= leagueFactor;
     awayXG *= leagueFactor;
     
-    // Sicherstellen, dass Werte im realistischen Bereich bleiben
-    homeXG = Math.max(0.3, Math.min(3.5, homeXG));
-    awayXG = Math.max(0.3, Math.min(3.0, awayXG));
-    
     return {
         home: +homeXG.toFixed(2),
         away: +awayXG.toFixed(2)
     };
+}
+
+// ERWEITERTE xG-BERECHNUNG MIT SPORTS DB DATEN
+async function estimateXGWithSportsDB(homeTeam, awayTeam, isHome = true, league = "") {
+    const baseXG = estimateXG(homeTeam, awayTeam, isHome, league);
+    
+    try {
+        // Hole Form-Daten von The Sports DB
+        const homeForm = await sportsDBService.getTeamForm(homeTeam);
+        const awayForm = await sportsDBService.getTeamForm(awayTeam);
+        
+        if (homeForm && awayForm) {
+            console.log(`📊 SportsDB Form: ${homeTeam} ${(homeForm.form * 100).toFixed(0)}%, ${awayTeam} ${(awayForm.form * 100).toFixed(0)}%`);
+            
+            // Form-Korrektur anwenden
+            const formCorrection = calculateFormCorrection(homeForm, awayForm);
+            baseXG.home += formCorrection.home;
+            baseXG.away += formCorrection.away;
+            
+            // Tordifferenz-Korrektur
+            const goalDiffCorrection = calculateGoalDiffCorrection(homeForm, awayForm);
+            baseXG.home += goalDiffCorrection.home;
+            baseXG.away += goalDiffCorrection.away;
+        }
+        
+    } catch (error) {
+        console.log('❌ SportsDB integration error, using base xG:', error.message);
+    }
+    
+    // Sicherstellen, dass Werte im realistischen Bereich bleiben
+    baseXG.home = Math.max(0.3, Math.min(3.5, baseXG.home));
+    baseXG.away = Math.max(0.3, Math.min(3.0, baseXG.away));
+    
+    return baseXG;
+}
+
+// FORM-KORREKTUR BERECHNUNG
+function calculateFormCorrection(homeForm, awayForm) {
+    let homeCorrection = 0;
+    let awayCorrection = 0;
+    
+    if (homeForm && awayForm) {
+        // Form-Differenz (0.0 = schlechte Form, 1.0 = gute Form)
+        const formDiff = homeForm.form - awayForm.form;
+        
+        // Stärkere Gewichtung für extreme Form-Unterschiede
+        if (formDiff > 0.3) {
+            homeCorrection += 0.25;
+            awayCorrection -= 0.15;
+        } else if (formDiff > 0.15) {
+            homeCorrection += 0.15;
+            awayCorrection -= 0.08;
+        } else if (formDiff < -0.3) {
+            awayCorrection += 0.25;
+            homeCorrection -= 0.15;
+        } else if (formDiff < -0.15) {
+            awayCorrection += 0.15;
+            homeCorrection -= 0.08;
+        }
+    }
+    
+    return { home: homeCorrection, away: awayCorrection };
+}
+
+// TORDIFFERENZ-KORREKTUR
+function calculateGoalDiffCorrection(homeForm, awayForm) {
+    let homeCorrection = 0;
+    let awayCorrection = 0;
+    
+    if (homeForm && awayForm) {
+        // Durchschnittliche Tordifferenz pro Spiel
+        const homeGoalDiffPerGame = homeForm.goalDifference / Math.max(homeForm.last5Matches, 1);
+        const awayGoalDiffPerGame = awayForm.goalDifference / Math.max(awayForm.last5Matches, 1);
+        
+        // Korrektur basierend auf Tordifferenz
+        homeCorrection += homeGoalDiffPerGame * 0.1;
+        awayCorrection += awayGoalDiffPerGame * 0.1;
+    }
+    
+    return { home: homeCorrection, away: awayCorrection };
 }
 
 // OPTIMIERTE WAHRSCHEINLICHKEITSBERECHNUNG
@@ -260,7 +418,7 @@ function computeBTTS(homeXG, awayXG) {
     return +(bttsYes.toFixed(4));
 }
 
-// KORRIGIERTE TREND-ANALYSE - JETZT RICHTIG
+// KORRIGIERTE TREND-ANALYSE - REALISTISCH
 function computeTrend(prob, homeXG, awayXG, homeTeam, awayTeam) {
     const { home, draw, away } = prob;
     
@@ -342,8 +500,29 @@ function getFlag(teamName) {
     }
     return "eu";
 }
+// TEIL 4/4: API Routes und Server Start
 
-// Haupt-API Route mit optimierten Berechnungen
+// NEUE ROUTE FÜR SPORTS DB TEST
+app.get('/api/sportsdb-test', async (req, res) => {
+    try {
+        const teamName = req.query.team || 'Bayern Munich';
+        const teamData = await sportsDBService.searchTeam(teamName);
+        const formData = await sportsDBService.getTeamForm(teamName);
+        
+        res.json({
+            team: teamData,
+            form: formData,
+            status: 'success'
+        });
+    } catch (error) {
+        res.status(500).json({
+            error: error.message,
+            status: 'error'
+        });
+    }
+});
+
+// Haupt-API Route mit erweiterten Berechnungen
 app.get('/api/games', async (req, res) => {
     try {
         const requestedDate = req.query.date || new Date().toISOString().split('T')[0];
@@ -382,13 +561,16 @@ app.get('/api/games', async (req, res) => {
             });
         }
         
-        const processedGames = matches.map((match) => {
+        // Verarbeite Spiele mit erweiterter xG-Berechnung
+        const processedGames = [];
+        
+        for (const match of matches) {
             const homeTeam = match.homeTeam?.name || 'Unknown Home';
             const awayTeam = match.awayTeam?.name || 'Unknown Away';
             const league = match.competition?.name || 'Unknown League';
             
-            // OPTIMIERTE xG-BERECHNUNG
-            const xg = estimateXG(homeTeam, awayTeam, true, league);
+            // ERWEITERTE xG-BERECHNUNG MIT SPORTS DB
+            const xg = await estimateXGWithSportsDB(homeTeam, awayTeam, true, league);
             
             // OPTIMIERTE WAHRSCHEINLICHKEITEN
             const prob = computeMatchOutcomeProbs(xg.home, xg.away);
@@ -415,7 +597,7 @@ app.get('/api/games', async (req, res) => {
             
             const bestBet = findBestBet(prob, value, odds);
             
-            return {
+            processedGames.push({
                 id: match.id,
                 home: homeTeam,
                 away: awayTeam,
@@ -433,7 +615,7 @@ app.get('/api/games', async (req, res) => {
                 over25,
                 under25: 1 - over25,
                 status: match.status,
-                source: "football_data",
+                source: "football_data+sportsdb",
                 competition: match.competition?.name,
                 matchday: match.matchday,
                 season: match.season?.currentMatchday,
@@ -446,8 +628,8 @@ app.get('/api/games', async (req, res) => {
                     expectedGoals: xg.home + xg.away,
                     goalExpectancy: `${xg.home}-${xg.away}`
                 }
-            };
-        });
+            });
+        }
         
         const sortBy = req.query.sortBy || 'value';
         
@@ -486,9 +668,9 @@ app.get('/api/games', async (req, res) => {
             info: {
                 date: requestedDate,
                 total: processedGames.length,
-                source: "football_data",
+                source: "football_data+sportsdb",
                 sort_by: sortBy,
-                message: `Echte Spiele mit optimierten Berechnungen - sortiert nach: ${sortBy === 'probability' ? 'Siegwahrscheinlichkeit' : sortBy === 'goals' ? 'erwarteten Toren' : 'Best Value'}`
+                message: `Echte Spiele mit erweiterten Berechnungen (Football-Data + The Sports DB)`
             }
         });
         
@@ -544,10 +726,14 @@ app.get('/api/status', (req, res) => {
             football_data: {
                 configured: !!FOOTBALL_DATA_KEY,
                 status: FOOTBALL_DATA_KEY ? 'active' : 'missing_key'
+            },
+            sports_db: {
+                configured: true,
+                status: 'active'
             }
         },
         sorting_options: ['value', 'probability', 'goals'],
-        version: 'korrigierte_trend_analyse_v3'
+        version: 'sports_db_integration_v1'
     });
 });
 
@@ -555,15 +741,16 @@ app.get('/api/status', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`🔑 Football-Data.org API: ${FOOTBALL_DATA_KEY ? '✅ Configured' : '❌ MISSING'}`);
+    console.log(`🔑 The Sports DB API: ✅ Configured (Free Tier)`);
     
     if (FOOTBALL_DATA_KEY) {
         console.log(`🌐 App verfügbar: https://your-app.onrender.com`);
         console.log(`🔗 Test: https://your-app.onrender.com/api/test`);
-        console.log(`📊 KORRIGIERTE BERECHNUNGEN aktiviert:`);
-        console.log(`  BERECHNUNGEN aktiviert:`);
-        console.log(`   ✅ Realistische xG mit Team-Stärken`);
-        console.log(`   ✅ Korrigierte Trend-Analyse (keine falschen Home-Favoriten mehr)`);
-        console.log(`   ✅ Reduzierter Heimvorteil für realistischere Ergebnisse`);
-        console.log(`   ✅ Verbesserte Team-Stärken-Differenzierung`);
+        console.log(`🔗 SportsDB Test: https://your-app.onrender.com/api/sportsdb-test?team=Bayern%20Munich`);
+        console.log(`📊 ERWEITERTE BERECHNUNGEN aktiviert:`);
+        console.log(`   ✅ The Sports DB Integration für Form-Analyse`);
+        console.log(`   ✅ Erweiterte xG-Berechnung mit Form-Korrektur`);
+        console.log(`   ✅ Realistischere Wahrscheinlichkeiten`);
+        console.log(`   ✅ Tordifferenz-basierte Korrekturen`);
     }
 });
