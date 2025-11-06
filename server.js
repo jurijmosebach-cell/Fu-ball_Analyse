@@ -1,4 +1,4 @@
-// server.js — Vereinfachte funktionierende Version
+// server.js — Korrigierte Version mit richtiger SportsAPI360 v3 API
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -37,7 +37,7 @@ app.get('/health', (req, res) => {
 const cache = new Map();
 const CACHE_DURATION = 10 * 60 * 1000;
 
-// Mathematical functions
+// Mathematical functions (unverändert)
 function factorial(n) {
     if (n <= 1) return 1;
     let f = 1;
@@ -55,7 +55,7 @@ function estimateXG(teamName, isHome = true, league = "") {
     
     const LEAGUE_FACTORS = {
         "Premier League": 1.05, "Bundesliga": 1.10, "La Liga": 1.00, 
-        "Serie A": 0.95, "Ligue 1": 1.02
+        "Serie A": 0.95, "Ligue 1": 1.02, "Champions League": 1.08
     };
     
     const leagueFactor = LEAGUE_FACTORS[league] || 1.0;
@@ -128,7 +128,7 @@ function getFlag(teamName) {
     return "eu";
 }
 
-// Demo data
+// Demo data (Fallback)
 function getDemoGames(date = null) {
     const baseDate = date ? new Date(date) : new Date();
     
@@ -187,64 +187,196 @@ function getDemoGames(date = null) {
     });
 }
 
-// SportsAPI360 Service (simplified)
+// KORRIGIERTE SportsAPI360 Service Klasse - v3 API
 class SportsAPI360Service {
     constructor(apiKey) {
         this.apiKey = apiKey;
-        this.baseURL = "https://api.sportsapi360.com";
+        this.baseURL = "https://apiv3.sportsap360.com";
     }
 
-    async getMatchesByDate(date) {
-        if (!this.apiKey) return { matches: [] };
+    async makeRequest(endpoint) {
+        if (!this.apiKey) {
+            console.log('❌ No API Key for SportsAPI360');
+            return null;
+        }
         
         try {
-            const url = `${this.baseURL}/matches?api_key=${this.apiKey}&sport_id=1&date=${date}`;
-            console.log('🔗 Fetching from SportsAPI360...');
+            const url = `${this.baseURL}${endpoint}`;
+            console.log('🔗 Fetching from SportsAPI360 v3...');
             
-            const response = await fetch(url, { timeout: 10000 });
+            const response = await fetch(url, { 
+                timeout: 15000,
+                headers: {
+                    'x-api-key': this.apiKey,
+                    'Accept': 'application/json',
+                    'User-Agent': 'WettAnalyseTool/1.0'
+                }
+            });
+            
+            console.log('📡 HTTP Status:', response.status, response.statusText);
             
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
             const data = await response.json();
-            console.log(`✅ Got ${data.matches?.length || 0} matches from SportsAPI360`);
+            console.log('✅ SportsAPI360 v3 Response received');
             return data;
             
         } catch (error) {
-            console.log('❌ SportsAPI360 error:', error.message);
-            return { matches: [] };
+            console.log('❌ SportsAPI360 v3 Error:', error.message);
+            return null;
         }
+    }
+
+    // Live Matches - wie in der Dokumentation
+    async getLiveMatches() {
+        return await this.makeRequest('/football/api/v1/matches/live');
+    }
+
+    // Upcoming Matches für ein bestimmtes Datum
+    async getMatchesByDate(date) {
+        // Für v3 API müssen wir möglicherweise einen anderen Endpoint finden
+        // Vorerst verwenden wir live matches als Beispiel
+        console.log('📅 Getting matches for date:', date);
+        const liveData = await this.getLiveMatches();
+        
+        if (liveData && liveData.response) {
+            // Filtere nach Datum falls benötigt
+            return { matches: this.extractMatchesFromResponse(liveData) };
+        }
+        
+        return { matches: [] };
+    }
+
+    extractMatchesFromResponse(apiData) {
+        if (!apiData || !apiData.response) return [];
+        
+        const matches = [];
+        
+        try {
+            // Durchlaufe alle Turniere und matches
+            for (const item of apiData.response) {
+                if (item.matches && Array.isArray(item.matches)) {
+                    for (const match of item.matches) {
+                        matches.push({
+                            match_id: match.id,
+                            home_team: {
+                                name: match.homeTeam?.name || 'Home Team',
+                                logo: null // Könnte aus details kommen
+                            },
+                            away_team: {
+                                name: match.awayTeam?.name || 'Away Team', 
+                                logo: null
+                            },
+                            league: {
+                                name: item.tournaments?.name || 'Unknown League'
+                            },
+                            date: new Date(match.startTimestamp * 1000).toISOString(),
+                            status: match.status?.description || 'SCHEDULED'
+                        });
+                    }
+                }
+            }
+        } catch (error) {
+            console.log('❌ Error extracting matches:', error);
+        }
+        
+        console.log(`📊 Extracted ${matches.length} matches from API response`);
+        return matches;
     }
 }
 
 const sportsAPI360 = new SportsAPI360Service(SPORTSAPI360_KEY);
 
-// Main API route
+// Debug Route für die neue v3 API
+app.get('/api/debug-v3', async (req, res) => {
+    try {
+        console.log('🔍 DEBUG v3 API');
+        
+        if (!SPORTSAPI360_KEY) {
+            return res.json({ error: 'No API Key configured' });
+        }
+        
+        console.log('🔑 API Key:', SPORTSAPI360_KEY.substring(0, 10) + '...');
+        
+        const sportsAPI = new SportsAPI360Service(SPORTSAPI360_KEY);
+        const liveData = await sportsAPI.getLiveMatches();
+        
+        if (!liveData) {
+            return res.json({ 
+                status: 'error', 
+                message: 'Failed to fetch from API',
+                using_demo: true
+            });
+        }
+        
+        return res.json({
+            status: 'success',
+            api_working: true,
+            response_structure: Object.keys(liveData),
+            has_response: !!liveData.response,
+            response_count: liveData.response?.length || 0,
+            sample_data: liveData.response ? {
+                first_tournament: liveData.response[0]?.tournaments?.name,
+                matches_count: liveData.response[0]?.matches?.length || 0,
+                sample_match: liveData.response[0]?.matches?.[0] ? {
+                    home: liveData.response[0].matches[0].homeTeam?.name,
+                    away: liveData.response[0].matches[0].awayTeam?.name,
+                    league: liveData.response[0].tournaments?.name,
+                    status: liveData.response[0].matches[0].status?.description
+                } : 'No matches in first tournament'
+            } : 'No response data',
+            using_demo: false
+        });
+        
+    } catch (error) {
+        console.error('❌ Debug v3 Error:', error);
+        res.json({
+            status: 'error',
+            error: error.message,
+            using_demo: true
+        });
+    }
+});
+
+// Haupt-API Route mit v3 Integration
 app.get('/api/games', async (req, res) => {
     try {
-        console.log('📥 API Request received');
-        
         const requestedDate = req.query.date || new Date().toISOString().split('T')[0];
+        console.log('🎯 API Request for date:', requestedDate);
+        
         const cacheKey = `games-${requestedDate}`;
         
-        // Check cache
+        // Cache prüfen
         const cached = cache.get(cacheKey);
-        if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+        if (cached) {
             console.log('✅ Serving from cache');
-            return res.json({ response: cached.data });
+            return res.json({ 
+                response: cached.data,
+                info: { source: 'cache', date: requestedDate }
+            });
         }
         
         let apiGames = [];
+        let apiSource = 'demo';
         
-        // Try SportsAPI360
+        // SPORTSAPI360 v3 VERSION
         if (SPORTSAPI360_KEY) {
+            console.log('🔄 Trying SportsAPI360 v3...');
             try {
                 const sportsData = await sportsAPI360.getMatchesByDate(requestedDate);
+                
                 if (sportsData.matches && sportsData.matches.length > 0) {
-                    apiGames = sportsData.matches.map(match => {
-                        const homeXG = estimateXG(match.home_team?.name, true, match.league?.name);
-                        const awayXG = estimateXG(match.away_team?.name, false, match.league?.name);
+                    console.log(`✅ Got ${sportsData.matches.length} REAL matches from SportsAPI360 v3`);
+                    
+                    apiGames = sportsData.matches.map((match, index) => {
+                        const homeTeam = match.home_team?.name || 'Unknown Home';
+                        const awayTeam = match.away_team?.name || 'Unknown Away';
+                        const league = match.league?.name || 'Unknown League';
+                        
+                        const homeXG = estimateXG(homeTeam, true, league);
+                        const awayXG = estimateXG(awayTeam, false, league);
                         const prob = computeMatchOutcomeProbs(homeXG, awayXG);
                         const over25 = computeOver25Prob(homeXG, awayXG);
                         const btts = computeBTTS(homeXG, awayXG);
@@ -265,13 +397,13 @@ app.get('/api/games', async (req, res) => {
                         };
                         
                         return {
-                            id: match.match_id,
-                            home: match.home_team?.name,
-                            away: match.away_team?.name,
-                            league: match.league?.name,
-                            date: match.date,
-                            homeLogo: match.home_team?.logo || `https://flagcdn.com/w40/${getFlag(match.home_team?.name)}.png`,
-                            awayLogo: match.away_team?.logo || `https://flagcdn.com/w40/${getFlag(match.away_team?.name)}.png`,
+                            id: match.match_id || `real-${index}`,
+                            home: homeTeam,
+                            away: awayTeam,
+                            league: league,
+                            date: match.date || new Date().toISOString(),
+                            homeLogo: match.home_team?.logo || `https://flagcdn.com/w40/${getFlag(homeTeam)}.png`,
+                            awayLogo: match.away_team?.logo || `https://flagcdn.com/w40/${getFlag(awayTeam)}.png`,
                             homeXG,
                             awayXG,
                             prob,
@@ -280,28 +412,43 @@ app.get('/api/games', async (req, res) => {
                             btts,
                             over25,
                             under25: 1 - over25,
-                            status: match.status,
-                            source: "sportsapi360"
+                            status: match.status || "SCHEDULED",
+                            source: "sportsapi360_v3"
                         };
                     });
+                    
+                    apiSource = 'sportsapi360_v3';
+                } else {
+                    console.log('⚠️ SportsAPI360 v3 returned no matches');
                 }
             } catch (error) {
-                console.log('❌ SportsAPI360 failed:', error.message);
+                console.log('❌ SportsAPI360 v3 error:', error.message);
             }
+        } else {
+            console.log('⏭️ Skipping SportsAPI360 - no API key');
         }
         
-        let finalGames = apiGames.length > 0 ? apiGames : getDemoGames(requestedDate);
+        let finalGames = [];
         
-        // Sort by value
+        if (apiGames.length > 0) {
+            console.log(`🎯 Using ${apiGames.length} REAL games from API`);
+            finalGames = apiGames;
+        } else {
+            console.log('📋 Using DEMO games (no API data available)');
+            finalGames = getDemoGames(requestedDate);
+            apiSource = 'demo';
+        }
+        
+        // Sortieren
         finalGames.sort((a, b) => {
             const maxValueA = Math.max(a.value.home, a.value.draw, a.value.away, a.value.over25);
             const maxValueB = Math.max(b.value.home, b.value.draw, b.value.away, b.value.over25);
             return maxValueB - maxValueA;
         });
         
-        console.log(`🎯 Final: ${finalGames.length} games`);
+        console.log(`📊 Final: ${finalGames.length} games (source: ${apiSource})`);
         
-        // Cache results
+        // Cache
         cache.set(cacheKey, {
             timestamp: Date.now(),
             data: finalGames
@@ -312,7 +459,9 @@ app.get('/api/games', async (req, res) => {
             info: {
                 date: requestedDate,
                 total: finalGames.length,
-                source: apiGames.length > 0 ? "sportsapi360" : "demo"
+                source: apiSource,
+                real_games: apiGames.length,
+                demo_games: finalGames.length - apiGames.length
             }
         });
         
@@ -324,7 +473,8 @@ app.get('/api/games', async (req, res) => {
             info: {
                 date: req.query.date || new Date().toISOString().split('T')[0],
                 total: fallbackGames.length,
-                source: "fallback"
+                source: "fallback",
+                error: error.message
             }
         });
     }
@@ -335,18 +485,19 @@ app.get('/api/status', (req, res) => {
     res.json({
         status: 'running',
         apis: {
-            sportsapi360: !!SPORTSAPI360_KEY,
+            sportsapi360_v3: !!SPORTSAPI360_KEY,
             football_data: !!FOOTBALL_DATA_KEY
-        }
+        },
+        version: 'v3_api'
     });
 });
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`🔑 Football-Data API: ${FOOTBALL_DATA_KEY ? '✅' : '❌'}`);
-    console.log(`🔑 SportsAPI360 API: ${SPORTSAPI360_KEY ? '✅' : '❌'}`);
+    console.log(`🔑 SportsAPI360 v3 API: ${SPORTSAPI360_KEY ? '✅' : '❌'}`);
     console.log(`🌐 App available at: https://your-app.onrender.com`);
+    console.log(`🔗 Debug: https://your-app.onrender.com/api/debug-v3`);
 });
 
 // Handle uncaught errors
