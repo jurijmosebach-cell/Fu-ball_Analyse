@@ -560,3 +560,7 @@ app.listen(PORT, '0.0.0.0', () => {
         console.log(`🌐 App verfügbar: https://your-app.onrender.com`);
         console.log(`🔗 Test: https://your-app.onrender.com/api/test`);
         console.log(`📊 KORRIGIERTE 
+        
+     }   
+});       
+        
