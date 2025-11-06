@@ -1,4 +1,4 @@
-// server.js — Überarbeitete Analyse mit besseren Berechnungen
+// server.js — Vollständige korrigierte Version
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -88,8 +88,7 @@ class FootballDataService {
 
 const footballDataService = new FootballDataService(FOOTBALL_DATA_KEY);
 
-// VERBESSERTE MATHEMATISCHE FUNKTIONEN
-
+// Mathematische Funktionen
 function factorial(n) {
     if (n <= 1) return 1;
     let f = 1;
@@ -102,9 +101,8 @@ function poisson(k, lambda) {
     return Math.pow(lambda, k) * Math.exp(-lambda) / factorial(k);
 }
 
-// VERBESSERTE xG-SCHÄTZUNG mit Team-Stärken-Datenbank
+// Team-Stärken-Datenbank
 const TEAM_STRENGTHS = {
-    // Premier League
     "Manchester City": { attack: 2.4, defense: 0.8 },
     "Liverpool": { attack: 2.3, defense: 0.9 },
     "Arsenal": { attack: 2.1, defense: 0.9 },
@@ -115,32 +113,22 @@ const TEAM_STRENGTHS = {
     "Brighton": { attack: 1.9, defense: 1.4 },
     "West Ham": { attack: 1.6, defense: 1.5 },
     "Aston Villa": { attack: 1.8, defense: 1.3 },
-    
-    // Bundesliga
     "Bayern Munich": { attack: 2.5, defense: 0.7 },
     "Borussia Dortmund": { attack: 2.2, defense: 1.1 },
     "RB Leipzig": { attack: 2.0, defense: 1.2 },
     "Bayer Leverkusen": { attack: 2.1, defense: 1.0 },
     "Eintracht Frankfurt": { attack: 1.7, defense: 1.4 },
-    
-    // La Liga
     "Real Madrid": { attack: 2.3, defense: 0.8 },
     "Barcelona": { attack: 2.2, defense: 0.9 },
     "Atletico Madrid": { attack: 1.8, defense: 0.9 },
     "Sevilla": { attack: 1.6, defense: 1.3 },
-    
-    // Serie A
     "Inter Milan": { attack: 2.1, defense: 0.9 },
     "Juventus": { attack: 1.9, defense: 1.0 },
     "AC Milan": { attack: 1.9, defense: 1.1 },
     "Napoli": { attack: 1.8, defense: 1.2 },
-    
-    // Ligue 1
     "PSG": { attack: 2.4, defense: 0.9 },
     "Marseille": { attack: 1.8, defense: 1.3 },
     "Monaco": { attack: 1.9, defense: 1.4 },
-    
-    // Standardwerte für unbekannte Teams
     "default": { attack: 1.5, defense: 1.5 }
 };
 
@@ -157,21 +145,18 @@ function estimateXG(homeTeam, awayTeam, isHome = true, league = "") {
     const homeStrength = getTeamStrength(homeTeam);
     const awayStrength = getTeamStrength(awayTeam);
     
-    // Basis xG basierend auf Team-Stärken
     let homeXG = homeStrength.attack * (1 - awayStrength.defense / 3);
     let awayXG = awayStrength.attack * (1 - homeStrength.defense / 3);
     
-    // Heimvorteil anpassen
     const homeAdvantage = isHome ? 0.25 : -0.15;
     homeXG += homeAdvantage;
     awayXG -= homeAdvantage;
     
-    // Liga-Faktoren
     const LEAGUE_FACTORS = {
         "Premier League": 1.0,
-        "Bundesliga": 1.05,  // Mehr Tore
-        "La Liga": 0.95,     // Weniger Tore
-        "Serie A": 0.90,     // Defensiver
+        "Bundesliga": 1.05,
+        "La Liga": 0.95,
+        "Serie A": 0.90,
         "Ligue 1": 1.0,
         "Champions League": 1.1,
         "Europa League": 1.05
@@ -181,7 +166,6 @@ function estimateXG(homeTeam, awayTeam, isHome = true, league = "") {
     homeXG *= leagueFactor;
     awayXG *= leagueFactor;
     
-    // Sicherstellen, dass Werte im realistischen Bereich bleiben
     homeXG = Math.max(0.3, Math.min(3.5, homeXG));
     awayXG = Math.max(0.3, Math.min(3.0, awayXG));
     
@@ -191,11 +175,9 @@ function estimateXG(homeTeam, awayTeam, isHome = true, league = "") {
     };
 }
 
-// VERBESSERTE WAHRSCHEINLICHKEITSBERECHNUNG
 function computeMatchOutcomeProbs(homeXG, awayXG) {
     let homeProb = 0, drawProb = 0, awayProb = 0;
     
-    // Erweiterte Poisson-Berechnung für genauere Ergebnisse
     for (let i = 0; i <= 8; i++) {
         for (let j = 0; j <= 8; j++) {
             const p = poisson(i, homeXG) * poisson(j, awayXG);
@@ -205,7 +187,6 @@ function computeMatchOutcomeProbs(homeXG, awayXG) {
         }
     }
     
-    // Korrektur für extreme Fälle
     const total = homeProb + drawProb + awayProb;
     if (total < 0.99) {
         const correction = 1 / total;
@@ -221,17 +202,15 @@ function computeMatchOutcomeProbs(homeXG, awayXG) {
     };
 }
 
-// VERBESSERTE OVER/UNDER BERECHNUNG
 function computeGoalProbabilities(homeXG, awayXG) {
     const totalXG = homeXG + awayXG;
     
-    // Wahrscheinlichkeiten für verschiedene Toranzahlen
     const probabilities = {
         over05: 0, over15: 0, over25: 0, over35: 0,
-        exact0: 0, exact1: 0, exact2: 0, exact3: 0, exact4: 0
+        exact0: 0, exact1: 0, exact2: 0, exact3: 0, exact4: 0,
+        under25: 0, under35: 0
     };
     
-    // Berechne exakte Torwahrscheinlichkeiten
     for (let i = 0; i <= 6; i++) {
         for (let j = 0; j <= 6; j++) {
             const p = poisson(i, homeXG) * poisson(j, awayXG);
@@ -247,15 +226,15 @@ function computeGoalProbabilities(homeXG, awayXG) {
             if (totalGoals > 1.5) probabilities.over15 += p;
             if (totalGoals > 2.5) probabilities.over25 += p;
             if (totalGoals > 3.5) probabilities.over35 += p;
+            if (totalGoals < 2.5) probabilities.under25 += p;
+            if (totalGoals < 3.5) probabilities.under35 += p;
         }
     }
     
     return probabilities;
 }
 
-// VERBESSERTE BTTS BERECHNUNG
 function computeBTTS(homeXG, awayXG) {
-    // Wahrscheinlichkeit, dass beide Teams mindestens 1 Tor schießen
     const pHomeScores = 1 - poisson(0, homeXG);
     const pAwayScores = 1 - poisson(0, awayXG);
     const bttsYes = pHomeScores * pAwayScores;
@@ -266,17 +245,14 @@ function computeBTTS(homeXG, awayXG) {
     };
 }
 
-// VERBESSERTE TREND-ANALYSE
 function computeAdvancedTrend(homeXG, awayXG, homeProb, awayProb, drawProb) {
     const xgDifference = homeXG - awayXG;
     const probDifference = homeProb - awayProb;
     const totalXG = homeXG + awayXG;
     
-    // Stärke-Indikatoren
     const homeDominance = homeXG / (homeXG + awayXG);
     const expectedGoals = totalXG;
     
-    // Trend-Bestimmung basierend auf mehreren Faktoren
     let trend = "";
     let confidence = 0;
     let reasoning = [];
@@ -303,7 +279,6 @@ function computeAdvancedTrend(homeXG, awayXG, homeProb, awayProb, drawProb) {
         reasoning.push("Ausgeglichene Mannschaftsstärken");
     }
     
-    // Torreichheit hinzufügen
     if (expectedGoals > 3.5) {
         reasoning.push("Torreich erwartet");
     } else if (expectedGoals < 2.0) {
@@ -319,21 +294,16 @@ function computeAdvancedTrend(homeXG, awayXG, homeProb, awayProb, drawProb) {
     };
 }
 
-// REALISTISCHE ODDS BERECHNUNG
 function calculateRealisticOdds(probabilities, goalProbabilities, btts) {
-    // Buchmacher-Marge (typisch 5-8%)
-    const margin = 0.05; // 5% Marge
+    const margin = 0.05;
     
-    // 1X2 Odds
     const homeOdds = 1 / (probabilities.home * (1 - margin));
     const drawOdds = 1 / (probabilities.draw * (1 - margin));
     const awayOdds = 1 / (probabilities.away * (1 - margin));
     
-    // Over/Under Odds
     const over25Odds = 1 / (goalProbabilities.over25 * (1 - margin));
     const under25Odds = 1 / (goalProbabilities.under25 * (1 - margin));
     
-    // BTTS Odds
     const bttsYesOdds = 1 / (btts.yes * (1 - margin));
     const bttsNoOdds = 1 / (btts.no * (1 - margin));
     
@@ -348,14 +318,12 @@ function calculateRealisticOdds(probabilities, goalProbabilities, btts) {
     };
 }
 
-// VALUE BERECHNUNG
 function calculateValue(probability, odds) {
     if (!odds || odds <= 1) return 0;
     const value = (probability * odds) - 1;
     return +Math.max(-1, Math.min(2, value)).toFixed(4);
 }
 
-// BESTE WETT-OPTIONEN FINDEN
 function findBestBets(probabilities, goalProbabilities, btts, odds) {
     const betOptions = [
         { type: 'home', probability: probabilities.home, odds: odds.home, market: '1X2' },
@@ -367,16 +335,13 @@ function findBestBets(probabilities, goalProbabilities, btts, odds) {
         { type: 'btts_no', probability: btts.no, odds: odds.bttsNo, market: 'BTTS' }
     ];
     
-    // Berechne Value für jede Option
     betOptions.forEach(bet => {
         bet.value = calculateValue(bet.probability, bet.odds);
     });
     
-    // Finde beste Optionen
     const bestValue = [...betOptions].sort((a, b) => b.value - a.value)[0];
     const bestProbability = [...betOptions].sort((a, b) => b.probability - a.probability)[0];
     
-    // Positive Value Wetten
     const positiveValueBets = betOptions.filter(bet => bet.value > 0.05);
     
     return {
@@ -410,7 +375,7 @@ function getFlag(teamName) {
     return "eu";
 }
 
-// HAUPT-API ROUTE MIT VERBESSERTEN BERECHNUNGEN
+// Haupt-API Route
 app.get('/api/games', async (req, res) => {
     try {
         const requestedDate = req.query.date || new Date().toISOString().split('T')[0];
@@ -454,24 +419,18 @@ app.get('/api/games', async (req, res) => {
             const awayTeam = match.awayTeam?.name || 'Unknown Away';
             const league = match.competition?.name || 'Unknown League';
             
-            // VERBESSERTE xG-BERECHNUNG
             const xg = estimateXG(homeTeam, awayTeam, true, league);
-            
-            // VERBESSERTE WAHRSCHEINLICHKEITEN
             const probabilities = computeMatchOutcomeProbs(xg.home, xg.away);
             const goalProbabilities = computeGoalProbabilities(xg.home, xg.away);
             const btts = computeBTTS(xg.home, xg.away);
             
-            // VERBESSERTE TREND-ANALYSE
             const trendAnalysis = computeAdvancedTrend(
                 xg.home, xg.away, 
                 probabilities.home, probabilities.away, probabilities.draw
             );
             
-            // REALISTISCHE ODDS
             const odds = calculateRealisticOdds(probabilities, goalProbabilities, btts);
             
-            // VALUE BERECHNUNG
             const value = {
                 home: calculateValue(probabilities.home, odds.home),
                 draw: calculateValue(probabilities.draw, odds.draw),
@@ -482,7 +441,6 @@ app.get('/api/games', async (req, res) => {
                 bttsNo: calculateValue(btts.no, odds.bttsNo)
             };
             
-            // BESTE WETT-OPTIONEN
             const bestBets = findBestBets(probabilities, goalProbabilities, btts, odds);
             
             return {
@@ -493,8 +451,6 @@ app.get('/api/games', async (req, res) => {
                 date: match.utcDate,
                 homeLogo: match.homeTeam?.crest || `https://flagcdn.com/w40/${getFlag(homeTeam)}.png`,
                 awayLogo: match.awayTeam?.crest || `https://flagcdn.com/w40/${getFlag(awayTeam)}.png`,
-                
-                // VERBESSERTE DATEN
                 xg: xg,
                 probabilities: probabilities,
                 goalProbabilities: goalProbabilities,
@@ -503,7 +459,6 @@ app.get('/api/games', async (req, res) => {
                 odds: odds,
                 value: value,
                 bestBets: bestBets,
-                
                 status: match.status,
                 source: "football_data",
                 competition: match.competition?.name,
@@ -511,7 +466,6 @@ app.get('/api/games', async (req, res) => {
             };
         });
         
-        // SORTIERUNG NACH BESTER VALUE-WETTE
         processedGames.sort((a, b) => {
             const bestValueA = a.bestBets.bestValue.value;
             const bestValueB = b.bestBets.bestValue.value;
@@ -552,9 +506,6 @@ app.listen(PORT, '0.0.0.0', () => {
     
     if (FOOTBALL_DATA_KEY) {
         console.log(`🌐 App verfügbar: https://your-app.onrender.com`);
-        console.log(`📊 ENHANCED ANALYSIS aktiviert:`);
-        console.log(`   ✅ Realistische xG Berechnung`);
-        console.log(`   ✅ Verbesserte Poisson-Wahrscheinlichkeiten`);
-        console.log(`   ✅ Genauere Over/Under Berechnungen`);
-        console.log(`   ✅ Erweiterte Trend-Analyse`);
-        console.log(`   ✅ Realistis
+        console.log(`📊 ENHANCED ANALYSIS aktiviert`);
+    }
+});
