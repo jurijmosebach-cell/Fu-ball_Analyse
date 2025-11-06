@@ -173,11 +173,13 @@ async function loadGames(){
         <div class="team"><img src="${g.homeLogo}" alt=""> ${g.home} xG:${g.homeXG} | Trend:${g.trend}</div>
         <div class="team"><img src="${g.awayLogo}" alt=""> ${g.away} xG:${g.awayXG} | Trend:${g.trend}</div>
       `;
-      div.appendChild(createBar("Home", g.prob?.home ?? g.value.home, "#4caf50"));
-      div.appendChild(createBar("Draw", g.prob?.draw ?? g.value.draw, "#f59e0b"));
-      div.appendChild(createBar("Away", g.prob?.away ?? g.value.away, "#ef4444"));
-      div.appendChild(createBar("Over 2.5", g.prob?.over25 ?? g.value.over25, "#2196f3"));
-      div.appendChild(createBar("Under 2.5", g.prob ? (1 - g.prob.over25) : g.value.under25, "#8b5cf6"));
+      
+      // ✅ KORRIGIERT: Over/Under mit Wahrscheinlichkeiten, nicht Values
+      div.appendChild(createBar("Home", g.prob?.home ?? 0, "#4caf50"));
+      div.appendChild(createBar("Draw", g.prob?.draw ?? 0, "#f59e0b"));
+      div.appendChild(createBar("Away", g.prob?.away ?? 0, "#ef4444"));
+      div.appendChild(createBar("Over 2.5", g.prob?.over25 ?? 0, "#2196f3"));
+      div.appendChild(createBar("Under 2.5", g.prob ? (1 - (g.prob.over25 ?? 0)) : 0, "#8b5cf6"));
       div.appendChild(createBar("BTTS", g.btts ?? 0, "#ff7a00"));
 
       top3Div.appendChild(div);
@@ -200,19 +202,28 @@ async function loadGames(){
       top7ValueDiv.appendChild(div);
     });
 
-    // Top5 Over
+    // Top5 Over - ✅ KOMPLETT KORRIGIERT
     top5OverDiv.innerHTML = "";
-    const top5Over = games.slice().sort((a,b) => b.value.over25 - a.value.over25).slice(0,5);
+    const top5Over = games.slice()
+      .filter(g => (g.prob?.over25 ?? 0) > 0.35) // Mindestens 35% Over Chance
+      .sort((a,b) => (b.prob?.over25 ?? 0) - (a.prob?.over25 ?? 0))
+      .slice(0,5);
+
     top5Over.forEach(g => {
       const div = document.createElement("div");
       div.className = "game";
       
-      // ✅ KORRIGIERT: Verwende den echten Trend für die Farbe (auch bei Over 2.5)
-      const bestVal = Math.max(g.value.home, g.value.draw, g.value.away);
-      const color = getTrafficColor(bestVal, g.trend);
+      // Over-spezifische Farbe
+      const overProb = g.prob?.over25 ?? 0;
+      let borderColor = "#2196f3";
+      if (overProb > 0.7) borderColor = "#1e40af";
+      else if (overProb > 0.55) borderColor = "#3b82f6";
       
-      div.style.borderLeft = `6px solid ${color}`;
-      div.textContent = `${g.home} vs ${g.away} (${g.league}) → Over2.5 ${(g.prob?.over25 ?? g.value.over25).toFixed(2)} | Trend: ${g.trend}`;
+      div.style.borderLeft = `6px solid ${borderColor}`;
+      
+      const overPercentage = Math.round(overProb * 100);
+      div.textContent = `${g.home} vs ${g.away} (${g.league}) → Over 2.5: ${overPercentage}% | Trend: ${g.trend}`;
+      
       top5OverDiv.appendChild(div);
     });
 
@@ -234,11 +245,13 @@ async function loadGames(){
         <div class="team"><img src="${g.homeLogo}" alt=""> ${g.home} xG:${g.homeXG} | Trend:${g.trend}</div>
         <div class="team"><img src="${g.awayLogo}" alt=""> ${g.away} xG:${g.awayXG} | Trend:${g.trend}</div>
       `;
-      div.appendChild(createBar("Home", g.prob?.home ?? g.value.home, "#4caf50"));
-      div.appendChild(createBar("Draw", g.prob?.draw ?? g.value.draw, "#f59e0b"));
-      div.appendChild(createBar("Away", g.prob?.away ?? g.value.away, "#ef4444"));
-      div.appendChild(createBar("Over 2.5", g.prob?.over25 ?? g.value.over25, "#2196f3"));
-      div.appendChild(createBar("Under 2.5", g.prob ? (1 - g.prob.over25) : g.value.under25, "#8b5cf6"));
+      
+      // ✅ KORRIGIERT: Over/Under mit Wahrscheinlichkeiten
+      div.appendChild(createBar("Home", g.prob?.home ?? 0, "#4caf50"));
+      div.appendChild(createBar("Draw", g.prob?.draw ?? 0, "#f59e0b"));
+      div.appendChild(createBar("Away", g.prob?.away ?? 0, "#ef4444"));
+      div.appendChild(createBar("Over 2.5", g.prob?.over25 ?? 0, "#2196f3"));
+      div.appendChild(createBar("Under 2.5", g.prob ? (1 - (g.prob.over25 ?? 0)) : 0, "#8b5cf6"));
       div.appendChild(createBar("BTTS", g.btts ?? 0, "#ff7a00"));
 
       gamesDiv.appendChild(div);
