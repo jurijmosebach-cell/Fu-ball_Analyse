@@ -1,5 +1,4 @@
 // ki-module.js - KI-Modul für erweiterte Fußballanalysen
-import { Matrix } from 'ml-matrix';
 import * as ss from 'simple-statistics';
 
 export class KIAnalyse {
