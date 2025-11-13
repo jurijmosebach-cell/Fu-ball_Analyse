@@ -80,7 +80,7 @@ class ProfessionalFootballDataService {
                 return matchDate === date && (match.status === 'SCHEDULED' || match.status === 'TIMED');
             }) || [];
 
-            console.log(`✅ Found ${filtermedMatches.length} professional matches for ${date}`);
+            console.log(`✅ Found ${filteredMatches.length} professional matches for ${date}`);
             return filteredMatches;
 
         } catch (error) {
