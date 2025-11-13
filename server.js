@@ -1,4 +1,4 @@
-// server.js — Mit KI-Integration und erweiterten Analysen
+// Nur diese Importe behalten:
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
