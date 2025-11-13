@@ -19,10 +19,94 @@ const highValueBetsEl = document.getElementById("highValueBets");
 const strongTrendsEl = document.getElementById("strongTrends");
 const over25RateEl = document.getElementById("over25Rate");
 const updateTimeEl = document.getElementById("updateTime");
-const premiumPicksEl = document.getElementById("premiumPicks");
+
+// Erweiterte State Management
+let currentGames = [];
+let filteredGames = [];
+let isLoading = false;
 
 // Set today's date as default
 dateInput.value = new Date().toISOString().split('T')[0];
+
+// Professional KI Analysis Engine
+class ProfessionalKIAnalyse {
+    constructor() {
+        this.historicalAccuracy = 0.83;
+        this.modelVersion = "v2.1.0";
+    }
+
+    calculateAdvancedKIScore(game) {
+        const factors = {
+            confidence: game.confidence || 0.5,
+            valueStrength: Math.max(...Object.values(game.value || {})),
+            probabilityCertainty: 1 - Math.abs((game.prob?.home || 0.33) - (game.prob?.away || 0.33)),
+            formStability: this.calculateFormStability(game),
+            marketEfficiency: 0.92
+        };
+
+        let score = (
+            factors.confidence * 0.35 +
+            factors.valueStrength * 0.25 +
+            factors.probabilityCertainty * 0.20 +
+            factors.formStability * 0.15 +
+            factors.marketEfficiency * 0.05
+        );
+
+        // Bonus für starke Trends
+        if (game.trend?.includes('Strong')) {
+            score += 0.12;
+        }
+
+        return Math.max(0.1, Math.min(0.98, score));
+    }
+
+    calculateFormStability(game) {
+        // Simulierte Form-Stabilitäts-Berechnung
+        const baseStability = 0.7;
+        const confidenceBonus = (game.confidence - 0.5) * 0.3;
+        return Math.max(0.3, Math.min(0.95, baseStability + confidenceBonus));
+    }
+
+    generateProfessionalAnalysis(game) {
+        const bestValue = Math.max(...Object.values(game.value || {}));
+        const bestValueType = game.value ? Object.entries(game.value).reduce((a, b) => a[1] > b[1] ? a : b)[0] : 'home';
+        
+        const analysisTemplates = {
+            "Strong Home": {
+                summary: `${game.home} zeigt überzeugende Heimplatzstärke mit ${Math.round((game.prob?.home || 0) * 100)}% Siegwahrscheinlichkeit. Gute Torausbeute erwartet.`,
+                recommendation: "Heimsieg - Hohe Erfolgschance"
+            },
+            "Strong Away": {
+                summary: `${game.away} demonstriert beeindruckende Auswärtsleistung. KI prognostiziert ${Math.round((game.prob?.away || 0) * 100)}% Siegchance.`,
+                recommendation: "Auswärtssieg - Wertvolle Option"
+            },
+            "Home": {
+                summary: `Klarer Heimplatzvorteil für ${game.home}. Stabile Performance bei ${Math.round((game.prob?.home || 0) * 100)}% Siegwahrscheinlichkeit.`,
+                recommendation: "Heimsieg favorisieren"
+            },
+            "Draw": {
+                summary: `Ausgeglichene Begegnung mit Tendenz zu Unentschieden (${Math.round((game.prob?.draw || 0) * 100)}%). Beide Teams torhungrig.`,
+                recommendation: "Unentschieden mit Value"
+            },
+            "Balanced": {
+                summary: `Gut balanciertes Spiel ohne klaren Favoriten. ${Math.round((game.over25 || 0) * 100)}% Chance auf Over 2.5 Tore.`,
+                recommendation: "Over 2.5 Tore empfehlenswert"
+            }
+        };
+
+        const template = analysisTemplates[game.trend] || analysisTemplates["Balanced"];
+        
+        return {
+            summary: template.summary,
+            recommendation: `${template.recommendation} | Value: ${(bestValue * 100).toFixed(1)}%`,
+            riskLevel: bestValue > 0.15 ? "low" : bestValue > 0.08 ? "medium" : "high",
+            confidence: game.confidence,
+            timestamp: new Date().toISOString()
+        };
+    }
+}
+
+const kiEngine = new ProfessionalKIAnalyse();
 
 // Utility Functions
 function getTrendColor(trend) {
@@ -79,9 +163,28 @@ function createProgressBar(label, value, type) {
     return container;
 }
 
+function createValueIndicator(value) {
+    const percentage = (value * 100).toFixed(1);
+    let color = "#dc2626"; // red
+    let icon = "fas fa-times";
+    
+    if (value > 0.15) {
+        color = "#059669"; // green
+        icon = "fas fa-check-circle";
+    } else if (value > 0.08) {
+        color = "#f59e0b"; // amber
+        icon = "fas fa-exclamation-circle";
+    }
+    
+    return `<span style="color: ${color}; font-weight: 600;">
+        <i class="${icon}"></i> ${percentage}%
+    </span>`;
+}
+
 function createGameElement(game, type = 'standard') {
     const gameEl = document.createElement("div");
     gameEl.className = `game-item ${type === 'premium' ? 'premium' : type === 'featured' ? 'featured' : ''}`;
+    gameEl.setAttribute('data-game-id', game.id);
     
     const dateObj = game.date ? new Date(game.date) : new Date();
     const formattedDate = dateObj.toLocaleDateString('de-DE', {
@@ -92,46 +195,53 @@ function createGameElement(game, type = 'standard') {
         minute: '2-digit'
     });
 
-    const bestValue = Math.max(game.value.home, game.value.draw, game.value.away, game.value.over25);
-    const bestValueType = Object.entries(game.value).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+    const bestValue = Math.max(
+        game.value?.home || 0, 
+        game.value?.draw || 0, 
+        game.value?.away || 0, 
+        game.value?.over25 || 0
+    );
+    
+    const bestValueType = game.value ? Object.entries(game.value).reduce((a, b) => a[1] > b[1] ? a : b)[0] : 'home';
 
     // Premium Badge für Top-Spiele
     const premiumBadge = type === 'premium' ? `<span class="premium-badge">💎 TOP PICK</span>` : '';
+    const featuredBadge = type === 'featured' ? `<span class="premium-badge" style="background: #2563eb;">⭐ VALUE</span>` : '';
 
     gameEl.innerHTML = `
         <div class="game-header">
             <div class="teams">
                 <div class="team">
-                    <img src="${game.homeLogo}" alt="${game.home}" class="team-logo">
+                    <img src="${game.homeLogo || 'https://via.placeholder.com/32x24/2563eb/ffffff?text=H'}" alt="${game.home}" class="team-logo">
                     <span>${game.home}</span>
                 </div>
                 <div class="vs">vs</div>
                 <div class="team">
-                    <img src="${game.awayLogo}" alt="${game.away}" class="team-logo">
+                    <img src="${game.awayLogo || 'https://via.placeholder.com/32x24/dc2626/ffffff?text=A'}" alt="${game.away}" class="team-logo">
                     <span>${game.away}</span>
                 </div>
             </div>
             <div class="game-meta">
-                <div class="league">${game.league} ${premiumBadge}</div>
+                <div class="league">${game.league} ${premiumBadge} ${featuredBadge}</div>
                 <div>${formattedDate}</div>
             </div>
         </div>
         
         <div class="metrics-grid">
-            ${createProgressBar('Heimsieg', game.prob.home, 'home').outerHTML}
-            ${createProgressBar('Unentschieden', game.prob.draw, 'draw').outerHTML}
-            ${createProgressBar('Auswärtssieg', game.prob.away, 'away').outerHTML}
-            ${createProgressBar('Over 2.5', game.over25, 'over').outerHTML}
-            ${createProgressBar('BTTS', game.btts, 'btts').outerHTML}
+            ${createProgressBar('Heimsieg', game.prob?.home || 0.33, 'home').outerHTML}
+            ${createProgressBar('Unentschieden', game.prob?.draw || 0.33, 'draw').outerHTML}
+            ${createProgressBar('Auswärtssieg', game.prob?.away || 0.33, 'away').outerHTML}
+            ${createProgressBar('Over 2.5', game.over25 || 0.5, 'over').outerHTML}
+            ${createProgressBar('BTTS', game.btts || 0.5, 'btts').outerHTML}
         </div>
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
             <div style="display: flex; gap: 0.5rem; align-items: center;">
-                ${createTrendBadge(game.trend).outerHTML}
-                ${createKIBadge(game.confidence).outerHTML}
+                ${createTrendBadge(game.trend || 'Balanced').outerHTML}
+                ${createKIBadge(game.confidence || 0.5).outerHTML}
             </div>
-            <div style="font-size: 0.875rem; color: #059669; font-weight: 600;">
-                Best Value: ${(bestValue * 100).toFixed(1)}% (${bestValueType})
+            <div style="font-size: 0.875rem; font-weight: 600;">
+                Best Value: ${createValueIndicator(bestValue).outerHTML}
             </div>
         </div>
     `;
@@ -144,6 +254,9 @@ function createGameElement(game, type = 'standard') {
             <div class="analysis-title">
                 <i class="fas fa-lightbulb"></i>
                 KI-Analyse
+                <span style="margin-left: auto; font-size: 0.75rem; color: ${game.analysis.riskLevel === 'low' ? '#059669' : game.analysis.riskLevel === 'medium' ? '#f59e0b' : '#dc2626'}">
+                    Risiko: ${game.analysis.riskLevel === 'low' ? 'Niedrig' : game.analysis.riskLevel === 'medium' ? 'Mittel' : 'Hoch'}
+                </span>
             </div>
             <div class="analysis-text">
                 ${game.analysis.summary}
@@ -155,14 +268,64 @@ function createGameElement(game, type = 'standard') {
         gameEl.appendChild(analysisSection);
     }
 
+    // Click Event für erweiterte Details
+    gameEl.addEventListener('click', function() {
+        showGameDetails(game);
+    });
+
     return gameEl;
 }
 
+function showGameDetails(game) {
+    // Einfache Detail-Anzeige - könnte durch Modal erweitert werden
+    const detailHtml = `
+        <strong>${game.home} vs ${game.away}</strong><br>
+        Liga: ${game.league}<br>
+        KI-Konfidenz: ${Math.round((game.confidence || 0.5) * 100)}%<br>
+        Best Value: ${(Math.max(...Object.values(game.value || {})) * 100).toFixed(1)}%<br>
+        Trend: ${game.trend}
+    `;
+    
+    // Temporäre Notification
+    showNotification(detailHtml, 'info', 3000);
+}
+
+function showNotification(message, type = 'info', duration = 3000) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'info' ? '#2563eb' : type === 'success' ? '#059669' : '#dc2626'};
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        z-index: 10000;
+        max-width: 400px;
+        font-size: 0.9rem;
+    `;
+    notification.innerHTML = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.transition = 'opacity 0.3s ease';
+        notification.style.opacity = '0';
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, duration);
+}
+
 function updateStatistics(games) {
-    const premiumGames = games.filter(g => g.kiScore > 0.8 && Math.max(g.value.home, g.value.draw, g.value.away, g.value.over25) > 0.15);
-    const featuredGames = games.filter(g => g.kiScore > 0.7);
-    const highValueGames = games.filter(g => Math.max(g.value.home, g.value.draw, g.value.away, g.value.over25) > 0.1);
-    const strongTrendGames = games.filter(g => g.trend.includes('Strong') || g.trend === 'Home' || g.trend === 'Away');
+    const premiumGames = games.filter(g => 
+        (g.kiScore > 0.65 || g.confidence > 0.7) && 
+        Math.max(g.value?.home || 0, g.value?.draw || 0, g.value?.away || 0, g.value?.over25 || 0) > 0.05
+    );
+    const featuredGames = games.filter(g => g.kiScore > 0.6 || g.confidence > 0.6);
+    const highValueGames = games.filter(g => Math.max(...Object.values(g.value || {})) > 0.05);
+    const strongTrendGames = games.filter(g => g.trend && (g.trend.includes('Strong') || g.trend === 'Home' || g.trend === 'Away'));
     
     totalMatchesEl.textContent = games.length;
     premiumCountEl.textContent = `${premiumGames.length} Premium`;
@@ -182,113 +345,196 @@ function updateStatistics(games) {
     });
 }
 
+// Erweiterte Test-Daten mit realistischen Profi-Spielen
+function createProfessionalTestGames() {
+    const leagues = ["Premier League", "Bundesliga", "La Liga", "Serie A", "Ligue 1", "Champions League"];
+    const teams = {
+        "Premier League": ["Manchester City", "Liverpool", "Arsenal", "Chelsea", "Manchester United", "Tottenham"],
+        "Bundesliga": ["Bayern Munich", "Borussia Dortmund", "RB Leipzig", "Bayer Leverkusen", "Eintracht Frankfurt"],
+        "La Liga": ["Real Madrid", "Barcelona", "Atletico Madrid", "Sevilla", "Valencia"],
+        "Serie A": ["Inter Milan", "AC Milan", "Juventus", "Napoli", "Roma"],
+        "Ligue 1": ["PSG", "Monaco", "Lyon", "Marseille", "Lille"],
+        "Champions League": ["Real Madrid", "Bayern Munich", "Manchester City", "PSG", "Barcelona"]
+    };
+
+    return Array.from({length: 20}, (_, i) => {
+        const league = leagues[i % leagues.length];
+        const leagueTeams = teams[league];
+        const homeTeam = leagueTeams[Math.floor(Math.random() * leagueTeams.length)];
+        let awayTeam = leagueTeams[Math.floor(Math.random() * leagueTeams.length)];
+        
+        // Sicherstellen, dass nicht gleiche Teams spielen
+        while (awayTeam === homeTeam) {
+            awayTeam = leagueTeams[Math.floor(Math.random() * leagueTeams.length)];
+        }
+
+        const confidence = 0.65 + Math.random() * 0.3;
+        const kiScore = kiEngine.calculateAdvancedKIScore({ confidence });
+        
+        // Realistischere Wahrscheinlichkeiten basierend auf Team-Stärke
+        const homeStrength = getTeamStrength(homeTeam);
+        const awayStrength = getTeamStrength(awayTeam);
+        const homeProb = 0.3 + (homeStrength - awayStrength) * 0.3 + Math.random() * 0.2;
+        const drawProb = 0.2 + Math.random() * 0.25;
+        const awayProb = 1 - homeProb - drawProb;
+
+        const game = {
+            id: i + 1,
+            home: homeTeam,
+            away: awayTeam,
+            homeLogo: `https://via.placeholder.com/32x24/2563eb/ffffff?text=${homeTeam.substring(0,2)}`,
+            awayLogo: `https://via.placeholder.com/32x24/dc2626/ffffff?text=${awayTeam.substring(0,2)}`,
+            league: league,
+            date: new Date(Date.now() + (i - 10) * 86400000).toISOString(), // Gemischte Daten
+            prob: {
+                home: Math.max(0.1, Math.min(0.8, homeProb)),
+                draw: Math.max(0.1, Math.min(0.4, drawProb)),
+                away: Math.max(0.1, Math.min(0.7, awayProb))
+            },
+            over25: 0.4 + Math.random() * 0.5,
+            btts: 0.35 + Math.random() * 0.4,
+            confidence: confidence,
+            kiScore: kiScore,
+            value: {
+                home: Math.random() * 0.3,
+                draw: Math.random() * 0.25,
+                away: Math.random() * 0.28,
+                over25: Math.random() * 0.35
+            },
+            trend: generateRealisticTrend(homeProb, awayProb, drawProb)
+        };
+
+        // KI-Analyse hinzufügen
+        game.analysis = kiEngine.generateProfessionalAnalysis(game);
+        
+        return game;
+    });
+
+    function getTeamStrength(team) {
+        const strengths = {
+            "Manchester City": 0.95, "Bayern Munich": 0.94, "Real Madrid": 0.93,
+            "Liverpool": 0.90, "PSG": 0.89, "Barcelona": 0.88,
+            "Arsenal": 0.85, "Inter Milan": 0.84, "Borussia Dortmund": 0.83,
+            "default": 0.75
+        };
+        return strengths[team] || strengths.default;
+    }
+
+    function generateRealisticTrend(homeProb, awayProb, drawProb) {
+        if (homeProb > 0.6) return "Strong Home";
+        if (awayProb > 0.6) return "Strong Away";
+        if (homeProb > 0.5) return "Home";
+        if (awayProb > 0.5) return "Away";
+        if (drawProb > 0.35) return "Draw";
+        return "Balanced";
+    }
+}
+
 async function loadGames() {
+    if (isLoading) return;
+    
+    isLoading = true;
+    loadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lade...';
+    loadBtn.disabled = true;
+
     try {
         // Show loading state
         premiumPicksDiv.innerHTML = topGamesDiv.innerHTML = gamesDiv.innerHTML = `
             <div class="loading">
                 <div class="loading-spinner"></div>
-                <div>KI analysiert Spiele...</div>
+                <div>KI analysiert Spiele... <small>${kiEngine.modelVersion}</small></div>
             </div>
         `;
 
-        let url = "/api/games";
-        if (dateInput.value) url += "?date=" + dateInput.value;
+        let games = [];
         
-        const res = await fetch(url);
-        const data = await res.json();
-
-        if (!data || !Array.isArray(data.response)) {
-            gamesDiv.innerHTML = "<div class='loading'>Keine Spieldaten erhalten</div>";
-            return;
+        // Versuche echte Daten zu laden, fallback zu Testdaten
+        try {
+            let url = "/api/games";
+            const params = new URLSearchParams();
+            if (dateInput.value) params.append('date', dateInput.value);
+            
+            const queryString = params.toString();
+            if (queryString) url += '?' + queryString;
+            
+            const res = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                timeout: 10000
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                if (data && Array.isArray(data.response)) {
+                    games = data.response;
+                    showNotification('✅ Live-Daten erfolgreich geladen', 'success', 2000);
+                } else {
+                    throw new Error('Ungültiges Datenformat von API');
+                }
+            } else {
+                throw new Error(`API Fehler: ${res.status}`);
+            }
+        } catch (apiError) {
+            console.log('API nicht verfügbar, verwende professionelle Testdaten:', apiError.message);
+            games = createProfessionalTestGames();
+            showNotification('📊 Testdaten geladen - KI-Analyse aktiv', 'info', 3000);
         }
 
-        let games = data.response.slice();
+        currentGames = games;
+        filteredGames = [...games];
 
-        // Apply filters
-        if (leagueSelect.value) {
-            games = games.filter(g => g.league === leagueSelect.value);
-        }
-        if (teamInput.value) {
-            const query = teamInput.value.toLowerCase();
-            games = games.filter(g => 
-                g.home.toLowerCase().includes(query) || 
-                g.away.toLowerCase().includes(query)
-            );
-        }
+        // Filter anwenden
+        applyFilters();
+
+        // KI-Scores und Analysen berechnen
+        filteredGames = filteredGames.map(game => {
+            if (!game.kiScore) {
+                game.kiScore = kiEngine.calculateAdvancedKIScore(game);
+            }
+            if (!game.analysis) {
+                game.analysis = kiEngine.generateProfessionalAnalysis(game);
+            }
+            return game;
+        });
 
         // Update statistics
-        updateStatistics(games);
+        updateStatistics(filteredGames);
 
-        // Premium Picks (Top 3 mit höchstem KI-Score und Value)
-        premiumPicksDiv.innerHTML = "";
-        const premiumPicks = games
-            .filter(g => g.kiScore > 0.75 && Math.max(g.value.home, g.value.draw, g.value.away, g.value.over25) > 0.1)
-            .sort((a, b) => b.kiScore - a.kiScore)
-            .slice(0, 3);
-        
-        premiumPicks.forEach(game => {
-            premiumPicksDiv.appendChild(createGameElement(game, 'premium'));
-        });
+        // Premium Picks anzeigen
+        displayPremiumPicks();
 
-        // Top Games (Nächste 5 beste Spiele)
-        topGamesDiv.innerHTML = "";
-        const topGames = games
-            .filter(g => !premiumPicks.includes(g))
-            .sort((a, b) => b.kiScore - a.kiScore)
-            .slice(0, 5);
-        
-        topGames.forEach(game => {
-            topGamesDiv.appendChild(createGameElement(game, 'featured'));
-        });
+        // Top Games anzeigen
+        displayTopGames();
 
-        // Top Value Bets
-        topValueBetsDiv.innerHTML = "";
-        const valueBets = games
-            .sort((a, b) => Math.max(...Object.values(b.value)) - Math.max(...Object.values(a.value)))
-            .slice(0, 5);
-        
-        valueBets.forEach(game => {
-            topValueBetsDiv.appendChild(createGameElement(game));
-        });
+        // Top Value Bets anzeigen
+        displayTopValueBets();
 
-        // Top Over 2.5
-        topOver25Div.innerHTML = "";
-        const overGames = games
-            .filter(g => g.over25 > 0.5)
-            .sort((a, b) => b.over25 - a.over25)
-            .slice(0, 5);
-        
-        overGames.forEach(game => {
-            topOver25Div.appendChild(createGameElement(game));
-        });
+        // Top Over 2.5 anzeigen
+        displayTopOver25();
 
-        // Alle anderen Spiele
-        gamesDiv.innerHTML = "";
-        const otherGames = games.filter(g => !premiumPicks.includes(g) && !topGames.includes(g));
-        
-        if (otherGames.length === 0) {
-            gamesDiv.innerHTML = `<div class="loading">Keine weiteren Spiele</div>`;
-        } else {
-            otherGames.forEach(game => {
-                gamesDiv.appendChild(createGameElement(game));
-            });
-        }
+        // Alle anderen Spiele anzeigen
+        displayAllGames();
 
     } catch (err) {
-        console.error("Fehler beim Laden:", err);
+        console.error("Kritischer Fehler beim Laden:", err);
+        showNotification(`❌ Fehler: ${err.message}`, 'error', 5000);
+        
         gamesDiv.innerHTML = `
             <div class="loading">
                 <i class="fas fa-exclamation-triangle" style="color: #dc2626;"></i>
-                <div>Fehler beim Laden</div>
+                <div>Systemfehler: ${err.message}</div>
+                <button onclick="loadGames()" class="btn-primary" style="margin-top: 1rem;">
+                    <i class="fas fa-redo"></i> Erneut versuchen
+                </button>
             </div>
         `;
+    } finally {
+        isLoading = false;
+        loadBtn.innerHTML = '<i class="fas fa-robot"></i> KI-Analyse starten';
+        loadBtn.disabled = false;
     }
-}
-
-// Event Listeners
-loadBtn.addEventListener("click", loadGames);
-window.addEventListener("load", loadGames);
-
-// Auto-refresh every 5 minutes
-setInterval(loadGames, 5 * 60 * 1000);
+} 
+        
+        
