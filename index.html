@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚽ ProFoot Analytics | KI-gestützte Fußballanalyse</title>
+    <title>⚽ ProFoot Analytics | Professionelle KI-Fußballanalyse</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -262,6 +262,12 @@
             border-left-color: var(--secondary);
         }
 
+        .game-item.premium {
+            background: linear-gradient(135deg, #fff, #f0f9ff);
+            border-left-color: var(--accent);
+            border: 2px solid #fef3c7;
+        }
+
         .game-header {
             display: flex;
             justify-content: space-between;
@@ -444,6 +450,17 @@
             color: var(--gray);
         }
 
+        /* Premium Badge */
+        .premium-badge {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
         /* Loading */
         .loading {
             text-align: center;
@@ -515,7 +532,7 @@
                     </div>
                     <div class="logo-text">
                         <h1>ProFoot Analytics</h1>
-                        <div class="subtitle">KI-gestützte Fußballanalyse & Prognosen</div>
+                        <div class="subtitle">Professionelle KI-Fußballanalyse & Value-Betting</div>
                     </div>
                 </div>
                 <div class="stats-bar">
@@ -524,8 +541,8 @@
                         <div class="stat-label">Spiele analysiert</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-value" id="kiAccuracy">94%</div>
-                        <div class="stat-label">KI-Genauigkeit</div>
+                        <div class="stat-value" id="premiumPicks">0</div>
+                        <div class="stat-label">Premium Picks</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-value" id="updateTime">-</div>
@@ -551,12 +568,18 @@
                     </label>
                     <select id="league" class="form-control">
                         <option value="">Alle Ligen</option>
-                        <option value="Premier League">Premier League</option>
-                        <option value="Bundesliga">Bundesliga</option>
-                        <option value="La Liga">La Liga</option>
-                        <option value="Serie A">Serie A</option>
-                        <option value="Ligue 1">Ligue 1</option>
-                        <option value="Champions League">Champions League</option>
+                        <option value="Premier League">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
+                        <option value="La Liga">🇪🇸 La Liga</option>
+                        <option value="Bundesliga">🇩🇪 Bundesliga</option>
+                        <option value="Serie A">🇮🇹 Serie A</option>
+                        <option value="Ligue 1">🇫🇷 Ligue 1</option>
+                        <option value="Championship">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Championship</option>
+                        <option value="Primeira Liga">🇵🇹 Primeira Liga</option>
+                        <option value="European Championship">🇪🇺 European Championship</option>
+                        <option value="Champions League">⭐ Champions League</option>
+                        <option value="Europa League">🌍 Europa League</option>
+                        <option value="Eredivisie">🇳🇱 Eredivisie</option>
+                        <option value="Campeonato Brasileiro Série A">🇧🇷 Brasileirão</option>
                     </select>
                 </div>
                 
@@ -577,15 +600,27 @@
         <div class="main-content">
             <!-- Left Column -->
             <div class="main-column">
+                <!-- Premium Picks -->
+                <section class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-crown" style="color: #f59e0b;"></i>
+                            💎 Premium KI-Picks
+                        </h2>
+                        <span class="card-badge" id="premiumCount">Top 3</span>
+                    </div>
+                    <div class="game-list" id="premiumPicks"></div>
+                </section>
+
                 <!-- Featured Games -->
                 <section class="card">
                     <div class="card-header">
                         <h2 class="card-title">
-                            <i class="fas fa-star"></i> Top KI-Empfehlungen
+                            <i class="fas fa-star"></i> Top Value Spiele
                         </h2>
-                        <span class="card-badge" id="featuredCount">3 Spiele</span>
+                        <span class="card-badge" id="featuredCount">5 Spiele</span>
                     </div>
-                    <div class="game-list" id="top3"></div>
+                    <div class="game-list" id="topGames"></div>
                 </section>
 
                 <!-- All Games -->
@@ -606,10 +641,10 @@
                 <section class="card">
                     <div class="card-header">
                         <h2 class="card-title">
-                            <i class="fas fa-chart-line"></i> Value Bets
+                            <i class="fas fa-chart-line"></i> Beste Value-Wetten
                         </h2>
                     </div>
-                    <div class="game-list" id="top7Value"></div>
+                    <div class="game-list" id="topValueBets"></div>
                 </section>
 
                 <!-- Over 2.5 -->
@@ -619,14 +654,14 @@
                             <i class="fas fa-bullseye"></i> Top Over 2.5
                         </h2>
                     </div>
-                    <div class="game-list" id="top5Over25"></div>
+                    <div class="game-list" id="topOver25"></div>
                 </section>
-
-                <!-- Quick Stats -->
+                
+                    <!-- Quick Stats -->
                 <section class="card">
                     <div class="card-header">
                         <h2 class="card-title">
-                            <i class="fas fa-chart-bar"></i> Statistik
+                            <i class="fas fa-chart-bar"></i> Live-Statistik
                         </h2>
                     </div>
                     <div class="quick-stats">
