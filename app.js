@@ -84,115 +84,6 @@ function createProgressBar(label, value, type) {
     return container;
 }
 
-// Torschützen-Anzeige erstellen
-function createGoalscorerDisplay(goalscorers) {
-    if (!goalscorers || !goalscorers.anytime) return '';
-
-    const container = document.createElement('div');
-    container.className = 'goalscorer-section';
-    container.style.marginTop = '1rem';
-    container.style.padding = '1rem';
-    container.style.background = '#f8fafc';
-    container.style.borderRadius = '8px';
-    container.style.border = '1px solid #e2e8f0';
-
-    // Header
-    const header = document.createElement('div');
-    header.className = 'goalscorer-header';
-    header.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
-            <i class="fas fa-futbol" style="color: #059669;"></i>
-            <h4 style="margin: 0; font-size: 1rem; color: #1f2937;">KI-Torschützen Prognose</h4>
-        </div>
-    `;
-    container.appendChild(header);
-
-    // Top Anytime Scorer
-    const anytimeSection = document.createElement('div');
-    anytimeSection.innerHTML = `
-        <div style="font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">
-            ⚽ Jeder Torschütze (Top 3)
-        </div>
-    `;
-
-    const topAnytime = [...(goalscorers.anytime.home || []), ...(goalscorers.anytime.away || [])]
-        .sort((a, b) => b.probability - a.probability)
-        .slice(0, 3);
-
-    topAnytime.forEach(scorer => {
-        const scorerEl = document.createElement('div');
-        scorerEl.style.display = 'flex';
-        scorerEl.style.justifyContent = 'space-between';
-        scorerEl.style.alignItems = 'center';
-        scorerEl.style.padding = '0.5rem';
-        scorerEl.style.marginBottom = '0.25rem';
-        scorerEl.style.background = 'white';
-        scorerEl.style.borderRadius = '4px';
-        scorerEl.style.fontSize = '0.8rem';
-
-        scorerEl.innerHTML = `
-            <div>
-                <strong>${scorer.name}</strong>
-                <span style="color: #6b7280; font-size: 0.75rem; margin-left: 0.5rem;">
-                    ${Math.round(scorer.probability * 100)}%
-                </span>
-            </div>
-            <div style="display: flex; gap: 1rem; align-items: center;">
-                <span style="color: #059669; font-weight: 600;">${scorer.odds}</span>
-                <span style="color: ${scorer.value > 0.1 ? '#059669' : scorer.value > 0 ? '#f59e0b' : '#ef4444'}; 
-                              font-size: 0.7rem; font-weight: 600;">
-                    ${(scorer.value * 100).toFixed(1)}%
-                </span>
-            </div>
-        `;
-        anytimeSection.appendChild(scorerEl);
-    });
-
-    container.appendChild(anytimeSection);
-
-    // Best Value Bets
-    if (goalscorers.bestValue && goalscorers.bestValue.length > 0) {
-        const valueSection = document.createElement('div');
-        valueSection.style.marginTop = '1rem';
-        valueSection.innerHTML = `
-            <div style="font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">
-                💎 Beste Value-Wetten
-            </div>
-        `;
-
-        goalscorers.bestValue.slice(0, 2).forEach(bet => {
-            const betEl = document.createElement('div');
-            betEl.style.display = 'flex';
-            betEl.style.justifyContent = 'space-between';
-            betEl.style.alignItems = 'center';
-            betEl.style.padding = '0.5rem';
-            betEl.style.background = '#dcfce7';
-            betEl.style.borderRadius = '4px';
-            betEl.style.marginBottom = '0.25rem';
-            betEl.style.fontSize = '0.8rem';
-            betEl.style.border = '1px solid #bbf7d0';
-
-            betEl.innerHTML = `
-                <div>
-                    <strong>${bet.player}</strong>
-                    <div style="color: #6b7280; font-size: 0.7rem;">${bet.type}</div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="color: #059669; font-weight: 600;">${bet.odds}</div>
-                    <div style="color: #059669; font-size: 0.7rem; font-weight: 600;">
-                        +${(bet.value * 100).toFixed(1)}% Value
-                    </div>
-                </div>
-            `;
-            valueSection.appendChild(betEl);
-        });
-
-        container.appendChild(valueSection);
-    }
-
-    return container;
-}
-
 function createGameElement(game, featured = false) {
     const gameEl = document.createElement("div");
     gameEl.className = `game-item ${featured ? 'featured' : ''}`;
@@ -272,14 +163,6 @@ function createGameElement(game, featured = false) {
         gameEl.appendChild(analysisSection);
     }
 
-    // Torschützen anzeigen
-    if (game.goalscorers) {
-        const goalscorerDisplay = createGoalscorerDisplay(game.goalscorers);
-        if (goalscorerDisplay) {
-            gameEl.appendChild(goalscorerDisplay);
-        }
-    }
-
     return gameEl;
 }
 
@@ -315,7 +198,7 @@ async function loadGames() {
         gamesDiv.innerHTML = `
             <div class="loading">
                 <div class="loading-spinner"></div>
-                <div>KI analysiert Spiele und Torschützen...</div>
+                <div>KI analysiert Spiele...</div>
             </div>
         `;
 
