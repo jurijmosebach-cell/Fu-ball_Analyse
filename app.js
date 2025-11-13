@@ -1,309 +1,295 @@
+// DOM Elements
 const top3Div = document.getElementById("top3");
 const top7ValueDiv = document.getElementById("top7Value");
 const top5OverDiv = document.getElementById("top5Over25");
 const gamesDiv = document.getElementById("games");
-const top10Div = document.getElementById("top10");
 const loadBtn = document.getElementById("loadBtn");
 const dateInput = document.getElementById("date");
 const leagueSelect = document.getElementById("league");
 const teamInput = document.getElementById("team");
 
-// Heutiges Datum setzen
+// Statistic Elements
+const totalMatchesEl = document.getElementById("totalMatches");
+const featuredCountEl = document.getElementById("featuredCount");
+const allGamesCountEl = document.getElementById("allGamesCount");
+const avgConfidenceEl = document.getElementById("avgConfidence");
+const highValueBetsEl = document.getElementById("highValueBets");
+const strongTrendsEl = document.getElementById("strongTrends");
+const over25RateEl = document.getElementById("over25Rate");
+const updateTimeEl = document.getElementById("updateTime");
+
+// Set today's date as default
 dateInput.value = new Date().toISOString().split('T')[0];
 
-function createBar(label, value, color){
-  const wrap = document.createElement("div");
-  wrap.className = "bar-container";
-  const bar = document.createElement("div");
-  bar.className = "bar";
-  const pct = Math.round((value || 0) * 100);
-  bar.style.width = `${pct}%`;
-  bar.style.background = color;
-  bar.textContent = `${label} ${pct}%`;
-  wrap.appendChild(bar);
-  return wrap;
+// Utility Functions
+function getTrendColor(trend) {
+    const colors = {
+        "Strong Home": "#059669",
+        "Home": "#16a34a", 
+        "Slight Home": "#22c55e",
+        "Strong Away": "#dc2626",
+        "Away": "#ef4444",
+        "Slight Away": "#f97316",
+        "Draw": "#f59e0b",
+        "Balanced": "#6b7280"
+    };
+    return colors[trend] || "#6b7280";
 }
 
-function getTrafficColor(value, trend){
-  if (trend.includes("Strong")) {
-    return trend.includes("Home") ? "#059669" : "#dc2626";
-  }
-  if (trend.includes("Home")) return "#16a34a";
-  if (trend.includes("Away")) return "#ef4444";
-  if (trend === "Draw") return "#f59e0b";
-  if (trend === "Balanced") return "#6b7280";
-  if (trend.includes("Slight")) {
-    return trend.includes("Home") ? "#22c55e" : "#f97316";
-  }
-  
-  if(value > 0.15) return '#16a34a';
-  if(value > 0) return '#f59e0b';
-  return '#ef4444';
+function getTrendIcon(trend) {
+    const icons = {
+        "Strong Home": "fas fa-arrow-up",
+        "Home": "fas fa-arrow-up",
+        "Slight Home": "fas fa-arrow-up-right",
+        "Strong Away": "fas fa-arrow-up",
+        "Away": "fas fa-arrow-up", 
+        "Slight Away": "fas fa-arrow-up-right",
+        "Draw": "fas fa-minus",
+        "Balanced": "fas fa-equals"
+    };
+    return icons[trend] || "fas fa-chart-line";
 }
 
-function createTrendArrow(trend){
-  const span = document.createElement("span");
-  span.style.marginLeft = "8px";
-  span.style.fontWeight = "bold";
-  span.style.fontSize = "1.1em";
-  
-  if(trend === "Strong Home") {
-    span.textContent = "⬆️⬆️ Strong Home";
-    span.style.color = "#059669";
-  } else if(trend === "Home") {
-    span.textContent = "⬆️ Home";
-    span.style.color = "#16a34a";
-  } else if(trend === "Slight Home") {
-    span.textContent = "↗️ Slight Home";
-    span.style.color = "#22c55e";
-  } else if(trend === "Strong Away") {
-    span.textContent = "⬆️⬆️ Strong Away";
-    span.style.color = "#dc2626";
-  } else if(trend === "Away") {
-    span.textContent = "⬆️ Away";
-    span.style.color = "#ef4444";
-  } else if(trend === "Slight Away") {
-    span.textContent = "↗️ Slight Away";
-    span.style.color = "#f97316";
-  } else if(trend === "Draw") {
-    span.textContent = "➡️ Draw";
-    span.style.color = "#f59e0b";
-  } else if(trend === "Balanced") {
-    span.textContent = "⚖️ Balanced";
-    span.style.color = "#6b7280";
-  } else {
-    span.textContent = `➡️ ${trend}`;
-    span.style.color = "#6b7280";
-  }
-  return span;
+function createKIBadge(confidence) {
+    const badge = document.createElement("span");
+    badge.className = `ki-badge ${confidence > 0.8 ? 'ki-high' : confidence > 0.6 ? 'ki-medium' : 'ki-low'}`;
+    badge.innerHTML = `<i class="fas fa-robot"></i> ${Math.round(confidence * 100)}%`;
+    badge.title = `KI-Konfidenz: ${Math.round(confidence * 100)}%`;
+    return badge;
 }
 
-function createKIBadge(confidence, kiScore) {
-  const badge = document.createElement("span");
-  badge.style.marginLeft = "8px";
-  badge.style.padding = "2px 6px";
-  badge.style.borderRadius = "4px";
-  badge.style.fontSize = "0.8em";
-  badge.style.fontWeight = "bold";
-  
-  let color, text;
-  if (confidence > 0.8) {
-    color = "#059669";
-    text = "🤖 HIGH";
-  } else if (confidence > 0.6) {
-    color = "#f59e0b";
-    text = "🤖 MED";
-  } else {
-    color = "#ef4444";
-    text = "🤖 LOW";
-  }
-  
-  badge.style.background = color;
-  badge.style.color = "white";
-  badge.textContent = text;
-  badge.title = `KI-Konfidenz: ${Math.round(confidence * 100)}%`;
-  
-  return badge;
+function createTrendBadge(trend) {
+    const badge = document.createElement("span");
+    badge.className = `trend-indicator trend-${trend.toLowerCase().includes('home') ? 'home' : trend.toLowerCase().includes('away') ? 'away' : trend.toLowerCase().includes('draw') ? 'draw' : 'balanced'}`;
+    badge.innerHTML = `<i class="${getTrendIcon(trend)}"></i> ${trend}`;
+    return badge;
 }
 
-function renderTop10(games){
-  top10Div.innerHTML = "";
-  const top10Games = games.slice().map(g => {
-    const maxWin = Math.max(g.prob.home, g.prob.away, g.prob.draw);
-    const trend = g.trend;
-    return {...g, maxWin, trend};
-  }).sort((a,b) => b.maxWin - a.maxWin).slice(0,10);
-
-  top10Games.forEach(g => {
-    const div = document.createElement("div");
-    div.className = "game top10";
+function createProgressBar(label, value, type) {
+    const percentage = Math.round(value * 100);
     
-    let borderColor = "#6b7280";
-    if (g.trend.includes("Home")) borderColor = "#16a34a";
-    else if (g.trend.includes("Away")) borderColor = "#ef4444";
-    else if (g.trend === "Draw") borderColor = "#f59e0b";
+    const container = document.createElement("div");
+    container.className = "metric";
     
-    div.style.borderLeft = `6px solid ${borderColor}`;
-    div.style.padding = "6px 8px";
-    div.style.marginBottom = "6px";
-    div.style.borderRadius = "4px";
-    div.style.backgroundColor = "#f9fafb";
-
-    const title = document.createElement("div");
-    title.innerHTML = `<strong>${g.home}</strong> vs <strong>${g.away}</strong> (${g.league})`;
-    title.appendChild(createTrendArrow(g.trend));
-    title.appendChild(createKIBadge(g.confidence, g.kiScore));
-
-    let highestProbType = "home";
-    let highestProbValue = g.prob.home;
-    if (g.prob.away > highestProbValue) {
-      highestProbType = "away";
-      highestProbValue = g.prob.away;
-    }
-    if (g.prob.draw > highestProbValue) {
-      highestProbType = "draw";
-      highestProbValue = g.prob.draw;
-    }
-
-    const bar = createBar(
-      highestProbType.charAt(0).toUpperCase() + highestProbType.slice(1), 
-      highestProbValue, 
-      highestProbType === "home" ? "#16a34a" : highestProbType === "away" ? "#ef4444" : "#f59e0b"
-    );
-
-    // KI-Analyse anzeigen
-    const analysisDiv = document.createElement("div");
-    analysisDiv.style.fontSize = "0.85em";
-    analysisDiv.style.color = "#6b7280";
-    analysisDiv.style.marginTop = "4px";
-    analysisDiv.innerHTML = `<strong>KI-Analyse:</strong> ${g.analysis?.summary || "Analyse verfügbar"}`;
-
-    div.appendChild(title);
-    div.appendChild(bar);
-    div.appendChild(analysisDiv);
-    top10Div.appendChild(div);
-  });
+    container.innerHTML = `
+        <div class="metric-label">
+            <span>${label}</span>
+            <span class="metric-value">${percentage}%</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill progress-${type}" style="width: ${percentage}%"></div>
+        </div>
+    `;
+    
+    return container;
 }
 
-async function loadGames(){
-  try {
-    let url = "/api/games";
-    if(dateInput.value) url += "?date=" + dateInput.value;
+function createGameElement(game, featured = false) {
+    const gameEl = document.createElement("div");
+    gameEl.className = `game-item ${featured ? 'featured' : ''}`;
     
-    // Lade-Animation
-    gamesDiv.innerHTML = "<p>🤖 KI analysiert Spiele...</p>";
-    
-    const res = await fetch(url);
-    const data = await res.json();
-
-    if(!data || !Array.isArray(data.response)){
-      gamesDiv.innerHTML = "<p>Fehler: keine Spieldaten erhalten.</p>";
-      return;
-    }
-
-    let games = data.response.slice();
-
-    if(leagueSelect.value) games = games.filter(g => g.league === leagueSelect.value);
-    if(teamInput.value){
-      const q = teamInput.value.toLowerCase();
-      games = games.filter(g => g.home.toLowerCase().includes(q) || g.away.toLowerCase().includes(q));
-    }
-
-    renderTop10(games);
-
-    // Top3
-    top3Div.innerHTML = "";
-    const topGames = games.slice(0,3);
-    topGames.forEach(g => {
-      g.btts = g.btts ?? 0;
-      const div = document.createElement("div");
-      div.className = "game top3";
-      const dateObj = g.date ? new Date(g.date) : new Date();
-      
-      const bestVal = Math.max(g.value.home, g.value.draw, g.value.away);
-      const color = getTrafficColor(bestVal, g.trend);
-      
-      div.style.borderLeft = `6px solid ${color}`;
-      div.innerHTML = `<div><strong>${g.home}</strong> vs <strong>${g.away}</strong> (${g.league}) - <span class="date">${dateObj.toLocaleString()}</span></div>
-        <div class="team"><img src="${g.homeLogo}" alt=""> ${g.home} xG:${g.homeXG} | Trend:${g.trend}</div>
-        <div class="team"><img src="${g.awayLogo}" alt=""> ${g.away} xG:${g.awayXG} | Trend:${g.trend}</div>
-      `;
-      
-      div.appendChild(createBar("Home", g.prob?.home ?? 0, "#4caf50"));
-      div.appendChild(createBar("Draw", g.prob?.draw ?? 0, "#f59e0b"));
-      div.appendChild(createBar("Away", g.prob?.away ?? 0, "#ef4444"));
-      div.appendChild(createBar("Over 2.5", g.prob?.over25 ?? 0, "#2196f3"));
-      div.appendChild(createBar("Under 2.5", g.prob ? (1 - (g.prob.over25 ?? 0)) : 0, "#8b5cf6"));
-      div.appendChild(createBar("BTTS", g.btts ?? 0, "#ff7a00"));
-
-      // KI-Info hinzufügen
-      const kiInfo = document.createElement("div");
-      kiInfo.style.marginTop = "8px";
-      kiInfo.style.padding = "6px";
-      kiInfo.style.background = "#f3f4f6";
-      kiInfo.style.borderRadius = "4px";
-      kiInfo.style.fontSize = "0.9em";
-      kiInfo.innerHTML = `<strong>🤖 KI-Empfehlung:</strong> ${g.analysis?.recommendation || "Keine spezifische Empfehlung"} | Confidence: ${Math.round((g.confidence || 0.5) * 100)}%`;
-      
-      div.appendChild(kiInfo);
-      top3Div.appendChild(div);
+    const dateObj = game.date ? new Date(game.date) : new Date();
+    const formattedDate = dateObj.toLocaleDateString('de-DE', {
+        weekday: 'short',
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
     });
 
-    // Top7 Value
-    top7ValueDiv.innerHTML = "";
-    const top7 = games.slice(0,7);
-    top7.forEach(g => {
-      const div = document.createElement("div");
-      div.className = "game";
-      const dateObj = g.date ? new Date(g.date) : new Date();
-      
-      const bestVal = Math.max(g.value.home, g.value.draw, g.value.away);
-      const color = getTrafficColor(bestVal, g.trend);
-      
-      div.style.borderLeft = `6px solid ${color}`;
-      div.innerHTML = `${g.home} vs ${g.away} (${g.league}) → Value ${bestVal.toFixed(2)} | Trend: ${g.trend}`;
-      div.appendChild(createKIBadge(g.confidence, g.kiScore));
-      top7ValueDiv.appendChild(div);
-    });
+    // Calculate best value
+    const bestValue = Math.max(game.value.home, game.value.draw, game.value.away, game.value.over25, game.value.under25);
+    const bestValueType = bestValue === game.value.home ? 'home' : 
+                         bestValue === game.value.draw ? 'draw' : 
+                         bestValue === game.value.away ? 'away' :
+                         bestValue === game.value.over25 ? 'over25' : 'under25';
 
-    // Top5 Over
-    top5OverDiv.innerHTML = "";
-    const top5Over = games.slice()
-      .filter(g => (g.prob?.over25 ?? 0) > 0.35)
-      .sort((a,b) => (b.prob?.over25 ?? 0) - (a.prob?.over25 ?? 0))
-      .slice(0,5);
+    gameEl.innerHTML = `
+        <div class="game-header">
+            <div class="teams">
+                <div class="team">
+                    <img src="${game.homeLogo}" alt="${game.home}" class="team-logo">
+                    <span>${game.home}</span>
+                </div>
+                <div class="vs">vs</div>
+                <div class="team">
+                    <img src="${game.awayLogo}" alt="${game.away}" class="team-logo">
+                    <span>${game.away}</span>
+                </div>
+            </div>
+            <div class="game-meta">
+                <div class="league">${game.league}</div>
+                <div>${formattedDate}</div>
+            </div>
+        </div>
+        
+        <div class="metrics-grid">
+            ${createProgressBar('Heimsieg', game.prob.home, 'home').outerHTML}
+            ${createProgressBar('Unentschieden', game.prob.draw, 'draw').outerHTML}
+            ${createProgressBar('Auswärtssieg', game.prob.away, 'away').outerHTML}
+            ${createProgressBar('Over 2.5', game.over25, 'over').outerHTML}
+            ${createProgressBar('BTTS', game.btts, 'btts').outerHTML}
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                ${createTrendBadge(game.trend).outerHTML}
+                ${createKIBadge(game.confidence).outerHTML}
+            </div>
+            <div style="font-size: 0.875rem; color: #059669; font-weight: 600;">
+                Best Value: ${(bestValue * 100).toFixed(1)}% (${bestValueType})
+            </div>
+        </div>
+    `;
 
-    top5Over.forEach(g => {
-      const div = document.createElement("div");
-      div.className = "game";
-      
-      const overProb = g.prob?.over25 ?? 0;
-      let borderColor = "#2196f3";
-      if (overProb > 0.7) borderColor = "#1e40af";
-      else if (overProb > 0.55) borderColor = "#3b82f6";
-      
-      div.style.borderLeft = `6px solid ${borderColor}`;
-      
-      const overPercentage = Math.round(overProb * 100);
-      div.innerHTML = `${g.home} vs ${g.away} (${g.league}) → Over 2.5: ${overPercentage}% | Trend: ${g.trend}`;
-      div.appendChild(createKIBadge(g.confidence, g.kiScore));
-      
-      top5OverDiv.appendChild(div);
-    });
+    // Add analysis section for featured games
+    if (featured && game.analysis) {
+        const analysisSection = document.createElement("div");
+        analysisSection.className = "analysis-section";
+        analysisSection.innerHTML = `
+            <div class="analysis-title">
+                <i class="fas fa-lightbulb"></i>
+                KI-Analyse
+            </div>
+            <div class="analysis-text">
+                ${game.analysis.summary}
+            </div>
+            ${game.analysis.recommendation ? `
+            <div style="margin-top: 0.5rem; font-size: 0.875rem; font-weight: 600; color: #2563eb;">
+                <i class="fas fa-check-circle"></i> Empfehlung: ${game.analysis.recommendation}
+            </div>
+            ` : ''}
+        `;
+        gameEl.appendChild(analysisSection);
+    }
 
-    // Alle anderen Spiele
-    gamesDiv.innerHTML = "";
-    const otherGames = games.slice(3);
-    otherGames.forEach(g => {
-      g.btts = g.btts ?? 0;
-      const div = document.createElement("div");
-      div.className = "game";
-      const dateObj = g.date ? new Date(g.date) : new Date();
-      
-      const bestVal = Math.max(g.value.home, g.value.draw, g.value.away);
-      const color = getTrafficColor(bestVal, g.trend);
-      
-      div.style.borderLeft = `6px solid ${color}`;
-      div.innerHTML = `<div><strong>${g.home}</strong> vs <strong>${g.away}</strong> (${g.league}) - <span class="date">${dateObj.toLocaleString()}</span></div>
-        <div class="team"><img src="${g.homeLogo}" alt=""> ${g.home} xG:${g.homeXG} | Trend:${g.trend}</div>
-        <div class="team"><img src="${g.awayLogo}" alt=""> ${g.away} xG:${g.awayXG} | Trend:${g.trend}</div>
-      `;
-      
-      div.appendChild(createBar("Home", g.prob?.home ?? 0, "#4caf50"));
-      div.appendChild(createBar("Draw", g.prob?.draw ?? 0, "#f59e0b"));
-      div.appendChild(createBar("Away", g.prob?.away ?? 0, "#ef4444"));
-      div.appendChild(createBar("Over 2.5", g.prob?.over25 ?? 0, "#2196f3"));
-      div.appendChild(createBar("Under 2.5", g.prob ? (1 - (g.prob.over25 ?? 0)) : 0, "#8b5cf6"));
-      div.appendChild(createBar("BTTS", g.btts ?? 0, "#ff7a00"));
-
-      gamesDiv.appendChild(div);
-    });
-
-  } catch (err) {
-    console.error("Fehler beim Laden:", err);
-    gamesDiv.innerHTML = "<p>Fehler beim Laden der Spiele. Siehe Konsole.</p>";
-  }
+    return gameEl;
 }
 
+function updateStatistics(games) {
+    // Basic counts
+    totalMatchesEl.textContent = games.length;
+    featuredCountEl.textContent = `${Math.min(3, games.length)} Spiele`;
+    allGamesCountEl.textContent = `${games.length} Spiele`;
+
+    // Advanced statistics
+    const avgConfidence = games.reduce((sum, game) => sum + (game.confidence || 0.5), 0) / games.length;
+    const highValueBets = games.filter(game => 
+        Math.max(game.value.home, game.value.draw, game.value.away, game.value.over25) > 0.1
+    ).length;
+    const strongTrends = games.filter(game => 
+        game.trend.includes('Strong') || game.trend === 'Home' || game.trend === 'Away'
+    ).length;
+    const over25Rate = games.reduce((sum, game) => sum + (game.over25 || 0), 0) / games.length;
+
+    avgConfidenceEl.textContent = `${Math.round(avgConfidence * 100)}%`;
+    highValueBetsEl.textContent = highValueBets;
+    strongTrendsEl.textContent = strongTrends;
+    over25RateEl.textContent = `${Math.round(over25Rate * 100)}%`;
+    updateTimeEl.textContent = new Date().toLocaleTimeString('de-DE', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+}
+
+async function loadGames() {
+    try {
+        // Show loading state
+        gamesDiv.innerHTML = `
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <div>KI analysiert Spiele...</div>
+            </div>
+        `;
+
+        let url = "/api/games";
+        if (dateInput.value) url += "?date=" + dateInput.value;
+        
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (!data || !Array.isArray(data.response)) {
+            gamesDiv.innerHTML = "<div class='loading'>Fehler: Keine Spieldaten erhalten</div>";
+            return;
+        }
+
+        let games = data.response.slice();
+
+        // Apply filters
+        if (leagueSelect.value) {
+            games = games.filter(g => g.league === leagueSelect.value);
+        }
+        if (teamInput.value) {
+            const query = teamInput.value.toLowerCase();
+            games = games.filter(g => 
+                g.home.toLowerCase().includes(query) || 
+                g.away.toLowerCase().includes(query)
+            );
+        }
+
+        // Update statistics
+        updateStatistics(games);
+
+        // Render featured games (Top 3)
+        top3Div.innerHTML = "";
+        const featuredGames = games.slice(0, 3);
+        featuredGames.forEach(game => {
+            top3Div.appendChild(createGameElement(game, true));
+        });
+
+        // Render value bets (Top 7)
+        top7ValueDiv.innerHTML = "";
+        const valueGames = games
+            .slice()
+            .sort((a, b) => {
+                const aValue = Math.max(a.value.home, a.value.draw, a.value.away, a.value.over25);
+                const bValue = Math.max(b.value.home, b.value.draw, b.value.away, b.value.over25);
+                return bValue - aValue;
+            })
+            .slice(0, 7);
+        
+        valueGames.forEach(game => {
+            top7ValueDiv.appendChild(createGameElement(game));
+        });
+
+        // Render over 2.5 games
+        top5OverDiv.innerHTML = "";
+        const overGames = games
+            .slice()
+            .filter(g => (g.over25 || 0) > 0.35)
+            .sort((a, b) => (b.over25 || 0) - (a.over25 || 0))
+            .slice(0, 5);
+        
+        overGames.forEach(game => {
+            top5OverDiv.appendChild(createGameElement(game));
+        });
+
+        // Render all games
+        gamesDiv.innerHTML = "";
+        const otherGames = games.slice(3);
+        if (otherGames.length === 0) {
+            gamesDiv.innerHTML = `<div class="loading">Keine weiteren Spiele gefunden</div>`;
+        } else {
+            otherGames.forEach(game => {
+                gamesDiv.appendChild(createGameElement(game));
+            });
+        }
+
+    } catch (err) {
+        console.error("Fehler beim Laden:", err);
+        gamesDiv.innerHTML = `
+            <div class="loading">
+                <i class="fas fa-exclamation-triangle" style="color: #dc2626; font-size: 2rem; margin-bottom: 1rem;"></i>
+                <div>Fehler beim Laden der Spiele</div>
+                <div style="font-size: 0.875rem; margin-top: 0.5rem;">Bitte überprüfe die Konsole für Details</div>
+            </div>
+        `;
+    }
+}
+
+// Event Listeners
 loadBtn.addEventListener("click", loadGames);
 window.addEventListener("load", loadGames);
+
+// Auto-refresh every 5 minutes
+setInterval(loadGames, 5 * 60 * 1000);
