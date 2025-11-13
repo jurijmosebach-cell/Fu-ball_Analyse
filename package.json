@@ -1,31 +1,26 @@
 {
   "name": "xg-value-tool",
-  "version": "2.0.0",
-  "description": "KI-gestütztes xG-Value- und Trendanalyse-Tool für professionelle Fußballwetten",
+  "version": "3.1.0",
+  "description": "Professionelle KI-Fußballanalyse mit Torschützen",
   "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js",
-    "build": "echo 'No build step required for Render'"
+    "dev": "node --watch server.js"
   },
   "dependencies": {
     "express": "^4.19.2",
-    "node-fetch": "^3.3.2",
-    "simple-statistics": "^7.8.3"
+    "node-fetch": "^3.3.2"
   },
   "engines": {
     "node": ">=18"
   },
   "keywords": [
     "football",
-    "xg",
-    "betting",
     "analysis",
-    "trend",
-    "value",
-    "machine-learning",
-    "ai"
+    "betting",
+    "ki",
+    "goalscorer"
   ],
   "author": "Dein Name",
   "license": "MIT"
