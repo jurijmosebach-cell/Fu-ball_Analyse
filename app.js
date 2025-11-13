@@ -1,7 +1,8 @@
 // DOM Elements
-const top3Div = document.getElementById("top3");
-const top7ValueDiv = document.getElementById("top7Value");
-const top5OverDiv = document.getElementById("top5Over25");
+const premiumPicksDiv = document.getElementById("premiumPicks");
+const topGamesDiv = document.getElementById("topGames");
+const topValueBetsDiv = document.getElementById("topValueBets");
+const topOver25Div = document.getElementById("topOver25");
 const gamesDiv = document.getElementById("games");
 const loadBtn = document.getElementById("loadBtn");
 const dateInput = document.getElementById("date");
@@ -10,6 +11,7 @@ const teamInput = document.getElementById("team");
 
 // Statistic Elements
 const totalMatchesEl = document.getElementById("totalMatches");
+const premiumCountEl = document.getElementById("premiumCount");
 const featuredCountEl = document.getElementById("featuredCount");
 const allGamesCountEl = document.getElementById("allGamesCount");
 const avgConfidenceEl = document.getElementById("avgConfidence");
@@ -17,6 +19,7 @@ const highValueBetsEl = document.getElementById("highValueBets");
 const strongTrendsEl = document.getElementById("strongTrends");
 const over25RateEl = document.getElementById("over25Rate");
 const updateTimeEl = document.getElementById("updateTime");
+const premiumPicksEl = document.getElementById("premiumPicks");
 
 // Set today's date as default
 dateInput.value = new Date().toISOString().split('T')[0];
@@ -36,38 +39,30 @@ function getTrendColor(trend) {
     return colors[trend] || "#6b7280";
 }
 
-function getTrendIcon(trend) {
-    const icons = {
-        "Strong Home": "fas fa-arrow-up",
-        "Home": "fas fa-arrow-up",
-        "Slight Home": "fas fa-arrow-up-right",
-        "Strong Away": "fas fa-arrow-up",
-        "Away": "fas fa-arrow-up", 
-        "Slight Away": "fas fa-arrow-up-right",
-        "Draw": "fas fa-minus",
-        "Balanced": "fas fa-equals"
-    };
-    return icons[trend] || "fas fa-chart-line";
-}
-
 function createKIBadge(confidence) {
     const badge = document.createElement("span");
     badge.className = `ki-badge ${confidence > 0.8 ? 'ki-high' : confidence > 0.6 ? 'ki-medium' : 'ki-low'}`;
     badge.innerHTML = `<i class="fas fa-robot"></i> ${Math.round(confidence * 100)}%`;
-    badge.title = `KI-Konfidenz: ${Math.round(confidence * 100)}%`;
     return badge;
 }
 
 function createTrendBadge(trend) {
     const badge = document.createElement("span");
     badge.className = `trend-indicator trend-${trend.toLowerCase().includes('home') ? 'home' : trend.toLowerCase().includes('away') ? 'away' : trend.toLowerCase().includes('draw') ? 'draw' : 'balanced'}`;
-    badge.innerHTML = `<i class="${getTrendIcon(trend)}"></i> ${trend}`;
+    
+    const icons = {
+        "Strong Home": "fas fa-arrow-up", "Home": "fas fa-arrow-up",
+        "Slight Home": "fas fa-arrow-up-right", "Strong Away": "fas fa-arrow-up",
+        "Away": "fas fa-arrow-up", "Slight Away": "fas fa-arrow-up-right",
+        "Draw": "fas fa-minus", "Balanced": "fas fa-equals"
+    };
+    
+    badge.innerHTML = `<i class="${icons[trend] || 'fas fa-chart-line'}"></i> ${trend}`;
     return badge;
 }
 
 function createProgressBar(label, value, type) {
     const percentage = Math.round(value * 100);
-    
     const container = document.createElement("div");
     container.className = "metric";
     
@@ -84,9 +79,9 @@ function createProgressBar(label, value, type) {
     return container;
 }
 
-function createGameElement(game, featured = false) {
+function createGameElement(game, type = 'standard') {
     const gameEl = document.createElement("div");
-    gameEl.className = `game-item ${featured ? 'featured' : ''}`;
+    gameEl.className = `game-item ${type === 'premium' ? 'premium' : type === 'featured' ? 'featured' : ''}`;
     
     const dateObj = game.date ? new Date(game.date) : new Date();
     const formattedDate = dateObj.toLocaleDateString('de-DE', {
@@ -97,12 +92,11 @@ function createGameElement(game, featured = false) {
         minute: '2-digit'
     });
 
-    // Calculate best value
-    const bestValue = Math.max(game.value.home, game.value.draw, game.value.away, game.value.over25, game.value.under25);
-    const bestValueType = bestValue === game.value.home ? 'home' : 
-                         bestValue === game.value.draw ? 'draw' : 
-                         bestValue === game.value.away ? 'away' :
-                         bestValue === game.value.over25 ? 'over25' : 'under25';
+    const bestValue = Math.max(game.value.home, game.value.draw, game.value.away, game.value.over25);
+    const bestValueType = Object.entries(game.value).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+
+    // Premium Badge für Top-Spiele
+    const premiumBadge = type === 'premium' ? `<span class="premium-badge">💎 TOP PICK</span>` : '';
 
     gameEl.innerHTML = `
         <div class="game-header">
@@ -118,7 +112,7 @@ function createGameElement(game, featured = false) {
                 </div>
             </div>
             <div class="game-meta">
-                <div class="league">${game.league}</div>
+                <div class="league">${game.league} ${premiumBadge}</div>
                 <div>${formattedDate}</div>
             </div>
         </div>
@@ -142,8 +136,8 @@ function createGameElement(game, featured = false) {
         </div>
     `;
 
-    // Add analysis section for featured games
-    if (featured && game.analysis) {
+    // Analysis section für Premium und Featured Games
+    if ((type === 'premium' || type === 'featured') && game.analysis) {
         const analysisSection = document.createElement("div");
         analysisSection.className = "analysis-section";
         analysisSection.innerHTML = `
@@ -154,11 +148,9 @@ function createGameElement(game, featured = false) {
             <div class="analysis-text">
                 ${game.analysis.summary}
             </div>
-            ${game.analysis.recommendation ? `
             <div style="margin-top: 0.5rem; font-size: 0.875rem; font-weight: 600; color: #2563eb;">
-                <i class="fas fa-check-circle"></i> Empfehlung: ${game.analysis.recommendation}
+                <i class="fas fa-check-circle"></i> ${game.analysis.recommendation}
             </div>
-            ` : ''}
         `;
         gameEl.appendChild(analysisSection);
     }
@@ -167,24 +159,22 @@ function createGameElement(game, featured = false) {
 }
 
 function updateStatistics(games) {
-    // Basic counts
+    const premiumGames = games.filter(g => g.kiScore > 0.8 && Math.max(g.value.home, g.value.draw, g.value.away, g.value.over25) > 0.15);
+    const featuredGames = games.filter(g => g.kiScore > 0.7);
+    const highValueGames = games.filter(g => Math.max(g.value.home, g.value.draw, g.value.away, g.value.over25) > 0.1);
+    const strongTrendGames = games.filter(g => g.trend.includes('Strong') || g.trend === 'Home' || g.trend === 'Away');
+    
     totalMatchesEl.textContent = games.length;
-    featuredCountEl.textContent = `${Math.min(3, games.length)} Spiele`;
+    premiumCountEl.textContent = `${premiumGames.length} Premium`;
+    featuredCountEl.textContent = `${featuredGames.length} Spiele`;
     allGamesCountEl.textContent = `${games.length} Spiele`;
 
-    // Advanced statistics
     const avgConfidence = games.reduce((sum, game) => sum + (game.confidence || 0.5), 0) / games.length;
-    const highValueBets = games.filter(game => 
-        Math.max(game.value.home, game.value.draw, game.value.away, game.value.over25) > 0.1
-    ).length;
-    const strongTrends = games.filter(game => 
-        game.trend.includes('Strong') || game.trend === 'Home' || game.trend === 'Away'
-    ).length;
     const over25Rate = games.reduce((sum, game) => sum + (game.over25 || 0), 0) / games.length;
 
     avgConfidenceEl.textContent = `${Math.round(avgConfidence * 100)}%`;
-    highValueBetsEl.textContent = highValueBets;
-    strongTrendsEl.textContent = strongTrends;
+    highValueBetsEl.textContent = highValueGames.length;
+    strongTrendsEl.textContent = strongTrendGames.length;
     over25RateEl.textContent = `${Math.round(over25Rate * 100)}%`;
     updateTimeEl.textContent = new Date().toLocaleTimeString('de-DE', { 
         hour: '2-digit', 
@@ -195,7 +185,7 @@ function updateStatistics(games) {
 async function loadGames() {
     try {
         // Show loading state
-        gamesDiv.innerHTML = `
+        premiumPicksDiv.innerHTML = topGamesDiv.innerHTML = gamesDiv.innerHTML = `
             <div class="loading">
                 <div class="loading-spinner"></div>
                 <div>KI analysiert Spiele...</div>
@@ -209,7 +199,7 @@ async function loadGames() {
         const data = await res.json();
 
         if (!data || !Array.isArray(data.response)) {
-            gamesDiv.innerHTML = "<div class='loading'>Fehler: Keine Spieldaten erhalten</div>";
+            gamesDiv.innerHTML = "<div class='loading'>Keine Spieldaten erhalten</div>";
             return;
         }
 
@@ -230,45 +220,55 @@ async function loadGames() {
         // Update statistics
         updateStatistics(games);
 
-        // Render featured games (Top 3)
-        top3Div.innerHTML = "";
-        const featuredGames = games.slice(0, 3);
-        featuredGames.forEach(game => {
-            top3Div.appendChild(createGameElement(game, true));
-        });
-
-        // Render value bets (Top 7)
-        top7ValueDiv.innerHTML = "";
-        const valueGames = games
-            .slice()
-            .sort((a, b) => {
-                const aValue = Math.max(a.value.home, a.value.draw, a.value.away, a.value.over25);
-                const bValue = Math.max(b.value.home, b.value.draw, b.value.away, b.value.over25);
-                return bValue - aValue;
-            })
-            .slice(0, 7);
+        // Premium Picks (Top 3 mit höchstem KI-Score und Value)
+        premiumPicksDiv.innerHTML = "";
+        const premiumPicks = games
+            .filter(g => g.kiScore > 0.75 && Math.max(g.value.home, g.value.draw, g.value.away, g.value.over25) > 0.1)
+            .sort((a, b) => b.kiScore - a.kiScore)
+            .slice(0, 3);
         
-        valueGames.forEach(game => {
-            top7ValueDiv.appendChild(createGameElement(game));
+        premiumPicks.forEach(game => {
+            premiumPicksDiv.appendChild(createGameElement(game, 'premium'));
         });
 
-        // Render over 2.5 games
-        top5OverDiv.innerHTML = "";
+        // Top Games (Nächste 5 beste Spiele)
+        topGamesDiv.innerHTML = "";
+        const topGames = games
+            .filter(g => !premiumPicks.includes(g))
+            .sort((a, b) => b.kiScore - a.kiScore)
+            .slice(0, 5);
+        
+        topGames.forEach(game => {
+            topGamesDiv.appendChild(createGameElement(game, 'featured'));
+        });
+
+        // Top Value Bets
+        topValueBetsDiv.innerHTML = "";
+        const valueBets = games
+            .sort((a, b) => Math.max(...Object.values(b.value)) - Math.max(...Object.values(a.value)))
+            .slice(0, 5);
+        
+        valueBets.forEach(game => {
+            topValueBetsDiv.appendChild(createGameElement(game));
+        });
+
+        // Top Over 2.5
+        topOver25Div.innerHTML = "";
         const overGames = games
-            .slice()
-            .filter(g => (g.over25 || 0) > 0.35)
-            .sort((a, b) => (b.over25 || 0) - (a.over25 || 0))
+            .filter(g => g.over25 > 0.5)
+            .sort((a, b) => b.over25 - a.over25)
             .slice(0, 5);
         
         overGames.forEach(game => {
-            top5OverDiv.appendChild(createGameElement(game));
+            topOver25Div.appendChild(createGameElement(game));
         });
 
-        // Render all games
+        // Alle anderen Spiele
         gamesDiv.innerHTML = "";
-        const otherGames = games.slice(3);
+        const otherGames = games.filter(g => !premiumPicks.includes(g) && !topGames.includes(g));
+        
         if (otherGames.length === 0) {
-            gamesDiv.innerHTML = `<div class="loading">Keine weiteren Spiele gefunden</div>`;
+            gamesDiv.innerHTML = `<div class="loading">Keine weiteren Spiele</div>`;
         } else {
             otherGames.forEach(game => {
                 gamesDiv.appendChild(createGameElement(game));
@@ -279,9 +279,8 @@ async function loadGames() {
         console.error("Fehler beim Laden:", err);
         gamesDiv.innerHTML = `
             <div class="loading">
-                <i class="fas fa-exclamation-triangle" style="color: #dc2626; font-size: 2rem; margin-bottom: 1rem;"></i>
-                <div>Fehler beim Laden der Spiele</div>
-                <div style="font-size: 0.875rem; margin-top: 0.5rem;">Bitte überprüfe die Konsole für Details</div>
+                <i class="fas fa-exclamation-triangle" style="color: #dc2626;"></i>
+                <div>Fehler beim Laden</div>
             </div>
         `;
     }
