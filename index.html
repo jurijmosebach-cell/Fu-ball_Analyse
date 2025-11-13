@@ -3,113 +3,267 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Football Dashboard</title>
+<title>🤖 KI Football Analysis Tool</title>
 <style>
+  :root {
+    --bg1: #e8f7fb;
+    --bg2: #ffffff;
+    --accent: #4caf50;
+    --muted: #6b7280;
+    --card: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+  
   body {
-    font-family: Arial, sans-serif;
-    background-color: #f3f4f6;
-    color: #111;
     margin: 0;
-    padding: 0 10px;
+    font-family: Inter, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: linear-gradient(135deg, var(--bg1), var(--bg2));
+    color: #111827;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  h1, h2 {
-    text-align: center;
+  
+  .container {
+    max-width: 1100px;
+    margin: 24px auto;
+    padding: 20px;
   }
-  .filters {
+  
+  header h1 { 
+    margin: 0; 
+    text-align: center; 
+    font-size: 1.8rem;
+    background: linear-gradient(135deg, #4caf50, #2196f3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .subtitle {
+    text-align: center; 
+    color: var(--muted); 
+    margin-top: 6px; 
+    margin-bottom: 16px;
+  }
+
+  .controls {
     display: flex;
-    justify-content: center;
     flex-wrap: wrap;
     gap: 10px;
-    margin-bottom: 10px;
+    justify-content: center;
+    margin-bottom: 18px;
   }
-  input, select, button {
-    padding: 6px 10px;
-    font-size: 1em;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-  }
-  #top10, #top3, #top7Value, #top5Over25, #games {
-    margin-bottom: 20px;
-  }
-  .game {
-    background-color: #fff;
-    padding: 8px;
-    margin-bottom: 6px;
-    border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  }
-  .game.top10 {
+  
+  .controls label {
     display: flex;
     flex-direction: column;
+    font-size: 0.85rem;
+    color: var(--muted);
   }
+  
+  .controls input[type="date"], .controls input[type="text"], .controls select {
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #e6e9ef;
+    background: #fff;
+    min-width: 150px;
+  }
+  
+  button#loadBtn {
+    padding: 9px 14px;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 6px 18px rgba(76,175,80,0.18);
+    cursor: pointer;
+    align-self: end;
+  }
+  
+  button#loadBtn:hover {
+    transform: translateY(-1px);
+  }
+
+  main { margin-top: 18px; }
+  
+  .games { display: flex; flex-direction: column; gap: 12px; }
+  
+  .game {
+    background: var(--card);
+    padding: 14px;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(15,23,42,0.06);
+    border-left: 6px solid #e5e7eb;
+    transition: transform .12s;
+  }
+  
+  .game:hover { transform: translateY(-4px); }
+  
+  .game.top3 {
+    padding: 18px;
+    border-radius: 12px;
+    font-weight: 600;
+  }
+  
+  .two-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 12px;
+  }
+  
+  .list div {
+    background: var(--card);
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    box-shadow: 0 4px 12px rgba(12,15,20,0.04);
+  }
+
   .team {
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin: 2px 0;
+    gap: 8px;
+    margin-top: 8px;
+    color: #374151;
+    font-weight: 600;
   }
+  
   .team img {
-    width: 24px;
+    width: 26px;
     height: 18px;
+    object-fit: cover;
+    border-radius: 3px;
   }
+  
+  .date {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-top: 6px;
+  }
+
   .bar-container {
-    width: 100%;
-    background-color: #e5e7eb;
-    border-radius: 4px;
-    margin: 2px 0;
-    height: 18px;
-    position: relative;
+    background: #eef2f6;
+    height: 14px;
+    border-radius: 8px;
+    margin-top: 8px;
+    overflow: hidden;
   }
+  
   .bar {
     height: 100%;
-    border-radius: 4px;
-    line-height: 18px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    padding-left: 8px;
     color: #fff;
-    text-align: right;
-    padding-right: 4px;
-    font-size: 0.85em;
-    box-sizing: border-box;
+    font-weight: 600;
+    font-size: 12px;
   }
+  
+  .home-bar { background: #4caf50; }
+  .draw-bar { background: #f59e0b; }
+  .away-bar { background: #ef4444; }
+  .over25-bar { background: #2196f3; }
+  .under25-bar { background: #8b5cf6; }
+  .btts-bar { background: #ff7a00; }
+
+  footer {
+    margin-top: 18px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  /* responsive */
+  @media (max-width: 900px) {
+    .two-column { grid-template-columns: 1fr; }
+    .controls { justify-content: space-between; padding: 0 12px; }
+    .container { padding: 12px; }
+  }
+
+  .ki-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7em;
+    font-weight: bold;
+    margin-left: 8px;
+  }
+  
+  .ki-high { background: #059669; color: white; }
+  .ki-medium { background: #f59e0b; color: white; }
+  .ki-low { background: #ef4444; color: white; }
 </style>
 </head>
 <body>
 
-<h1>Football Dashboard</h1>
+<div class="container">
+  <header>
+    <h1>🤖 KI Football Analysis Tool v2.0</h1>
+    <div class="subtitle">Maschinelles Lernen für präzise Spielanalysen und Prognosen</div>
+  </header>
 
-<div class="filters">
-  <input type="date" id="date">
-  <select id="league">
-    <option value="">Alle Ligen</option>
-    <option value="Premier League">Premier League</option>
-    <option value="Bundesliga">Bundesliga</option>
-    <option value="La Liga">La Liga</option>
-    <option value="Serie A">Serie A</option>
-    <option value="Ligue 1">Ligue 1</option>
-    <option value="Champions League">Champions League</option>
-    <option value="Eredivisie">Eredivisie</option>
-    <option value="Campeonato Brasileiro Série A">Brasileirão</option>
-    <option value="Championship">Championship</option>
-    <option value="Primeira Liga">Primeira Liga</option>
-    <option value="European Championship">EM</option>
-  </select>
-  <input type="text" id="team" placeholder="Team suchen">
-  <button id="loadBtn">Spiele laden</button>
+  <div class="controls">
+    <label>
+      Datum
+      <input type="date" id="date">
+    </label>
+    
+    <label>
+      Liga
+      <select id="league">
+        <option value="">Alle Ligen</option>
+        <option value="Premier League">Premier League</option>
+        <option value="Bundesliga">Bundesliga</option>
+        <option value="La Liga">La Liga</option>
+        <option value="Serie A">Serie A</option>
+        <option value="Ligue 1">Ligue 1</option>
+        <option value="Champions League">Champions League</option>
+        <option value="Eredivisie">Eredivisie</option>
+        <option value="Campeonato Brasileiro Série A">Brasileirão</option>
+        <option value="Championship">Championship</option>
+        <option value="Primeira Liga">Primeira Liga</option>
+        <option value="European Championship">EM</option>
+      </select>
+    </label>
+    
+    <label>
+      Team suchen
+      <input type="text" id="team" placeholder="Team Name">
+    </label>
+    
+    <button id="loadBtn">🤖 Spiele analysieren</button>
+  </div>
+
+  <main>
+    <h2>🎯 Top 10 KI-Empfehlungen</h2>
+    <div id="top10"></div>
+
+    <div class="two-column">
+      <div>
+        <h2>🏆 Top 3 Spiele</h2>
+        <div id="top3"></div>
+      </div>
+      
+      <div>
+        <h2>💎 Top 7 Value Spiele</h2>
+        <div id="top7Value"></div>
+      </div>
+    </div>
+
+    <h2>⚡ Top 5 Over 2.5</h2>
+    <div id="top5Over25"></div>
+
+    <h2>📊 Alle Spiele</h2>
+    <div id="games"></div>
+  </main>
+
+  <footer>
+    <p>🤖 KI Football Analysis Tool v2.0 | Maschinelles Lernen für präzise Prognosen</p>
+  </footer>
 </div>
-
-<h2>Top 10 nach Siegwahrscheinlichkeit</h2>
-<div id="top10"></div>
-
-<h2>Top 3 Spiele</h2>
-<div id="top3"></div>
-
-<h2>Top 7 Value Spiele</h2>
-<div id="top7Value"></div>
-
-<h2>Top 5 Over 2.5</h2>
-<div id="top5Over25"></div>
-
-<h2>Alle Spiele</h2>
-<div id="games"></div>
 
 <script src="app.js"></script>
 
