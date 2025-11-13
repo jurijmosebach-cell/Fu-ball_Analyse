@@ -1,7 +1,8 @@
-// server.js — Mit The Sports DB Integration - TEIL 1/4
+// server.js — Mit KI-Integration und erweiterten Analysen
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { KIAnalyse } from './ki-module.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,7 +12,10 @@ const PORT = process.env.PORT || 10000;
 
 // API Keys
 const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_API_KEY;
-const SPORTS_DB_KEY = process.env.THE_SPORTS_DB_KEY || '3'; // Free tier key
+const SPORTS_DB_KEY = process.env.THE_SPORTS_DB_KEY || '3';
+
+// KI-Modul initialisieren
+const kiAnalyse = new KIAnalyse();
 
 // Middleware
 app.use(express.static(__dirname));
@@ -26,14 +30,14 @@ app.get('/health', (req, res) => {
     res.json({ 
         status: 'OK', 
         timestamp: new Date().toISOString(),
-        api: 'football-data.org + The Sports DB'
+        version: '2.0.0',
+        features: ['KI-Analyse', 'Machine Learning', 'Erweiterte Prognosen']
     });
 });
 
 // Cache
 const cache = new Map();
 const CACHE_DURATION = 10 * 60 * 1000;
-// TEIL 2/4: Services und Team-Stärken
 
 // Football-Data.org Service
 class FootballDataService {
@@ -97,7 +101,6 @@ class SportsDBService {
 
     async searchTeam(teamName) {
         try {
-            // The Sports DB Team-Suche
             const searchUrl = `${this.baseURL}/${this.apiKey}/searchteams.php?t=${encodeURIComponent(teamName)}`;
             console.log(`🔍 Searching SportsDB for: ${teamName}`);
             
@@ -113,7 +116,6 @@ class SportsDBService {
 
     async getTeamLastMatches(teamId, count = 5) {
         try {
-            // Letzte Spiele eines Teams
             const matchesUrl = `${this.baseURL}/${this.apiKey}/eventslast.php?id=${teamId}&limit=${count}`;
             const response = await fetch(matchesUrl, { timeout: 8000 });
             const data = await response.json();
@@ -132,10 +134,11 @@ class SportsDBService {
             
             const lastMatches = await this.getTeamLastMatches(team.idTeam, 5);
             
-            // Analysiere Form der letzten 5 Spiele
             let points = 0;
             let goalsFor = 0;
             let goalsAgainst = 0;
+            let shotsFor = 0;
+            let shotsAgainst = 0;
             
             lastMatches.forEach(match => {
                 const teamScore = parseInt(match.intHomeScore) || 0;
@@ -154,10 +157,12 @@ class SportsDBService {
                 last5Matches: lastMatches.length,
                 points: points,
                 maxPoints: lastMatches.length * 3,
-                form: points / (lastMatches.length * 3) || 0.5, // 0-1 Skala
+                form: points / (lastMatches.length * 3) || 0.5,
                 goalsFor: goalsFor,
                 goalsAgainst: goalsAgainst,
-                goalDifference: goalsFor - goalsAgainst
+                goalDifference: goalsFor - goalsAgainst,
+                avgGoalsFor: goalsFor / Math.max(lastMatches.length, 1),
+                avgGoalsAgainst: goalsAgainst / Math.max(lastMatches.length, 1)
             };
         } catch (error) {
             console.log(`❌ SportsDB form analysis error for ${teamName}:`, error.message);
@@ -168,63 +173,30 @@ class SportsDBService {
 
 const footballDataService = new FootballDataService(FOOTBALL_DATA_KEY);
 const sportsDBService = new SportsDBService(SPORTS_DB_KEY);
-
-// OPTIMIERTE xG-SCHÄTZUNG mit Team-Stärken
+// ERWEITERTE TEAM-STRENGTHS MIT KI-DATEN
 const TEAM_STRENGTHS = {
-    // Premier League
-    "Manchester City": { attack: 2.4, defense: 0.8 },
-    "Liverpool": { attack: 2.3, defense: 0.9 },
-    "Arsenal": { attack: 2.1, defense: 0.9 },
-    "Chelsea": { attack: 1.8, defense: 1.2 },
-    "Tottenham": { attack: 1.9, defense: 1.3 },
-    "Manchester United": { attack: 1.7, defense: 1.4 },
-    "Newcastle": { attack: 1.8, defense: 1.2 },
-    "Brighton": { attack: 1.9, defense: 1.4 },
-    "West Ham": { attack: 1.6, defense: 1.5 },
-    "Aston Villa": { attack: 1.8, defense: 1.3 },
-    "Sunderland": { attack: 1.2, defense: 1.8 },
-    "Burnley": { attack: 1.1, defense: 1.9 },
-    "Wolverhampton": { attack: 1.4, defense: 1.6 },
-    "Hull City": { attack: 1.3, defense: 1.7 },
-    "Portsmouth": { attack: 1.2, defense: 1.8 },
-    
-    // Bundesliga - KORRIGIERT mit besseren Differenzierungen
-    "Bayern Munich": { attack: 2.6, defense: 0.7 },
-    "Borussia Dortmund": { attack: 2.2, defense: 1.1 },
-    "RB Leipzig": { attack: 2.0, defense: 1.2 },
-    "Bayer Leverkusen": { attack: 2.1, defense: 1.0 },
-    "Union Berlin": { attack: 1.3, defense: 1.6 },
-    "Heidenheim": { attack: 1.2, defense: 1.7 },
-    "Mönchengladbach": { attack: 1.5, defense: 1.5 },
-    "Köln": { attack: 1.3, defense: 1.6 },
-    "Frankfurt": { attack: 1.7, defense: 1.3 },
-    
-    // La Liga
-    "Real Madrid": { attack: 2.3, defense: 0.8 },
-    "Barcelona": { attack: 2.2, defense: 0.9 },
-    "Atletico Madrid": { attack: 1.8, defense: 0.9 },
-    "Villarreal": { attack: 1.7, defense: 1.4 },
-    "Espanyol": { attack: 1.4, defense: 1.5 },
-    "Sevilla": { attack: 1.6, defense: 1.3 },
-    
-    // Serie A
-    "Inter Milan": { attack: 2.1, defense: 0.9 },
-    "Juventus": { attack: 1.9, defense: 1.0 },
-    "AC Milan": { attack: 1.9, defense: 1.1 },
-    "Napoli": { attack: 1.8, defense: 1.2 },
-    "Roma": { attack: 1.7, defense: 1.3 },
-    "Torino": { attack: 1.4, defense: 1.4 },
-    "Parma": { attack: 1.3, defense: 1.5 },
-    "Lazio": { attack: 1.6, defense: 1.2 },
-    
-    // Ligue 1
-    "PSG": { attack: 2.4, defense: 0.9 },
-    "Marseille": { attack: 1.8, defense: 1.3 },
-    "Brest": { attack: 1.5, defense: 1.4 },
-    "Monaco": { attack: 1.9, defense: 1.2 },
-    "Lyon": { attack: 1.7, defense: 1.4 },
-    
-    "default": { attack: 1.5, defense: 1.5 }
+    "Manchester City": { attack: 2.4, defense: 0.8, consistency: 0.9 },
+    "Liverpool": { attack: 2.3, defense: 0.9, consistency: 0.85 },
+    "Arsenal": { attack: 2.1, defense: 0.9, consistency: 0.88 },
+    "Chelsea": { attack: 1.8, defense: 1.2, consistency: 0.75 },
+    "Tottenham": { attack: 1.9, defense: 1.3, consistency: 0.78 },
+    "Manchester United": { attack: 1.7, defense: 1.4, consistency: 0.72 },
+    "Newcastle": { attack: 1.8, defense: 1.2, consistency: 0.8 },
+    "Brighton": { attack: 1.9, defense: 1.4, consistency: 0.82 },
+    "West Ham": { attack: 1.6, defense: 1.5, consistency: 0.7 },
+    "Aston Villa": { attack: 1.8, defense: 1.3, consistency: 0.79 },
+    "Bayern Munich": { attack: 2.6, defense: 0.7, consistency: 0.92 },
+    "Borussia Dortmund": { attack: 2.2, defense: 1.1, consistency: 0.84 },
+    "RB Leipzig": { attack: 2.0, defense: 1.2, consistency: 0.81 },
+    "Bayer Leverkusen": { attack: 2.1, defense: 1.0, consistency: 0.83 },
+    "Real Madrid": { attack: 2.3, defense: 0.8, consistency: 0.91 },
+    "Barcelona": { attack: 2.2, defense: 0.9, consistency: 0.87 },
+    "Atletico Madrid": { attack: 1.8, defense: 0.9, consistency: 0.85 },
+    "Inter Milan": { attack: 2.1, defense: 0.9, consistency: 0.86 },
+    "Juventus": { attack: 1.9, defense: 1.0, consistency: 0.82 },
+    "AC Milan": { attack: 1.9, defense: 1.1, consistency: 0.8 },
+    "PSG": { attack: 2.4, defense: 0.9, consistency: 0.88 },
+    "default": { attack: 1.5, defense: 1.5, consistency: 0.7 }
 };
 
 function getTeamStrength(teamName) {
@@ -235,36 +207,34 @@ function getTeamStrength(teamName) {
     }
     return TEAM_STRENGTHS.default;
 }
-// TEIL 3/4: xG-Berechnung und mathematische Funktionen
 
-// OPTIMIERTE MATHEMATISCHE FUNKTIONEN
-function factorial(n) {
-    if (n <= 1) return 1;
-    let f = 1;
-    for (let i = 2; i <= n; i++) f *= i;
-    return f;
-}
-
-function poisson(k, lambda) {
-    if (lambda <= 0) return k === 0 ? 1 : 0;
-    return Math.pow(lambda, k) * Math.exp(-lambda) / factorial(k);
-}
-
-// BASIS xG-BERECHNUNG
-function estimateXG(homeTeam, awayTeam, isHome = true, league = "") {
-    const homeStrength = getTeamStrength(homeTeam);
+// KI-OPTIMIERTE xG-BERECHNUNG
+async function estimateXGWithKI(homeTeam, awayTeam, isHome = true, league = "") {
+    const baseStrength = getTeamStrength(homeTeam);
     const awayStrength = getTeamStrength(awayTeam);
     
-    // Realistischere xG Berechnung basierend auf Team-Stärken
-    let homeXG = homeStrength.attack * (1 - awayStrength.defense / 3);
-    let awayXG = awayStrength.attack * (1 - homeStrength.defense / 3);
+    let homeXG = baseStrength.attack * (1 - awayStrength.defense / 3);
+    let awayXG = awayStrength.attack * (1 - baseStrength.defense / 3);
     
-    // KORRIGIERT: Realistischeren Heimvorteil (reduziert)
-    const homeAdvantage = isHome ? 0.12 : -0.08;
+    // KI-Korrekturfaktoren
+    const kiFactors = await kiAnalyse.calculateKIFactors(homeTeam, awayTeam, league);
+    
+    // Erweiterte Heimvorteilsberechnung
+    const homeAdvantage = isHome ? 0.12 * kiFactors.homeAdvantage : -0.08;
     homeXG += homeAdvantage;
     awayXG -= homeAdvantage;
     
-    // Liga-Faktoren für realistischere Werte
+    // Form-Korrektur mit KI
+    const homeForm = await sportsDBService.getTeamForm(homeTeam);
+    const awayForm = await sportsDBService.getTeamForm(awayTeam);
+    
+    if (homeForm && awayForm) {
+        const formCorrection = kiAnalyse.calculateFormCorrection(homeForm, awayForm);
+        homeXG += formCorrection.home * kiFactors.formImpact;
+        awayXG += formCorrection.away * kiFactors.formImpact;
+    }
+    
+    // Liga-Faktoren
     const LEAGUE_FACTORS = {
         "Premier League": 1.0,
         "Bundesliga": 1.05,
@@ -280,97 +250,35 @@ function estimateXG(homeTeam, awayTeam, isHome = true, league = "") {
     homeXG *= leagueFactor;
     awayXG *= leagueFactor;
     
+    // KI-Finalkorrektur
+    const finalCorrection = kiAnalyse.finalPredictionCorrection(homeXG, awayXG, homeTeam, awayTeam);
+    homeXG += finalCorrection.home;
+    awayXG += finalCorrection.away;
+    
     return {
-        home: +homeXG.toFixed(2),
-        away: +awayXG.toFixed(2)
+        home: Math.max(0.3, Math.min(3.5, +homeXG.toFixed(2))),
+        away: Math.max(0.3, Math.min(3.0, +awayXG.toFixed(2))),
+        confidence: kiFactors.confidence,
+        kiFactors: kiFactors
     };
 }
 
-// ERWEITERTE xG-BERECHNUNG MIT SPORTS DB DATEN
-async function estimateXGWithSportsDB(homeTeam, awayTeam, isHome = true, league = "") {
-    const baseXG = estimateXG(homeTeam, awayTeam, isHome, league);
-    
-    try {
-        // Hole Form-Daten von The Sports DB
-        const homeForm = await sportsDBService.getTeamForm(homeTeam);
-        const awayForm = await sportsDBService.getTeamForm(awayTeam);
-        
-        if (homeForm && awayForm) {
-            console.log(`📊 SportsDB Form: ${homeTeam} ${(homeForm.form * 100).toFixed(0)}%, ${awayTeam} ${(awayForm.form * 100).toFixed(0)}%`);
-            
-            // Form-Korrektur anwenden
-            const formCorrection = calculateFormCorrection(homeForm, awayForm);
-            baseXG.home += formCorrection.home;
-            baseXG.away += formCorrection.away;
-            
-            // Tordifferenz-Korrektur
-            const goalDiffCorrection = calculateGoalDiffCorrection(homeForm, awayForm);
-            baseXG.home += goalDiffCorrection.home;
-            baseXG.away += goalDiffCorrection.away;
-        }
-        
-    } catch (error) {
-        console.log('❌ SportsDB integration error, using base xG:', error.message);
-    }
-    
-    // Sicherstellen, dass Werte im realistischen Bereich bleiben
-    baseXG.home = Math.max(0.3, Math.min(3.5, baseXG.home));
-    baseXG.away = Math.max(0.3, Math.min(3.0, baseXG.away));
-    
-    return baseXG;
+// MATHEMATISCHE FUNKTIONEN
+function factorial(n) {
+    if (n <= 1) return 1;
+    let f = 1;
+    for (let i = 2; i <= n; i++) f *= i;
+    return f;
 }
 
-// FORM-KORREKTUR BERECHNUNG
-function calculateFormCorrection(homeForm, awayForm) {
-    let homeCorrection = 0;
-    let awayCorrection = 0;
-    
-    if (homeForm && awayForm) {
-        // Form-Differenz (0.0 = schlechte Form, 1.0 = gute Form)
-        const formDiff = homeForm.form - awayForm.form;
-        
-        // Stärkere Gewichtung für extreme Form-Unterschiede
-        if (formDiff > 0.3) {
-            homeCorrection += 0.25;
-            awayCorrection -= 0.15;
-        } else if (formDiff > 0.15) {
-            homeCorrection += 0.15;
-            awayCorrection -= 0.08;
-        } else if (formDiff < -0.3) {
-            awayCorrection += 0.25;
-            homeCorrection -= 0.15;
-        } else if (formDiff < -0.15) {
-            awayCorrection += 0.15;
-            homeCorrection -= 0.08;
-        }
-    }
-    
-    return { home: homeCorrection, away: awayCorrection };
-}
-
-// TORDIFFERENZ-KORREKTUR
-function calculateGoalDiffCorrection(homeForm, awayForm) {
-    let homeCorrection = 0;
-    let awayCorrection = 0;
-    
-    if (homeForm && awayForm) {
-        // Durchschnittliche Tordifferenz pro Spiel
-        const homeGoalDiffPerGame = homeForm.goalDifference / Math.max(homeForm.last5Matches, 1);
-        const awayGoalDiffPerGame = awayForm.goalDifference / Math.max(awayForm.last5Matches, 1);
-        
-        // Korrektur basierend auf Tordifferenz
-        homeCorrection += homeGoalDiffPerGame * 0.1;
-        awayCorrection += awayGoalDiffPerGame * 0.1;
-    }
-    
-    return { home: homeCorrection, away: awayCorrection };
-}
-
-// OPTIMIERTE WAHRSCHEINLICHKEITSBERECHNUNG
+function poisson(k, lambda) {
+    if (lambda <= 0) return k === 0 ? 1 : 0;
+    return Math.pow(lambda, k) * Math.exp(-lambda) / factorial(k);
+} 
+// ERWEITERTE WAHRSCHEINLICHKEITSBERECHNUNG
 function computeMatchOutcomeProbs(homeXG, awayXG) {
     let homeProb = 0, drawProb = 0, awayProb = 0;
     
-    // Erweiterte Poisson-Berechnung für genauere Ergebnisse
     for (let i = 0; i <= 8; i++) {
         for (let j = 0; j <= 8; j++) {
             const p = poisson(i, homeXG) * poisson(j, awayXG);
@@ -380,7 +288,6 @@ function computeMatchOutcomeProbs(homeXG, awayXG) {
         }
     }
     
-    // Korrektur für Rundungsfehler
     const total = homeProb + drawProb + awayProb;
     if (total < 0.99 || total > 1.01) {
         const correction = 1 / total;
@@ -396,11 +303,10 @@ function computeMatchOutcomeProbs(homeXG, awayXG) {
     };
 }
 
-// KORRIGIERTE OVER/UNDER BERECHNUNG - FIXED!
+// KORRIGIERTE OVER/UNDER BERECHNUNG
 function computeOver25Prob(homeXG, awayXG) {
     let pLe2 = 0;
     
-    // ✅ KORRIGIERT: Berechne Wahrscheinlichkeit für 2 oder weniger Tore
     for (let homeGoals = 0; homeGoals <= 10; homeGoals++) {
         for (let awayGoals = 0; awayGoals <= 10; awayGoals++) {
             const totalGoals = homeGoals + awayGoals;
@@ -411,48 +317,38 @@ function computeOver25Prob(homeXG, awayXG) {
     }
     
     const over25Prob = 1 - pLe2;
-    
-    // Debug log
-    console.log(`🎯 Over/Under Calculation: ${homeXG}-${awayXG} = Over: ${(over25Prob*100).toFixed(1)}%, Under: ${((1-over25Prob)*100).toFixed(1)}%`);
-    
     return +(over25Prob.toFixed(4));
 }
 
-// OPTIMIERTE BTTS BERECHNUNG
+// BTTS BERECHNUNG
 function computeBTTS(homeXG, awayXG) {
-    // Wahrscheinlichkeit, dass beide Teams mindestens 1 Tor schießen
     const pHomeScores = 1 - poisson(0, homeXG);
     const pAwayScores = 1 - poisson(0, awayXG);
     const bttsYes = pHomeScores * pAwayScores;
-    
     return +(bttsYes.toFixed(4));
 }
 
-// VERBESSERTE TREND-ANALYSE
-function computeTrend(prob, homeXG, awayXG, homeTeam, awayTeam) {
+// KI-TREND-ANALYSE
+function computeKITrend(prob, homeXG, awayXG, homeTeam, awayTeam, kiFactors) {
     const { home, draw, away } = prob;
     
-    console.log(`🔍 Trend-Analyse: ${homeTeam} vs ${awayTeam}`);
-    console.log(`   Wahrscheinlichkeiten: Home ${(home*100).toFixed(1)}%, Draw ${(draw*100).toFixed(1)}%, Away ${(away*100).toFixed(1)}%`);
+    // KI-gestützte Trend-Bestimmung
+    const trendScore = kiAnalyse.calculateTrendScore(home, draw, away, homeXG, awayXG);
     
-    // REALISTISCHE Trend-Bestimmung
-    if (home > 0.60) {
-        return "Strong Home";
-    } else if (away > 0.60) {
-        return "Strong Away";
-    } else if (home > 0.50 && home > away + 0.08) {
-        return "Home";
-    } else if (away > 0.50 && away > home + 0.08) {
-        return "Away";
-    } else if (draw > 0.40 && draw > home && draw > away) {
+    if (trendScore.home > 0.7) return "Strong Home";
+    if (trendScore.away > 0.7) return "Strong Away";
+    if (trendScore.home > 0.6) return "Home";
+    if (trendScore.away > 0.6) return "Away";
+    if (trendScore.draw > 0.4 && trendScore.draw > trendScore.home && trendScore.draw > trendScore.away) {
         return "Draw";
-    } else if (Math.abs(home - away) < 0.05) {
-        return "Balanced";
-    } else if (home > away) {
-        return "Slight Home";
-    } else {
-        return "Slight Away";
     }
+    if (Math.abs(trendScore.home - trendScore.away) < 0.1) {
+        return "Balanced";
+    }
+    if (trendScore.home > trendScore.away) {
+        return "Slight Home";
+    }
+    return "Slight Away";
 }
 
 function calculateValue(probability, odds) {
@@ -460,28 +356,15 @@ function calculateValue(probability, odds) {
     return +((probability * odds) - 1).toFixed(4);
 }
 
-// Beste Wett-Option finden
-function findBestBet(prob, value, odds) {
-    const options = [
-        { type: 'home', probability: prob.home, value: value.home, odds: odds.home },
-        { type: 'draw', probability: prob.draw, value: value.draw, odds: odds.draw },
-        { type: 'away', probability: prob.away, value: value.away, odds: odds.away },
-        { type: 'over25', probability: prob.over25, value: value.over25, odds: odds.over25 },
-        { type: 'under25', probability: 1 - prob.over25, value: value.under25, odds: 2.0 }
-    ];
-    
-    const bestValueOption = options.reduce((best, current) => 
-        current.value > best.value ? current : best
-    );
-    
-    const bestProbOption = options.reduce((best, current) => 
-        current.probability > best.probability ? current : best
-    );
-    
+// ODDS-GENERIERUNG
+function generateRealisticOdds(prob) {
+    const margin = 0.05; // 5% Buchmacher-Marge
     return {
-        bestValue: bestValueOption,
-        bestProbability: bestProbOption,
-        allOptions: options
+        home: +(1 / (prob.home * (1 - margin))).toFixed(2),
+        draw: +(1 / (prob.draw * (1 - margin))).toFixed(2),
+        away: +(1 / (prob.away * (1 - margin))).toFixed(2),
+        over25: +(1 / (prob.over25 * (1 - margin))).toFixed(2),
+        under25: +(1 / ((1 - prob.over25) * (1 - margin))).toFixed(2)
     };
 }
 
@@ -508,30 +391,8 @@ function getFlag(teamName) {
         if (teamName.includes(key)) return value;
     }
     return "eu";
-}
-// TEIL 4/4: API Routes und Server Start
-
-// NEUE ROUTE FÜR SPORTS DB TEST
-app.get('/api/sportsdb-test', async (req, res) => {
-    try {
-        const teamName = req.query.team || 'Bayern Munich';
-        const teamData = await sportsDBService.searchTeam(teamName);
-        const formData = await sportsDBService.getTeamForm(teamName);
-        
-        res.json({
-            team: teamData,
-            form: formData,
-            status: 'success'
-        });
-    } catch (error) {
-        res.status(500).json({
-            error: error.message,
-            status: 'error'
-        });
-    }
-});
-
-// Haupt-API Route mit erweiterten Berechnungen
+} 
+// HAUPT-API ROUTE
 app.get('/api/games', async (req, res) => {
     try {
         const requestedDate = req.query.date || new Date().toISOString().split('T')[0];
@@ -569,197 +430,129 @@ app.get('/api/games', async (req, res) => {
                 }
             });
         }
+
+        console.log('🤖 Starting KI analysis for', matches.length, 'matches...');
         
-        // Verarbeite Spiele mit erweiterter xG-Berechnung
-        const processedGames = [];
-        
-        for (const match of matches) {
-            const homeTeam = match.homeTeam?.name || 'Unknown Home';
-            const awayTeam = match.awayTeam?.name || 'Unknown Away';
-            const league = match.competition?.name || 'Unknown League';
-            
-            // ERWEITERTE xG-BERECHNUNG MIT SPORTS DB
-            const xg = await estimateXGWithSportsDB(homeTeam, awayTeam, true, league);
-            
-            // OPTIMIERTE WAHRSCHEINLICHKEITEN
-            const prob = computeMatchOutcomeProbs(xg.home, xg.away);
-            const over25 = computeOver25Prob(xg.home, xg.away);
-            const btts = computeBTTS(xg.home, xg.away);
-            
-            // KORRIGIERTE TREND-ANALYSE
-            const trend = computeTrend(prob, xg.home, xg.away, homeTeam, awayTeam);
-            
-            const odds = {
-                home: +(1 / prob.home * 0.92).toFixed(2),
-                draw: +(1 / prob.draw * 0.92).toFixed(2),
-                away: +(1 / prob.away * 0.92).toFixed(2),
-                over25: +(1 / over25 * 0.92).toFixed(2)
-            };
-            
-            const value = {
-                home: calculateValue(prob.home, odds.home),
-                draw: calculateValue(prob.draw, odds.draw),
-                away: calculateValue(prob.away, odds.away),
-                over25: calculateValue(over25, odds.over25),
-                under25: calculateValue(1 - over25, 2.0)
-            };
-            
-            const bestBet = findBestBet(prob, value, odds);
-            
-            processedGames.push({
-                id: match.id,
-                home: homeTeam,
-                away: awayTeam,
-                league: league,
-                date: match.utcDate,
-                homeLogo: match.homeTeam?.crest || `https://flagcdn.com/w40/${getFlag(homeTeam)}.png`,
-                awayLogo: match.awayTeam?.crest || `https://flagcdn.com/w40/${getFlag(awayTeam)}.png`,
-                homeXG: xg.home,
-                awayXG: xg.away,
-                prob,
-                value,
-                odds,
-                btts,
-                trend,
-                over25,
-                under25: 1 - over25,
-                status: match.status,
-                source: "football_data+sportsdb",
-                competition: match.competition?.name,
-                matchday: match.matchday,
-                season: match.season?.currentMatchday,
-                bestBet: bestBet.bestValue,
-                highestProbability: bestBet.bestProbability,
-                analysis: {
-                    homeWinProbability: prob.home,
-                    awayWinProbability: prob.away,
-                    drawProbability: prob.draw,
-                    expectedGoals: xg.home + xg.away,
-                    goalExpectancy: `${xg.home}-${xg.away}`
+        // KI-Analyse für alle Spiele
+        const enhancedGames = await Promise.all(
+            matches.map(async (match) => {
+                try {
+                    const homeTeam = match.homeTeam?.name || "Unknown Home";
+                    const awayTeam = match.awayTeam?.name || "Unknown Away";
+                    const league = match.competition?.name || "Unknown League";
+                    
+                    // KI-xG-Berechnung
+                    const xgData = await estimateXGWithKI(homeTeam, awayTeam, true, league);
+                    
+                    // Wahrscheinlichkeiten berechnen
+                    const prob = computeMatchOutcomeProbs(xgData.home, xgData.away);
+                    const over25Prob = computeOver25Prob(xgData.home, xgData.away);
+                    const bttsProb = computeBTTS(xgData.home, xgData.away);
+                    
+                    // Odds generieren
+                    const odds = generateRealisticOdds({
+                        ...prob,
+                        over25: over25Prob
+                    });
+                    
+                    // Value berechnen
+                    const value = {
+                        home: calculateValue(prob.home, odds.home),
+                        draw: calculateValue(prob.draw, odds.draw),
+                        away: calculateValue(prob.away, odds.away),
+                        over25: calculateValue(over25Prob, odds.over25),
+                        under25: calculateValue(1 - over25Prob, odds.under25)
+                    };
+                    
+                    // KI-Trend bestimmen
+                    const trend = computeKITrend(prob, xgData.home, xgData.away, homeTeam, awayTeam, xgData.kiFactors);
+                    
+                    return {
+                        id: match.id,
+                        home: homeTeam,
+                        away: awayTeam,
+                        league: league,
+                        date: match.utcDate,
+                        homeLogo: `https://flagsapi.com/${getFlag(homeTeam)}/flat/64.png`,
+                        awayLogo: `https://flagsapi.com/${getFlag(awayTeam)}/flat/64.png`,
+                        homeXG: xgData.home,
+                        awayXG: xgData.away,
+                        prob: prob,
+                        over25: over25Prob,
+                        btts: bttsProb,
+                        value: value,
+                        odds: odds,
+                        trend: trend,
+                        confidence: xgData.confidence,
+                        kiScore: xgData.kiFactors.kiScore,
+                        analysis: kiAnalyse.generateAnalysis(homeTeam, awayTeam, prob, trend, xgData.confidence)
+                    };
+                } catch (error) {
+                    console.log(`❌ Error processing match ${match.id}:`, error.message);
+                    return null;
                 }
-            });
-        }
-        
-        const sortBy = req.query.sortBy || 'value';
-        
-        if (sortBy === 'probability') {
-            processedGames.sort((a, b) => {
-                const maxProbA = Math.max(a.prob.home, a.prob.away, a.prob.draw);
-                const maxProbB = Math.max(b.prob.home, b.prob.away, b.prob.draw);
-                return maxProbB - maxProbA;
-            });
-            console.log('📊 Sorted by highest probability');
-        } else if (sortBy === 'goals') {
-            processedGames.sort((a, b) => {
-                const goalsA = a.homeXG + a.awayXG;
-                const goalsB = b.homeXG + b.awayXG;
-                return goalsB - goalsA;
-            });
-            console.log('📊 Sorted by expected goals');
-        } else {
-            processedGames.sort((a, b) => {
-                const maxValueA = Math.max(a.value.home, a.value.draw, a.value.away, a.value.over25);
-                const maxValueB = Math.max(b.value.home, b.value.draw, b.value.away, b.value.over25);
-                return maxValueB - maxValueA;
-            });
-            console.log('📊 Sorted by best value');
-        }
-        
-        console.log(`📊 Processed ${processedGames.length} real matches (sorted by: ${sortBy})`);
-        
-        cache.set(cacheKey, {
-            timestamp: Date.now(),
-            data: processedGames
-        });
-        
-        res.json({ 
-            response: processedGames,
+            })
+        );
+
+        // Nullwerte filtern und nach KI-Score sortieren
+        const validGames = enhancedGames.filter(game => game !== null);
+        validGames.sort((a, b) => (b.kiScore || 0) - (a.kiScore || 0));
+
+        console.log(`✅ KI analysis completed. Processed ${validGames.length} games`);
+
+        const responseData = {
+            response: validGames,
             info: {
                 date: requestedDate,
-                total: processedGames.length,
-                source: "football_data+sportsdb",
-                sort_by: sortBy,
-                message: `Echte Spiele mit erweiterten Berechnungen (Football-Data + The Sports DB)`
+                total: validGames.length,
+                source: "football_data+ki_analysis",
+                ki_version: "2.0.0",
+                timestamp: new Date().toISOString()
             }
+        };
+
+        // Im Cache speichern
+        cache.set(cacheKey, {
+            data: responseData.response,
+            timestamp: Date.now()
         });
-        
+
+        res.json(responseData);
+
     } catch (error) {
-        console.error('❌ Error in /api/games:', error);
-        res.status(500).json({ 
-            error: 'Fehler beim Laden der Spiele',
-            message: error.message
+        console.error('❌ API Error:', error);
+        res.status(500).json({
+            error: error.message,
+            info: {
+                date: req.query.date,
+                source: "error",
+                message: "Fehler bei der Datenverarbeitung"
+            }
         });
     }
 });
 
-// API Test Route
-app.get('/api/test', async (req, res) => {
+// NEUE ROUTE FÜR DETAILLIERTE KI-ANALYSE
+app.get('/api/ki-analysis/:matchId', async (req, res) => {
     try {
-        if (!FOOTBALL_DATA_KEY) {
-            return res.json({ 
-                error: 'API Key nicht konfiguriert',
-                hint: 'Setze FOOTBALL_DATA_API_KEY Environment Variable'
-            });
-        }
-        
-        const today = new Date().toISOString().split('T')[0];
-        const testData = await footballDataService.getMatchesByDate(today);
+        const matchId = req.params.matchId;
+        const detailedAnalysis = await kiAnalyse.getDetailedAnalysis(matchId);
         
         res.json({
-            status: 'success',
-            api_configured: true,
-            test_date: today,
-            total_matches: testData.length,
-            sample_matches: testData.slice(0, 3).map(match => ({
-                home: match.homeTeam?.name,
-                away: match.awayTeam?.name,
-                league: match.competition?.name,
-                date: match.utcDate,
-                status: match.status
-            }))
+            matchId: matchId,
+            analysis: detailedAnalysis,
+            timestamp: new Date().toISOString()
         });
-        
     } catch (error) {
-        res.json({ 
-            error: error.message,
-            api_configured: !!FOOTBALL_DATA_KEY
+        res.status(500).json({
+            error: error.message
         });
     }
 });
 
-// Status Route
-app.get('/api/status', (req, res) => {
-    res.json({
-        status: 'running',
-        api: {
-            football_data: {
-                configured: !!FOOTBALL_DATA_KEY,
-                status: FOOTBALL_DATA_KEY ? 'active' : 'missing_key'
-            },
-            sports_db: {
-                configured: true,
-                status: 'active'
-            }
-        },
-        sorting_options: ['value', 'probability', 'goals'],
-        version: 'sports_db_integration_v1'
-    });
-});
-
-// Start Server
-app.listen(PORT, '0.0.0.0', () => {
+// Server starten
+app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`🔑 Football-Data.org API: ${FOOTBALL_DATA_KEY ? '✅ Configured' : '❌ MISSING'}`);
-    console.log(`🔑 The Sports DB API: ✅ Configured (Free Tier)`);
-    
-    if (FOOTBALL_DATA_KEY) {
-        console.log(`🌐 App verfügbar: https://your-app.onrender.com`);
-        console.log(`🔗 Test: https://your-app.onrender.com/api/test`);
-        console.log(`🔗 SportsDB Test: https://your-app.onrender.com/api/sportsdb-test?team=Bayern%20Munich`);
-        console.log(`📊 ERWEITERTE BERECHNUNGEN aktiviert:`);
-        console.log(`   ✅ The Sports DB Integration für Form-Analyse`);
-        console.log(`   ✅ Erweiterte xG-Berechnung mit Form-Korrektur`);
-        console.log(`   ✅ Realistischere Wahrscheinlichkeiten`);
-        console.log(`   ✅ Tordifferenz-basierte Korrekturen`);
-    }
+    console.log(`🤖 KI Football Analysis Tool v2.0.0`);
+    console.log(`📍 Health check: http://localhost:${PORT}/health`);
 });
