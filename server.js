@@ -47,8 +47,8 @@ class ProfessionalFootballDataService {
 
     async getMatchesByDate(date) {
         if (!this.apiKey) {
-            console.log('⚠️  Kein API Key - Verwende Fallback-Daten');
-            return this.getFallbackMatches(date);
+            console.log('⚠️  Kein API Key - Keine Demo-Daten mehr');
+            return [];
         }
 
         try {
@@ -82,48 +82,13 @@ class ProfessionalFootballDataService {
 
             console.log(`✅ Found ${filteredMatches.length} real matches for ${date}`);
             
-            if (filteredMatches.length === 0) {
-                return this.getFallbackMatches(date);
-            }
-            
             return filteredMatches;
 
         } catch (error) {
             console.log('❌ Professional API error:', error.message);
-            console.log('🔄 Verwende Fallback-Daten...');
-            return this.getFallbackMatches(date);
+            console.log('🔄 Keine Demo-Daten mehr - nur echte API-Daten');
+            return [];
         }
-    }
-
-    getFallbackMatches(date) {
-        // Fallback mit simulierten Daten falls API nicht verfügbar
-        console.log('🔄 Generating fallback matches...');
-        return [
-            {
-                id: 1,
-                utcDate: new Date().toISOString(),
-                status: 'SCHEDULED',
-                homeTeam: { name: 'Bayern Munich' },
-                awayTeam: { name: 'Borussia Dortmund' },
-                competition: { name: 'Bundesliga' }
-            },
-            {
-                id: 2, 
-                utcDate: new Date().toISOString(),
-                status: 'SCHEDULED',
-                homeTeam: { name: 'Real Madrid' },
-                awayTeam: { name: 'Barcelona' },
-                competition: { name: 'La Liga' }
-            },
-            {
-                id: 3,
-                utcDate: new Date().toISOString(),
-                status: 'SCHEDULED', 
-                homeTeam: { name: 'Manchester City' },
-                awayTeam: { name: 'Liverpool' },
-                competition: { name: 'Premier League' }
-            }
-        ];
     }
 }
 
@@ -473,7 +438,7 @@ app.get('/api/games', async (req, res) => {
                         value: value,
                         odds: odds,
                         
-                          // KI-Analyse
+                        // KI-Analyse
                         trend: trend,
                         confidence: xgData.confidence,
                         kiScore: 0.5 + (xgData.confidence * 0.3) + (Math.max(
@@ -516,26 +481,4 @@ app.get('/api/games', async (req, res) => {
             timestamp: Date.now()
         });
 
-        res.json(responseData);
-
-    } catch (error) {
-        console.error('❌ Professional API Error:', error);
-        res.status(500).json({
-            error: error.message,
-            info: {
-                date: req.query.date,
-                source: "api_error",
-                message: "Fehler beim Laden der Spieldaten"
-            }
-        });
-    }
-});
-
-// Server starten
-app.listen(PORT, () => {
-    console.log(`🚀 Professional Server running on port ${PORT}`);
-    console.log(`🤖 ProFoot Analytics v4.0.0 - Alle Top-Ligen`);
-    console.log(`📍 Health check: http://localhost:${PORT}/health`);
-    console.log(`🏆 Unterstützte Ligen: Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Championship, Primeira Liga, European Championship`);
-});
     
