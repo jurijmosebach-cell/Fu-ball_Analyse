@@ -170,14 +170,9 @@ function createGameElement(game, type = 'standard') {
     return gameEl;
 }
 
-function updateStatistics(games) {
-    console.log('Updating statistics for', games.length, 'games');
+function calculateStatistics(games) {
+    console.log('Calculating statistics for', games.length, 'games');
     
-    // Debug: Zeige alle Spiele mit ihren kiScores
-    games.forEach((game, index) => {
-        console.log(`Game ${index}: ${game.home} vs ${game.away} - kiScore: ${game.kiScore}, Value:`, game.value);
-    });
-
     const premiumGames = games.filter(g => {
         const kiScore = g.kiScore || 0;
         const maxValue = Math.max(
@@ -187,7 +182,6 @@ function updateStatistics(games) {
             g.value?.over25 || 0
         );
         const isPremium = kiScore > 0.75 && maxValue > 0.1;
-        console.log(`Premium Check: ${g.home} vs ${g.away} - kiScore: ${kiScore}, maxValue: ${maxValue}, isPremium: ${isPremium}`);
         return isPremium;
     });
     
@@ -206,25 +200,36 @@ function updateStatistics(games) {
         g.trend && (g.trend.includes('Strong') || g.trend === 'Home' || g.trend === 'Away')
     );
     
-    totalMatchesEl.textContent = games.length;
-    premiumCountEl.textContent = `${premiumGames.length} Premium`;
-    featuredCountEl.textContent = `${featuredGames.length} Spiele`;
-    allGamesCountEl.textContent = `${games.length} Spiele`;
-
     const avgConfidence = games.length > 0 ? games.reduce((sum, game) => sum + (game.confidence || 0.5), 0) / games.length : 0;
     const over25Rate = games.length > 0 ? games.reduce((sum, game) => sum + (game.over25 || 0), 0) / games.length : 0;
 
-    avgConfidenceEl.textContent = `${Math.round(avgConfidence * 100)}%`;
-    highValueBetsEl.textContent = highValueGames.length;
-    strongTrendsEl.textContent = strongTrendGames.length;
-    over25RateEl.textContent = `${Math.round(over25Rate * 100)}%`;
+    return {
+        total: games.length,
+        premium: premiumGames.length,
+        featured: featuredGames.length,
+        highValue: highValueGames.length,
+        strongTrends: strongTrendGames.length,
+        avgConfidence: avgConfidence,
+        over25Rate: over25Rate
+    };
+}
+
+function updateStatistics(stats) {
+    totalMatchesEl.textContent = stats.total;
+    premiumCountEl.textContent = `${stats.premium} Premium`;
+    featuredCountEl.textContent = `${stats.featured} Spiele`;
+    allGamesCountEl.textContent = `${stats.total} Spiele`;
+
+    avgConfidenceEl.textContent = `${Math.round(stats.avgConfidence * 100)}%`;
+    highValueBetsEl.textContent = stats.highValue;
+    strongTrendsEl.textContent = stats.strongTrends;
+    over25RateEl.textContent = `${Math.round(stats.over25Rate * 100)}%`;
     updateTimeEl.textContent = new Date().toLocaleTimeString('de-DE', { 
         hour: '2-digit', 
         minute: '2-digit' 
     });
 
-    console.log('Premium Games found:', premiumGames.length);
-    return premiumGames;
+    console.log('Statistics updated:', stats);
 }
 
 async function loadGames() {
@@ -267,11 +272,26 @@ async function loadGames() {
 
         console.log('Games after filtering:', games);
 
-        // Update statistics and get premium picks
-        const premiumPicks = updateStatistics(games);
+        // Calculate statistics BEFORE filtering for premium picks
+        const stats = calculateStatistics(games);
+        updateStatistics(stats);
 
         // BUG FIX: Premium Picks anzeigen (auch wenn weniger als 3)
         premiumPicksDiv.innerHTML = "";
+        
+        const premiumPicks = games
+            .filter(g => {
+                const kiScore = g.kiScore || 0;
+                const maxValue = Math.max(
+                    g.value?.home || 0,
+                    g.value?.draw || 0, 
+                    g.value?.away || 0,
+                    g.value?.over25 || 0
+                );
+                return kiScore > 0.75 && maxValue > 0.1;
+            })
+            .sort((a, b) => (b.kiScore || 0) - (a.kiScore || 0))
+            .slice(0, 3);
         
         if (premiumPicks.length > 0) {
             console.log('Displaying premium picks:', premiumPicks.length);
@@ -280,26 +300,13 @@ async function loadGames() {
             });
         } else {
             console.log('No premium picks found, showing message');
-            // Weniger strenge Kriterien für Premium Picks als Fallback
-            const fallbackPicks = games
-                .filter(g => (g.kiScore || 0) > 0.6)
-                .sort((a, b) => (b.kiScore || 0) - (a.kiScore || 0))
-                .slice(0, 3);
-            
-            if (fallbackPicks.length > 0) {
-                console.log('Using fallback picks:', fallbackPicks.length);
-                fallbackPicks.forEach(game => {
-                    premiumPicksDiv.appendChild(createGameElement(game, 'premium'));
-                });
-            } else {
-                premiumPicksDiv.innerHTML = `
-                    <div class="loading">
-                        <i class="fas fa-info-circle" style="color: #6b7280;"></i>
-                        <div>Keine Premium Picks für heute</div>
-                        <div style="font-size: 0.8rem; margin-top: 0.5rem;">Versuche ein anderes Datum</div>
-                    </div>
-                `;
-            }
+            premiumPicksDiv.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-info-circle" style="color: #6b7280;"></i>
+                    <div>Keine Premium Picks für heute</div>
+                    <div style="font-size: 0.8rem; margin-top: 0.5rem;">Versuche ein anderes Datum</div>
+                </div>
+            `;
         }
 
         // Top Games (Nächste 5 beste Spiele)
