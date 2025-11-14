@@ -182,6 +182,7 @@ function calculateStatistics(games) {
             g.value?.over25 || 0
         );
         const isPremium = kiScore > 0.75 && maxValue > 0.1;
+        console.log(`Premium Check: ${g.home} vs ${g.away} - kiScore: ${kiScore}, maxValue: ${maxValue}, isPremium: ${isPremium}`);
         return isPremium;
     });
     
@@ -199,6 +200,8 @@ function calculateStatistics(games) {
     const strongTrendGames = games.filter(g => 
         g.trend && (g.trend.includes('Strong') || g.trend === 'Home' || g.trend === 'Away')
     );
+
+    const over25Games = games.filter(g => (g.over25 || 0) > 0.6);
     
     const avgConfidence = games.length > 0 ? games.reduce((sum, game) => sum + (game.confidence || 0.5), 0) / games.length : 0;
     const over25Rate = games.length > 0 ? games.reduce((sum, game) => sum + (game.over25 || 0), 0) / games.length : 0;
@@ -209,6 +212,7 @@ function calculateStatistics(games) {
         featured: featuredGames.length,
         highValue: highValueGames.length,
         strongTrends: strongTrendGames.length,
+        over25Games: over25Games.length,
         avgConfidence: avgConfidence,
         over25Rate: over25Rate
     };
@@ -235,7 +239,7 @@ function updateStatistics(stats) {
 async function loadGames() {
     try {
         // Show loading state
-        premiumPicksDiv.innerHTML = topGamesDiv.innerHTML = gamesDiv.innerHTML = `
+        premiumPicksDiv.innerHTML = topGamesDiv.innerHTML = gamesDiv.innerHTML = topValueBetsDiv.innerHTML = topOver25Div.innerHTML = `
             <div class="loading">
                 <div class="loading-spinner"></div>
                 <div>KI analysiert Spiele...</div>
@@ -252,7 +256,8 @@ async function loadGames() {
         console.log('API Response:', data);
 
         if (!data || !Array.isArray(data.response)) {
-            gamesDiv.innerHTML = "<div class='loading'>Keine Spieldaten erhalten</div>";
+            const errorHTML = `<div class="loading">Keine Spieldaten erhalten</div>`;
+            premiumPicksDiv.innerHTML = topGamesDiv.innerHTML = gamesDiv.innerHTML = topValueBetsDiv.innerHTML = topOver25Div.innerHTML = errorHTML;
             return;
         }
 
@@ -272,14 +277,13 @@ async function loadGames() {
 
         console.log('Games after filtering:', games);
 
-        // Calculate statistics BEFORE filtering for premium picks
+        // Calculate statistics
         const stats = calculateStatistics(games);
         updateStatistics(stats);
 
-        // BUG FIX: Premium Picks anzeigen (auch wenn weniger als 3)
+        // 🔥 PROBLEM 1: Premium Picks - WENIGER STRENGE KRITERIEN
         premiumPicksDiv.innerHTML = "";
-        
-        const premiumPicks = games
+        let premiumPicks = games
             .filter(g => {
                 const kiScore = g.kiScore || 0;
                 const maxValue = Math.max(
@@ -288,10 +292,22 @@ async function loadGames() {
                     g.value?.away || 0,
                     g.value?.over25 || 0
                 );
-                return kiScore > 0.75 && maxValue > 0.1;
+                // Weniger strenge Kriterien für Premium
+                return (kiScore > 0.65 || maxValue > 0.08);
             })
-            .sort((a, b) => (b.kiScore || 0) - (a.kiScore || 0))
+            .sort((a, b) => {
+                const aScore = (a.kiScore || 0) + (Math.max(a.value?.home || 0, a.value?.draw || 0, a.value?.away || 0, a.value?.over25 || 0) * 2);
+                const bScore = (b.kiScore || 0) + (Math.max(b.value?.home || 0, b.value?.draw || 0, b.value?.away || 0, b.value?.over25 || 0) * 2);
+                return bScore - aScore;
+            })
             .slice(0, 3);
+        
+        // Fallback: Wenn keine Premium Picks, nimm einfach die Top 3 nach KI-Score
+        if (premiumPicks.length === 0 && games.length > 0) {
+            premiumPicks = games
+                .sort((a, b) => (b.kiScore || 0) - (a.kiScore || 0))
+                .slice(0, 3);
+        }
         
         if (premiumPicks.length > 0) {
             console.log('Displaying premium picks:', premiumPicks.length);
@@ -299,7 +315,6 @@ async function loadGames() {
                 premiumPicksDiv.appendChild(createGameElement(game, 'premium'));
             });
         } else {
-            console.log('No premium picks found, showing message');
             premiumPicksDiv.innerHTML = `
                 <div class="loading">
                     <i class="fas fa-info-circle" style="color: #6b7280;"></i>
@@ -309,22 +324,7 @@ async function loadGames() {
             `;
         }
 
-        // Top Games (Nächste 5 beste Spiele)
-        topGamesDiv.innerHTML = "";
-        const topGames = games
-            .filter(g => !premiumPicks.includes(g))
-            .sort((a, b) => (b.kiScore || 0) - (a.kiScore || 0))
-            .slice(0, 5);
-        
-        if (topGames.length > 0) {
-            topGames.forEach(game => {
-                topGamesDiv.appendChild(createGameElement(game, 'featured'));
-            });
-        } else {
-            topGamesDiv.innerHTML = `<div class="loading">Keine Top Spiele gefunden</div>`;
-        }
-
-        // Top Value Bets
+        // 🔥 PROBLEM 2: Top Value Bets - BESSERE SORTIERUNG
         topValueBetsDiv.innerHTML = "";
         const valueBets = games
             .sort((a, b) => {
@@ -346,18 +346,20 @@ async function loadGames() {
         
         if (valueBets.length > 0) {
             valueBets.forEach(game => {
-                topValueBetsDiv.appendChild(createGameElement(game));
+                topValueBetsDiv.appendChild(createGameElement(game, 'featured'));
             });
         } else {
             topValueBetsDiv.innerHTML = `<div class="loading">Keine Value Bets gefunden</div>`;
         }
 
-        // Top Over 2.5
+        // 🔥 PROBLEM 3: Top Over 2.5 - KORREKTE FILTERUNG
         topOver25Div.innerHTML = "";
         const overGames = games
-            .filter(g => (g.over25 || 0) > 0.5)
+            .filter(g => (g.over25 || 0) > 0.5) // Filter für Over 2.5 Wahrscheinlichkeit
             .sort((a, b) => (b.over25 || 0) - (a.over25 || 0))
             .slice(0, 5);
+        
+        console.log('Over 2.5 Games found:', overGames.length, overGames);
         
         if (overGames.length > 0) {
             overGames.forEach(game => {
@@ -367,9 +369,29 @@ async function loadGames() {
             topOver25Div.innerHTML = `<div class="loading">Keine Over 2.5 Spiele gefunden</div>`;
         }
 
+        // Top Games (Nächste 5 beste Spiele nach KI-Score)
+        topGamesDiv.innerHTML = "";
+        const topGames = games
+            .filter(g => !premiumPicks.includes(g) && !valueBets.includes(g) && !overGames.includes(g))
+            .sort((a, b) => (b.kiScore || 0) - (a.kiScore || 0))
+            .slice(0, 5);
+        
+        if (topGames.length > 0) {
+            topGames.forEach(game => {
+                topGamesDiv.appendChild(createGameElement(game, 'featured'));
+            });
+        } else {
+            topGamesDiv.innerHTML = `<div class="loading">Keine Top Spiele gefunden</div>`;
+        }
+
         // Alle anderen Spiele
         gamesDiv.innerHTML = "";
-        const otherGames = games.filter(g => !premiumPicks.includes(g) && !topGames.includes(g));
+        const otherGames = games.filter(g => 
+            !premiumPicks.includes(g) && 
+            !topGames.includes(g) && 
+            !valueBets.includes(g) && 
+            !overGames.includes(g)
+        );
         
         if (otherGames.length === 0) {
             gamesDiv.innerHTML = `<div class="loading">Keine weiteren Spiele</div>`;
@@ -381,12 +403,13 @@ async function loadGames() {
 
     } catch (err) {
         console.error("Fehler beim Laden:", err);
-        gamesDiv.innerHTML = `
+        const errorHTML = `
             <div class="loading">
                 <i class="fas fa-exclamation-triangle" style="color: #dc2626;"></i>
                 <div>Fehler beim Laden: ${err.message}</div>
             </div>
         `;
+        premiumPicksDiv.innerHTML = topGamesDiv.innerHTML = gamesDiv.innerHTML = topValueBetsDiv.innerHTML = topOver25Div.innerHTML = errorHTML;
     }
 }
 
