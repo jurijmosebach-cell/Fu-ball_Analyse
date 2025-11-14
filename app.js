@@ -20,10 +20,178 @@ const strongTrendsEl = document.getElementById("strongTrends");
 const over25RateEl = document.getElementById("over25Rate");
 const updateTimeEl = document.getElementById("updateTime");
 
+// ⭐⭐ NEUE MODULE IMPORTIEREN ⭐⭐
+import { BankrollManager } from './bankroll-manager.js';
+import { AdvancedFormAnalyzer } from './advanced-form-analyzer.js';
+import { InjuryTracker } from './injury-tracker.js';
+
+// ⭐⭐ INITIALISIERUNG DER NEUEN MODULE ⭐⭐
+const bankrollManager = new BankrollManager();
+const formAnalyzer = new AdvancedFormAnalyzer();
+const injuryTracker = new InjuryTracker();
+
+// Bankroll aus Local Storage laden
+bankrollManager.loadFromLocalStorage();
+
 // Set today's date as default
 dateInput.value = new Date().toISOString().split('T')[0];
 
-// Utility Functions
+// ⭐⭐ NEUE FUNKTION: BANKROLL PANEL ERSTELLEN ⭐⭐
+function createBankrollPanel() {
+    const metrics = bankrollManager.getPerformanceMetrics();
+    const recommendations = bankrollManager.getBankrollRecommendations();
+    
+    const bankrollHTML = `
+        <div class="bankroll-panel" style="
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        ">
+            <div class="bankroll-header" style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1rem;
+                padding-bottom: 1rem;
+                border-bottom: 2px solid #cbd5e1;
+            ">
+                <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #1e293b;">
+                    <i class="fas fa-wallet" style="color: #059669;"></i> 
+                    Bankroll Management
+                </h3>
+                <span class="bankroll-amount" style="
+                    font-size: 1.5rem;
+                    font-weight: 800;
+                    color: #059669;
+                    background: white;
+                    padding: 0.5rem 1rem;
+                    border-radius: 12px;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                ">€${metrics.bankroll.toFixed(2)}</span>
+            </div>
+            
+            <div class="bankroll-stats" style="
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 1rem;
+                margin-bottom: 1rem;
+            ">
+                <div class="bankroll-stat" style="
+                    background: white;
+                    padding: 1rem;
+                    border-radius: 12px;
+                    text-align: center;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                ">
+                    <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; margin-bottom: 0.5rem;">Win Rate</div>
+                    <div style="font-size: 1.25rem; font-weight: 800; color: ${metrics.winRate > 50 ? '#059669' : '#dc2626'};">
+                        ${metrics.winRate.toFixed(1)}%
+                    </div>
+                </div>
+                <div class="bankroll-stat" style="
+                    background: white;
+                    padding: 1rem;
+                    border-radius: 12px;
+                    text-align: center;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                ">
+                    <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; margin-bottom: 0.5rem;">ROI</div>
+                    <div style="font-size: 1.25rem; font-weight: 800; color: ${metrics.roi > 0 ? '#059669' : '#dc2626'};">
+                        ${metrics.roi.toFixed(1)}%
+                    </div>
+                </div>
+                <div class="bankroll-stat" style="
+                    background: white;
+                    padding: 1rem;
+                    border-radius: 12px;
+                    text-align: center;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                ">
+                    <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; margin-bottom: 0.5rem;">Aktuelle Serie</div>
+                    <div style="font-size: 1.25rem; font-weight: 800; color: ${metrics.currentStreak > 0 ? '#059669' : '#dc2626'};">
+                        ${metrics.currentStreak > 0 ? '+' : ''}${metrics.currentStreak}
+                    </div>
+                </div>
+            </div>
+            
+            ${recommendations.length > 0 ? `
+                <div class="bankroll-recommendations">
+                    <div style="font-size: 0.9rem; font-weight: 700; color: #374151; margin-bottom: 0.75rem;">
+                        <i class="fas fa-lightbulb"></i> Empfehlungen
+                    </div>
+                    ${recommendations.map(rec => `
+                        <div class="recommendation" style="
+                            background: ${rec.type === 'warning' ? '#fef3c7' : rec.type === 'danger' ? '#fee2e2' : '#d1fae5'};
+                            border: 1px solid ${rec.type === 'warning' ? '#fbbf24' : rec.type === 'danger' ? '#f87171' : '#34d399'};
+                            border-left: 4px solid ${rec.type === 'warning' ? '#f59e0b' : rec.type === 'danger' ? '#dc2626' : '#059669'};
+                            padding: 1rem;
+                            border-radius: 8px;
+                            margin-bottom: 0.75rem;
+                            display: flex;
+                            align-items: flex-start;
+                            gap: 0.75rem;
+                        ">
+                            <i class="fas fa-${rec.type === 'warning' ? 'exclamation-triangle' : rec.type === 'danger' ? 'exclamation-circle' : 'check-circle'}" 
+                               style="color: ${rec.type === 'warning' ? '#d97706' : rec.type === 'danger' ? '#dc2626' : '#059669'}; margin-top: 0.1rem;"></i>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 700; color: ${rec.type === 'warning' ? '#92400e' : rec.type === 'danger' ? '#991b1b' : '#065f46'}; margin-bottom: 0.25rem;">
+                                    ${rec.message}
+                                </div>
+                                <div style="font-size: 0.85rem; color: #6b7280;">
+                                    ${rec.action}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+        </div>
+    `;
+    
+    return bankrollHTML;
+}
+
+// ⭐⭐ NEUE FUNKTION: ERWEITERTE ANALYSE ERSTELLEN ⭐⭐
+function generateEnhancedAnalysis(game, homeInjuries, awayInjuries, homeForm, awayForm) {
+    const analysis = {
+        summary: "",
+        keyFactors: [],
+        riskFactors: [],
+        recommendations: []
+    };
+
+    // Verletzungsanalyse
+    if (homeInjuries.overallImpact > 0.4 || awayInjuries.overallImpact > 0.4) {
+        analysis.riskFactors.push("⚠️ Verletzungsprobleme bei einem oder beiden Teams");
+        
+        if (homeInjuries.attackImpact > 0.3) {
+            analysis.keyFactors.push(`🔴 ${game.home} Angriff geschwächt (-${Math.round(homeInjuries.attackImpact * 100)}%)`);
+        }
+        if (awayInjuries.defenseImpact > 0.3) {
+            analysis.keyFactors.push(`🟢 ${game.away} Verteidigung geschwächt (+${Math.round(awayInjuries.defenseImpact * 100)}% für ${game.home})`);
+        }
+    }
+
+    // Form-Analyse
+    if (homeForm.formMomentum > 0.1) {
+        analysis.keyFactors.push(`📈 ${game.home} in guter Form (Momentum: +${Math.round(homeForm.formMomentum * 100)}%)`);
+    }
+    if (awayForm.formMomentum < -0.1) {
+        analysis.keyFactors.push(`📉 ${game.away} in schwacher Form (Momentum: ${Math.round(awayForm.formMomentum * 100)}%)`);
+    }
+
+    // Bankroll Empfehlungen
+    if (game.bankroll && game.bankroll.recommendedStake > 0) {
+        analysis.recommendations.push(`💰 Empfohlener Einsatz: €${game.bankroll.recommendedStake} auf ${game.bankroll.stakeType}`);
+    }
+
+    return analysis;
+}
+
+// Utility Functions (bestehender Code)
 function getTrendColor(trend) {
     const colors = {
         "Strong Home": "#059669",
@@ -110,6 +278,13 @@ function createGameElement(game, type = 'standard') {
     // Premium Badge für Top-Spiele
     const premiumBadge = type === 'premium' ? `<span class="premium-badge">💎 TOP PICK</span>` : '';
 
+    // ⭐⭐ BANKROLL EMPFEHLUNG ANZEIGEN ⭐⭐
+    const bankrollInfo = game.bankroll && game.bankroll.recommendedStake > 0 
+        ? `<div style="font-size: 0.8rem; color: #059669; font-weight: 600; margin-top: 0.5rem;">
+             <i class="fas fa-coins"></i> Empfohlener Einsatz: €${game.bankroll.recommendedStake}
+           </div>`
+        : '';
+
     gameEl.innerHTML = `
         <div class="game-header">
             <div class="teams">
@@ -146,24 +321,55 @@ function createGameElement(game, type = 'standard') {
                 Best Value: ${(bestValue * 100).toFixed(1)}% (${bestValueType})
             </div>
         </div>
+        ${bankrollInfo}
     `;
 
-    // Analysis section für Premium und Featured Games
-    if ((type === 'premium' || type === 'featured') && game.analysis) {
+    // ⭐⭐ ERWEITERTE ANALYSE FÜR PREMIUM SPIELE ⭐⭐
+    if ((type === 'premium' || type === 'featured') && game.enhancedAnalysis) {
         const analysisSection = document.createElement("div");
         analysisSection.className = "analysis-section";
-        analysisSection.innerHTML = `
+        
+        let enhancedHTML = `
             <div class="analysis-title">
                 <i class="fas fa-lightbulb"></i>
-                KI-Analyse
+                Erweiterte KI-Analyse
             </div>
             <div class="analysis-text">
-                ${game.analysis.summary || 'Keine Analyse verfügbar'}
-            </div>
-            <div style="margin-top: 0.5rem; font-size: 0.875rem; font-weight: 600; color: #2563eb;">
-                <i class="fas fa-check-circle"></i> ${game.analysis.recommendation || 'Keine Empfehlung'}
+                ${game.analysis?.summary || 'Professionelle Spielanalyse'}
             </div>
         `;
+
+        // Verletzungs-Info
+        if (game.injuries && (game.injuries.home.overallImpact > 0.2 || game.injuries.away.overallImpact > 0.2)) {
+            enhancedHTML += `
+                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                    <div style="font-weight: 700; color: #92400e; margin-bottom: 0.25rem;">
+                        <i class="fas fa-first-aid"></i> Verletzungsreport
+                    </div>
+                    <div style="font-size: 0.8rem; color: #92400e;">
+                        ${game.injuries.home.overallImpact > 0.2 ? `${game.home}: ${game.injuries.home.missingPlayers.length} Spieler verletzt` : ''}
+                        ${game.injuries.away.overallImpact > 0.2 ? `${game.away}: ${game.injuries.away.missingPlayers.length} Spieler verletzt` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Form-Info
+        if (game.form && (game.form.home.overallRating > 0.7 || game.form.away.overallRating > 0.7)) {
+            enhancedHTML += `
+                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #d1fae5; border-radius: 8px; border-left: 4px solid #059669;">
+                    <div style="font-weight: 700; color: #065f46; margin-bottom: 0.25rem;">
+                        <i class="fas fa-chart-line"></i> Form-Analyse
+                    </div>
+                    <div style="font-size: 0.8rem; color: #065f46;">
+                        ${game.form.home.overallRating > 0.7 ? `${game.home}: Starke Form (${Math.round(game.form.home.overallRating * 100)}%)` : ''}
+                        ${game.form.away.overallRating > 0.7 ? `${game.away}: Starke Form (${Math.round(game.form.away.overallRating * 100)}%)` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        analysisSection.innerHTML = enhancedHTML;
         gameEl.appendChild(analysisSection);
     }
 
@@ -234,7 +440,7 @@ function updateStatistics(stats) {
 
     console.log('Statistics updated:', stats);
 }
-
+// ⭐⭐ ERWEITERTE LOADGAMES FUNKTION ⭐⭐
 async function loadGames() {
     try {
         // Show loading state
@@ -276,13 +482,89 @@ async function loadGames() {
 
         console.log('Games after filtering:', games);
 
+        // ⭐⭐ ERWEITERTE ANALYSE FÜR JEDES SPIEL ⭐⭐
+        console.log('Starting enhanced analysis for', games.length, 'games...');
+        
+        const enhancedGames = await Promise.all(
+            games.map(async (game) => {
+                try {
+                    // Verletzungsanalyse
+                    const homeInjuries = await injuryTracker.getTeamInjuries(game.home);
+                    const awayInjuries = await injuryTracker.getTeamInjuries(game.away);
+                    
+                    // Form-Analyse
+                    const homeForm = formAnalyzer.analyzeTeamForm(game.home, 
+                        formAnalyzer.generateSimulatedForm(game.home));
+                    const awayForm = formAnalyzer.analyzeTeamForm(game.away,
+                        formAnalyzer.generateSimulatedForm(game.away));
+                    
+                    // Bankroll Empfehlungen
+                    const bestValue = Math.max(
+                        game.value?.home || 0,
+                        game.value?.draw || 0, 
+                        game.value?.away || 0,
+                        game.value?.over25 || 0
+                    );
+                    
+                    let recommendedStake = 0;
+                    let stakeType = 'none';
+                    
+                    if (bestValue > 0.1) {
+                        const bestValueType = Object.entries(game.value || {})
+                            .reduce((a, b) => (a[1] || 0) > (b[1] || 0) ? a : b)[0];
+                            
+                        const probability = game.prob?.[bestValueType] || game.over25 || 0.5;
+                        const odds = game.odds?.[bestValueType] || 2.0;
+                        
+                        recommendedStake = bankrollManager.calculateValueStake(bestValue, probability);
+                        stakeType = bestValueType;
+                    }
+                    
+                    // Erweiterte Spiel-Daten
+                    return {
+                        ...game,
+                        injuries: {
+                            home: homeInjuries,
+                            away: awayInjuries
+                        },
+                        form: {
+                            home: homeForm,
+                            away: awayForm
+                        },
+                        bankroll: {
+                            recommendedStake: recommendedStake,
+                            stakeType: stakeType,
+                            value: bestValue
+                        },
+                        enhancedAnalysis: generateEnhancedAnalysis(game, homeInjuries, awayInjuries, homeForm, awayForm)
+                    };
+                    
+                } catch (error) {
+                    console.error('Error enhancing game:', error);
+                    return game;
+                }
+            })
+        );
+
+        console.log('Enhanced games:', enhancedGames);
+
         // Calculate statistics
-        const stats = calculateStatistics(games);
+        const stats = calculateStatistics(enhancedGames);
         updateStatistics(stats);
+
+        // ⭐⭐ BANKROLL PANEL IN SIDEBAR EINFÜGEN ⭐⭐
+        const sidebar = document.querySelector('.sidebar');
+        const existingBankrollPanel = document.querySelector('.bankroll-panel');
+        if (existingBankrollPanel) {
+            existingBankrollPanel.remove();
+        }
+        
+        const bankrollPanelHTML = createBankrollPanel();
+        sidebar.insertAdjacentHTML('afterbegin', bankrollPanelHTML);
 
         // 🔥 PROBLEM 1: Premium Picks - WENIGER STRENGE KRITERIEN
         premiumPicksDiv.innerHTML = "";
-        let premiumPicks = games
+        let premiumPicks = enhancedGames
             .filter(g => {
                 const kiScore = g.kiScore || 0;
                 const maxValue = Math.max(
@@ -302,8 +584,8 @@ async function loadGames() {
             .slice(0, 3);
 
         // Fallback: Wenn immer noch keine, nimm einfach die ersten 3 Spiele
-        if (premiumPicks.length === 0 && games.length > 0) {
-            premiumPicks = games.slice(0, 3);
+        if (premiumPicks.length === 0 && enhancedGames.length > 0) {
+            premiumPicks = enhancedGames.slice(0, 3);
         }
         
         if (premiumPicks.length > 0) {
@@ -323,7 +605,7 @@ async function loadGames() {
 
         // 🔥 PROBLEM 2: Top Value Bets - BESSERE SORTIERUNG
         topValueBetsDiv.innerHTML = "";
-        const valueBets = games
+        const valueBets = enhancedGames
             .sort((a, b) => {
                 const aValue = Math.max(
                     a.value?.home || 0,
@@ -351,7 +633,7 @@ async function loadGames() {
 
         // 🔥 PROBLEM 3: Top Over 2.5 - NIEDRIGERE SCHWELLE
         topOver25Div.innerHTML = "";
-        const overGames = games
+        const overGames = enhancedGames
             .filter(g => (g.over25 || 0) > 0.4) // Niedrigere Schwelle: 40% statt 50%
             .sort((a, b) => (b.over25 || 0) - (a.over25 || 0))
             .slice(0, 5);
@@ -368,7 +650,7 @@ async function loadGames() {
 
         // Top Games (Nächste 5 beste Spiele nach KI-Score)
         topGamesDiv.innerHTML = "";
-        const topGames = games
+        const topGames = enhancedGames
             .filter(g => !premiumPicks.includes(g) && !valueBets.includes(g) && !overGames.includes(g))
             .sort((a, b) => (b.kiScore || 0) - (a.kiScore || 0))
             .slice(0, 5);
@@ -383,7 +665,7 @@ async function loadGames() {
 
         // Alle anderen Spiele
         gamesDiv.innerHTML = "";
-        const otherGames = games.filter(g => 
+        const otherGames = enhancedGames.filter(g => 
             !premiumPicks.includes(g) && 
             !topGames.includes(g) && 
             !valueBets.includes(g) && 
