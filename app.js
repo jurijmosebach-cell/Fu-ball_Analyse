@@ -19,7 +19,6 @@ const highValueBetsEl = document.getElementById("highValueBets");
 const strongTrendsEl = document.getElementById("strongTrends");
 const over25RateEl = document.getElementById("over25Rate");
 const updateTimeEl = document.getElementById("updateTime");
-const premiumPicksEl = document.getElementById("premiumPicks");
 
 // Set today's date as default
 dateInput.value = new Date().toISOString().split('T')[0];
@@ -62,7 +61,8 @@ function createTrendBadge(trend) {
 }
 
 function createProgressBar(label, value, type) {
-    const percentage = Math.round((value || 0) * 100);
+    const safeValue = value || 0;
+    const percentage = Math.round(safeValue * 100);
     const container = document.createElement("div");
     container.className = "metric";
     
@@ -99,8 +99,13 @@ function createGameElement(game, type = 'standard') {
     const over25Value = game.value?.over25 || 0;
     
     const bestValue = Math.max(homeValue, drawValue, awayValue, over25Value);
-    const bestValueType = Object.entries(game.value || {})
-        .reduce((a, b) => (a[1] || 0) > (b[1] || 0) ? a : b)[0];
+    
+    // Best Value Type sicher finden
+    let bestValueType = 'home';
+    if (bestValue === homeValue) bestValueType = 'home';
+    else if (bestValue === drawValue) bestValueType = 'draw';
+    else if (bestValue === awayValue) bestValueType = 'away';
+    else if (bestValue === over25Value) bestValueType = 'over25';
 
     // Premium Badge für Top-Spiele
     const premiumBadge = type === 'premium' ? `<span class="premium-badge">💎 TOP PICK</span>` : '';
@@ -166,18 +171,27 @@ function createGameElement(game, type = 'standard') {
 }
 
 function updateStatistics(games) {
+    console.log('Updating statistics for', games.length, 'games');
+    
+    // Debug: Zeige alle Spiele mit ihren kiScores
+    games.forEach((game, index) => {
+        console.log(`Game ${index}: ${game.home} vs ${game.away} - kiScore: ${game.kiScore}, Value:`, game.value);
+    });
+
     const premiumGames = games.filter(g => {
-        const kiScore = g.kiScore || 0.5;
+        const kiScore = g.kiScore || 0;
         const maxValue = Math.max(
             g.value?.home || 0,
             g.value?.draw || 0, 
             g.value?.away || 0,
             g.value?.over25 || 0
         );
-        return kiScore > 0.75 && maxValue > 0.1;
+        const isPremium = kiScore > 0.75 && maxValue > 0.1;
+        console.log(`Premium Check: ${g.home} vs ${g.away} - kiScore: ${kiScore}, maxValue: ${maxValue}, isPremium: ${isPremium}`);
+        return isPremium;
     });
     
-    const featuredGames = games.filter(g => (g.kiScore || 0.5) > 0.7);
+    const featuredGames = games.filter(g => (g.kiScore || 0) > 0.7);
     const highValueGames = games.filter(g => {
         const maxValue = Math.max(
             g.value?.home || 0,
@@ -189,7 +203,7 @@ function updateStatistics(games) {
     });
     
     const strongTrendGames = games.filter(g => 
-        g.trend?.includes('Strong') || g.trend === 'Home' || g.trend === 'Away'
+        g.trend && (g.trend.includes('Strong') || g.trend === 'Home' || g.trend === 'Away')
     );
     
     totalMatchesEl.textContent = games.length;
@@ -197,8 +211,8 @@ function updateStatistics(games) {
     featuredCountEl.textContent = `${featuredGames.length} Spiele`;
     allGamesCountEl.textContent = `${games.length} Spiele`;
 
-    const avgConfidence = games.reduce((sum, game) => sum + (game.confidence || 0.5), 0) / games.length || 0;
-    const over25Rate = games.reduce((sum, game) => sum + (game.over25 || 0), 0) / games.length || 0;
+    const avgConfidence = games.length > 0 ? games.reduce((sum, game) => sum + (game.confidence || 0.5), 0) / games.length : 0;
+    const over25Rate = games.length > 0 ? games.reduce((sum, game) => sum + (game.over25 || 0), 0) / games.length : 0;
 
     avgConfidenceEl.textContent = `${Math.round(avgConfidence * 100)}%`;
     highValueBetsEl.textContent = highValueGames.length;
@@ -208,6 +222,9 @@ function updateStatistics(games) {
         hour: '2-digit', 
         minute: '2-digit' 
     });
+
+    console.log('Premium Games found:', premiumGames.length);
+    return premiumGames;
 }
 
 async function loadGames() {
@@ -223,8 +240,11 @@ async function loadGames() {
         let url = "/api/games";
         if (dateInput.value) url += "?date=" + dateInput.value;
         
+        console.log('Fetching from:', url);
         const res = await fetch(url);
         const data = await res.json();
+
+        console.log('API Response:', data);
 
         if (!data || !Array.isArray(data.response)) {
             gamesDiv.innerHTML = "<div class='loading'>Keine Spieldaten erhalten</div>";
@@ -245,38 +265,48 @@ async function loadGames() {
             );
         }
 
-        // Update statistics
-        updateStatistics(games);
+        console.log('Games after filtering:', games);
 
-        // BUG FIX: Premium Picks mit sicherer Filterung
+        // Update statistics and get premium picks
+        const premiumPicks = updateStatistics(games);
+
+        // BUG FIX: Premium Picks anzeigen (auch wenn weniger als 3)
         premiumPicksDiv.innerHTML = "";
-        const premiumPicks = games
-            .filter(g => {
-                const kiScore = g.kiScore || 0.5;
-                const maxValue = Math.max(
-                    g.value?.home || 0,
-                    g.value?.draw || 0,
-                    g.value?.away || 0,
-                    g.value?.over25 || 0
-                );
-                return kiScore > 0.75 && maxValue > 0.1;
-            })
-            .sort((a, b) => (b.kiScore || 0.5) - (a.kiScore || 0.5))
-            .slice(0, 3);
         
         if (premiumPicks.length > 0) {
+            console.log('Displaying premium picks:', premiumPicks.length);
             premiumPicks.forEach(game => {
                 premiumPicksDiv.appendChild(createGameElement(game, 'premium'));
             });
         } else {
-            premiumPicksDiv.innerHTML = `<div class="loading">Keine Premium Picks gefunden</div>`;
+            console.log('No premium picks found, showing message');
+            // Weniger strenge Kriterien für Premium Picks als Fallback
+            const fallbackPicks = games
+                .filter(g => (g.kiScore || 0) > 0.6)
+                .sort((a, b) => (b.kiScore || 0) - (a.kiScore || 0))
+                .slice(0, 3);
+            
+            if (fallbackPicks.length > 0) {
+                console.log('Using fallback picks:', fallbackPicks.length);
+                fallbackPicks.forEach(game => {
+                    premiumPicksDiv.appendChild(createGameElement(game, 'premium'));
+                });
+            } else {
+                premiumPicksDiv.innerHTML = `
+                    <div class="loading">
+                        <i class="fas fa-info-circle" style="color: #6b7280;"></i>
+                        <div>Keine Premium Picks für heute</div>
+                        <div style="font-size: 0.8rem; margin-top: 0.5rem;">Versuche ein anderes Datum</div>
+                    </div>
+                `;
+            }
         }
 
         // Top Games (Nächste 5 beste Spiele)
         topGamesDiv.innerHTML = "";
         const topGames = games
             .filter(g => !premiumPicks.includes(g))
-            .sort((a, b) => (b.kiScore || 0.5) - (a.kiScore || 0.5))
+            .sort((a, b) => (b.kiScore || 0) - (a.kiScore || 0))
             .slice(0, 5);
         
         if (topGames.length > 0) {
