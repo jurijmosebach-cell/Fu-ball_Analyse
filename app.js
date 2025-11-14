@@ -181,12 +181,11 @@ function calculateStatistics(games) {
             g.value?.away || 0,
             g.value?.over25 || 0
         );
-        const isPremium = kiScore > 0.75 && maxValue > 0.1;
-        console.log(`Premium Check: ${g.home} vs ${g.away} - kiScore: ${kiScore}, maxValue: ${maxValue}, isPremium: ${isPremium}`);
+        const isPremium = kiScore > 0.55 || maxValue > 0.05;
         return isPremium;
     });
     
-    const featuredGames = games.filter(g => (g.kiScore || 0) > 0.7);
+    const featuredGames = games.filter(g => (g.kiScore || 0) > 0.6);
     const highValueGames = games.filter(g => {
         const maxValue = Math.max(
             g.value?.home || 0,
@@ -194,14 +193,14 @@ function calculateStatistics(games) {
             g.value?.away || 0,
             g.value?.over25 || 0
         );
-        return maxValue > 0.1;
+        return maxValue > 0.05;
     });
     
     const strongTrendGames = games.filter(g => 
         g.trend && (g.trend.includes('Strong') || g.trend === 'Home' || g.trend === 'Away')
     );
 
-    const over25Games = games.filter(g => (g.over25 || 0) > 0.6);
+    const over25Games = games.filter(g => (g.over25 || 0) > 0.4);
     
     const avgConfidence = games.length > 0 ? games.reduce((sum, game) => sum + (game.confidence || 0.5), 0) / games.length : 0;
     const over25Rate = games.length > 0 ? games.reduce((sum, game) => sum + (game.over25 || 0), 0) / games.length : 0;
@@ -292,21 +291,19 @@ async function loadGames() {
                     g.value?.away || 0,
                     g.value?.over25 || 0
                 );
-                // Weniger strenge Kriterien für Premium
-                return (kiScore > 0.65 || maxValue > 0.08);
+                // VIEL WENIGER STRENGE KRITERIEN
+                return (kiScore > 0.55 || maxValue > 0.05) && (g.confidence || 0) > 0.6;
             })
             .sort((a, b) => {
-                const aScore = (a.kiScore || 0) + (Math.max(a.value?.home || 0, a.value?.draw || 0, a.value?.away || 0, a.value?.over25 || 0) * 2);
-                const bScore = (b.kiScore || 0) + (Math.max(b.value?.home || 0, b.value?.draw || 0, b.value?.away || 0, b.value?.over25 || 0) * 2);
+                const aScore = (a.kiScore || 0) + (Math.max(a.value?.home || 0, a.value?.draw || 0, a.value?.away || 0, a.value?.over25 || 0) * 3);
+                const bScore = (b.kiScore || 0) + (Math.max(b.value?.home || 0, b.value?.draw || 0, b.value?.away || 0, b.value?.over25 || 0) * 3);
                 return bScore - aScore;
             })
             .slice(0, 3);
-        
-        // Fallback: Wenn keine Premium Picks, nimm einfach die Top 3 nach KI-Score
+
+        // Fallback: Wenn immer noch keine, nimm einfach die ersten 3 Spiele
         if (premiumPicks.length === 0 && games.length > 0) {
-            premiumPicks = games
-                .sort((a, b) => (b.kiScore || 0) - (a.kiScore || 0))
-                .slice(0, 3);
+            premiumPicks = games.slice(0, 3);
         }
         
         if (premiumPicks.length > 0) {
@@ -352,10 +349,10 @@ async function loadGames() {
             topValueBetsDiv.innerHTML = `<div class="loading">Keine Value Bets gefunden</div>`;
         }
 
-        // 🔥 PROBLEM 3: Top Over 2.5 - KORREKTE FILTERUNG
+        // 🔥 PROBLEM 3: Top Over 2.5 - NIEDRIGERE SCHWELLE
         topOver25Div.innerHTML = "";
         const overGames = games
-            .filter(g => (g.over25 || 0) > 0.5) // Filter für Over 2.5 Wahrscheinlichkeit
+            .filter(g => (g.over25 || 0) > 0.4) // Niedrigere Schwelle: 40% statt 50%
             .sort((a, b) => (b.over25 || 0) - (a.over25 || 0))
             .slice(0, 5);
         
