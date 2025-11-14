@@ -20,23 +20,120 @@ const strongTrendsEl = document.getElementById("strongTrends");
 const over25RateEl = document.getElementById("over25Rate");
 const updateTimeEl = document.getElementById("updateTime");
 
-// ⭐⭐ NEUE MODULE IMPORTIEREN ⭐⭐
-import { BankrollManager } from './bankroll-manager.js';
-import { AdvancedFormAnalyzer } from './advanced-form-analyzer.js';
-import { InjuryTracker } from './injury-tracker.js';
+// ⭐⭐ EINFACHE VERSION DER NEUEN MODULE (für Browser) ⭐⭐
+class SimpleBankrollManager {
+    constructor() {
+        this.bankroll = 1000;
+        this.riskProfile = 'medium';
+        this.bettingHistory = [];
+        this.performance = {
+            totalBets: 0, wins: 0, losses: 0, pushes: 0,
+            totalStaked: 0, totalReturn: 0, roi: 0,
+            currentStreak: 0, longestWinStreak: 0, longestLossStreak: 0
+        };
+        this.loadFromLocalStorage();
+    }
 
-// ⭐⭐ INITIALISIERUNG DER NEUEN MODULE ⭐⭐
-const bankrollManager = new BankrollManager();
-const formAnalyzer = new AdvancedFormAnalyzer();
-const injuryTracker = new InjuryTracker();
+    calculateValueStake(value, probability, baseStake = 25) {
+        if (value <= 0) return 0;
+        const stake = baseStake * (1 + (value * 3)) * (probability * 1.5);
+        const maxStake = this.bankroll * 0.05;
+        return Math.max(5, Math.min(Math.round(stake), maxStake));
+    }
 
-// Bankroll aus Local Storage laden
-bankrollManager.loadFromLocalStorage();
+    getPerformanceMetrics() {
+        const winRate = this.performance.totalBets > 0 
+            ? (this.performance.wins / this.performance.totalBets) * 100 
+            : 0;
+        return {
+            bankroll: this.bankroll,
+            winRate: winRate,
+            roi: this.performance.roi,
+            totalBets: this.performance.totalBets,
+            currentStreak: this.performance.currentStreak
+        };
+    }
+
+    getBankrollRecommendations() {
+        const metrics = this.getPerformanceMetrics();
+        const recommendations = [];
+        
+        if (metrics.winRate < 45) {
+            recommendations.push({
+                type: 'warning',
+                message: 'Win Rate unter 45%',
+                action: 'Stake-Größen reduzieren'
+            });
+        }
+        
+        if (metrics.currentStreak < -3) {
+            recommendations.push({
+                type: 'danger',
+                message: `Verlustserie: ${Math.abs(metrics.currentStreak)} Spiele`,
+                action: 'Pause einlegen'
+            });
+        }
+        
+        return recommendations;
+    }
+
+    loadFromLocalStorage() {
+        try {
+            const data = JSON.parse(localStorage.getItem('profoot_bankroll'));
+            if (data) {
+                this.bankroll = data.bankroll || 1000;
+                this.performance = data.performance || this.performance;
+            }
+        } catch (e) {
+            console.log('Could not load bankroll data');
+        }
+    }
+}
+
+class SimpleFormAnalyzer {
+    analyzeTeamForm(teamName) {
+        // Vereinfachte Form-Analyse
+        return {
+            currentForm: 0.5 + (Math.random() * 0.4),
+            formMomentum: (Math.random() - 0.5) * 0.3,
+            overallRating: 0.5 + (Math.random() * 0.4)
+        };
+    }
+}
+
+class SimpleInjuryTracker {
+    async getTeamInjuries(teamName) {
+        // Vereinfachte Verletzungsanalyse
+        const injuryCount = Math.floor(Math.random() * 2);
+        const injuries = [];
+        
+        for (let i = 0; i < injuryCount; i++) {
+            injuries.push({
+                name: `Spieler ${i+1}`,
+                position: ['goalkeeper', 'defender', 'midfielder', 'forward'][Math.floor(Math.random() * 4)],
+                severity: ['minor', 'moderate', 'major'][Math.floor(Math.random() * 3)]
+            });
+        }
+        
+        return {
+            team: teamName,
+            missingPlayers: injuries,
+            overallImpact: injuries.length * 0.2,
+            attackImpact: injuries.filter(i => i.position === 'forward' || i.position === 'midfielder').length * 0.25,
+            defenseImpact: injuries.filter(i => i.position === 'goalkeeper' || i.position === 'defender').length * 0.25
+        };
+    }
+}
+
+// ⭐⭐ INITIALISIERUNG DER EINFACHEN MODULE ⭐⭐
+const bankrollManager = new SimpleBankrollManager();
+const formAnalyzer = new SimpleFormAnalyzer();
+const injuryTracker = new SimpleInjuryTracker();
 
 // Set today's date as default
 dateInput.value = new Date().toISOString().split('T')[0];
 
-// ⭐⭐ NEUE FUNKTION: BANKROLL PANEL ERSTELLEN ⭐⭐
+// ⭐⭐ BANKROLL PANEL ERSTELLEN ⭐⭐
 function createBankrollPanel() {
     const metrics = bankrollManager.getPerformanceMetrics();
     const recommendations = bankrollManager.getBankrollRecommendations();
@@ -154,54 +251,12 @@ function createBankrollPanel() {
     return bankrollHTML;
 }
 
-// ⭐⭐ NEUE FUNKTION: ERWEITERTE ANALYSE ERSTELLEN ⭐⭐
-function generateEnhancedAnalysis(game, homeInjuries, awayInjuries, homeForm, awayForm) {
-    const analysis = {
-        summary: "",
-        keyFactors: [],
-        riskFactors: [],
-        recommendations: []
-    };
-
-    // Verletzungsanalyse
-    if (homeInjuries.overallImpact > 0.4 || awayInjuries.overallImpact > 0.4) {
-        analysis.riskFactors.push("⚠️ Verletzungsprobleme bei einem oder beiden Teams");
-        
-        if (homeInjuries.attackImpact > 0.3) {
-            analysis.keyFactors.push(`🔴 ${game.home} Angriff geschwächt (-${Math.round(homeInjuries.attackImpact * 100)}%)`);
-        }
-        if (awayInjuries.defenseImpact > 0.3) {
-            analysis.keyFactors.push(`🟢 ${game.away} Verteidigung geschwächt (+${Math.round(awayInjuries.defenseImpact * 100)}% für ${game.home})`);
-        }
-    }
-
-    // Form-Analyse
-    if (homeForm.formMomentum > 0.1) {
-        analysis.keyFactors.push(`📈 ${game.home} in guter Form (Momentum: +${Math.round(homeForm.formMomentum * 100)}%)`);
-    }
-    if (awayForm.formMomentum < -0.1) {
-        analysis.keyFactors.push(`📉 ${game.away} in schwacher Form (Momentum: ${Math.round(awayForm.formMomentum * 100)}%)`);
-    }
-
-    // Bankroll Empfehlungen
-    if (game.bankroll && game.bankroll.recommendedStake > 0) {
-        analysis.recommendations.push(`💰 Empfohlener Einsatz: €${game.bankroll.recommendedStake} auf ${game.bankroll.stakeType}`);
-    }
-
-    return analysis;
-}
-
-// Utility Functions (bestehender Code)
+// Utility Functions
 function getTrendColor(trend) {
     const colors = {
-        "Strong Home": "#059669",
-        "Home": "#16a34a", 
-        "Slight Home": "#22c55e",
-        "Strong Away": "#dc2626",
-        "Away": "#ef4444",
-        "Slight Away": "#f97316",
-        "Draw": "#f59e0b",
-        "Balanced": "#6b7280"
+        "Strong Home": "#059669", "Home": "#16a34a", "Slight Home": "#22c55e",
+        "Strong Away": "#dc2626", "Away": "#ef4444", "Slight Away": "#f97316",
+        "Draw": "#f59e0b", "Balanced": "#6b7280"
     };
     return colors[trend] || "#6b7280";
 }
@@ -260,7 +315,6 @@ function createGameElement(game, type = 'standard') {
         minute: '2-digit'
     });
 
-    // BUG FIX: NaN Problem beheben
     const homeValue = game.value?.home || 0;
     const drawValue = game.value?.draw || 0;
     const awayValue = game.value?.away || 0;
@@ -268,17 +322,15 @@ function createGameElement(game, type = 'standard') {
     
     const bestValue = Math.max(homeValue, drawValue, awayValue, over25Value);
     
-    // Best Value Type sicher finden
     let bestValueType = 'home';
     if (bestValue === homeValue) bestValueType = 'home';
     else if (bestValue === drawValue) bestValueType = 'draw';
     else if (bestValue === awayValue) bestValueType = 'away';
     else if (bestValue === over25Value) bestValueType = 'over25';
 
-    // Premium Badge für Top-Spiele
     const premiumBadge = type === 'premium' ? `<span class="premium-badge">💎 TOP PICK</span>` : '';
 
-    // ⭐⭐ BANKROLL EMPFEHLUNG ANZEIGEN ⭐⭐
+    // Bankroll Empfehlung
     const bankrollInfo = game.bankroll && game.bankroll.recommendedStake > 0 
         ? `<div style="font-size: 0.8rem; color: #059669; font-weight: 600; margin-top: 0.5rem;">
              <i class="fas fa-coins"></i> Empfohlener Einsatz: €${game.bankroll.recommendedStake}
@@ -324,61 +376,10 @@ function createGameElement(game, type = 'standard') {
         ${bankrollInfo}
     `;
 
-    // ⭐⭐ ERWEITERTE ANALYSE FÜR PREMIUM SPIELE ⭐⭐
-    if ((type === 'premium' || type === 'featured') && game.enhancedAnalysis) {
-        const analysisSection = document.createElement("div");
-        analysisSection.className = "analysis-section";
-        
-        let enhancedHTML = `
-            <div class="analysis-title">
-                <i class="fas fa-lightbulb"></i>
-                Erweiterte KI-Analyse
-            </div>
-            <div class="analysis-text">
-                ${game.analysis?.summary || 'Professionelle Spielanalyse'}
-            </div>
-        `;
-
-        // Verletzungs-Info
-        if (game.injuries && (game.injuries.home.overallImpact > 0.2 || game.injuries.away.overallImpact > 0.2)) {
-            enhancedHTML += `
-                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
-                    <div style="font-weight: 700; color: #92400e; margin-bottom: 0.25rem;">
-                        <i class="fas fa-first-aid"></i> Verletzungsreport
-                    </div>
-                    <div style="font-size: 0.8rem; color: #92400e;">
-                        ${game.injuries.home.overallImpact > 0.2 ? `${game.home}: ${game.injuries.home.missingPlayers.length} Spieler verletzt` : ''}
-                        ${game.injuries.away.overallImpact > 0.2 ? `${game.away}: ${game.injuries.away.missingPlayers.length} Spieler verletzt` : ''}
-                    </div>
-                </div>
-            `;
-        }
-
-        // Form-Info
-        if (game.form && (game.form.home.overallRating > 0.7 || game.form.away.overallRating > 0.7)) {
-            enhancedHTML += `
-                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #d1fae5; border-radius: 8px; border-left: 4px solid #059669;">
-                    <div style="font-weight: 700; color: #065f46; margin-bottom: 0.25rem;">
-                        <i class="fas fa-chart-line"></i> Form-Analyse
-                    </div>
-                    <div style="font-size: 0.8rem; color: #065f46;">
-                        ${game.form.home.overallRating > 0.7 ? `${game.home}: Starke Form (${Math.round(game.form.home.overallRating * 100)}%)` : ''}
-                        ${game.form.away.overallRating > 0.7 ? `${game.away}: Starke Form (${Math.round(game.form.away.overallRating * 100)}%)` : ''}
-                    </div>
-                </div>
-            `;
-        }
-
-        analysisSection.innerHTML = enhancedHTML;
-        gameEl.appendChild(analysisSection);
-    }
-
     return gameEl;
 }
 
 function calculateStatistics(games) {
-    console.log('Calculating statistics for', games.length, 'games');
-    
     const premiumGames = games.filter(g => {
         const kiScore = g.kiScore || 0;
         const maxValue = Math.max(
@@ -387,8 +388,7 @@ function calculateStatistics(games) {
             g.value?.away || 0,
             g.value?.over25 || 0
         );
-        const isPremium = kiScore > 0.55 || maxValue > 0.05;
-        return isPremium;
+        return kiScore > 0.55 || maxValue > 0.05;
     });
     
     const featuredGames = games.filter(g => (g.kiScore || 0) > 0.6);
@@ -437,12 +437,13 @@ function updateStatistics(stats) {
         hour: '2-digit', 
         minute: '2-digit' 
     });
-
-    console.log('Statistics updated:', stats);
 }
-// ⭐⭐ ERWEITERTE LOADGAMES FUNKTION ⭐⭐
+
+// ⭐⭐ HAUPT-LOAD FUNKTION (VEREINFACHT) ⭐⭐
 async function loadGames() {
     try {
+        console.log('Loading games...');
+        
         // Show loading state
         premiumPicksDiv.innerHTML = topGamesDiv.innerHTML = gamesDiv.innerHTML = topValueBetsDiv.innerHTML = topOver25Div.innerHTML = `
             <div class="loading">
@@ -456,14 +457,16 @@ async function loadGames() {
         
         console.log('Fetching from:', url);
         const res = await fetch(url);
+        
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
         const data = await res.json();
-
-        console.log('API Response:', data);
+        console.log('API Response received');
 
         if (!data || !Array.isArray(data.response)) {
-            const errorHTML = `<div class="loading">Keine Spieldaten erhalten</div>`;
-            premiumPicksDiv.innerHTML = topGamesDiv.innerHTML = gamesDiv.innerHTML = topValueBetsDiv.innerHTML = topOver25Div.innerHTML = errorHTML;
-            return;
+            throw new Error('Invalid API response format');
         }
 
         let games = data.response.slice();
@@ -480,79 +483,9 @@ async function loadGames() {
             );
         }
 
-        console.log('Games after filtering:', games);
+        console.log('Games after filtering:', games.length);
 
-        // ⭐⭐ ERWEITERTE ANALYSE FÜR JEDES SPIEL ⭐⭐
-        console.log('Starting enhanced analysis for', games.length, 'games...');
-        
-        const enhancedGames = await Promise.all(
-            games.map(async (game) => {
-                try {
-                    // Verletzungsanalyse
-                    const homeInjuries = await injuryTracker.getTeamInjuries(game.home);
-                    const awayInjuries = await injuryTracker.getTeamInjuries(game.away);
-                    
-                    // Form-Analyse
-                    const homeForm = formAnalyzer.analyzeTeamForm(game.home, 
-                        formAnalyzer.generateSimulatedForm(game.home));
-                    const awayForm = formAnalyzer.analyzeTeamForm(game.away,
-                        formAnalyzer.generateSimulatedForm(game.away));
-                    
-                    // Bankroll Empfehlungen
-                    const bestValue = Math.max(
-                        game.value?.home || 0,
-                        game.value?.draw || 0, 
-                        game.value?.away || 0,
-                        game.value?.over25 || 0
-                    );
-                    
-                    let recommendedStake = 0;
-                    let stakeType = 'none';
-                    
-                    if (bestValue > 0.1) {
-                        const bestValueType = Object.entries(game.value || {})
-                            .reduce((a, b) => (a[1] || 0) > (b[1] || 0) ? a : b)[0];
-                            
-                        const probability = game.prob?.[bestValueType] || game.over25 || 0.5;
-                        const odds = game.odds?.[bestValueType] || 2.0;
-                        
-                        recommendedStake = bankrollManager.calculateValueStake(bestValue, probability);
-                        stakeType = bestValueType;
-                    }
-                    
-                    // Erweiterte Spiel-Daten
-                    return {
-                        ...game,
-                        injuries: {
-                            home: homeInjuries,
-                            away: awayInjuries
-                        },
-                        form: {
-                            home: homeForm,
-                            away: awayForm
-                        },
-                        bankroll: {
-                            recommendedStake: recommendedStake,
-                            stakeType: stakeType,
-                            value: bestValue
-                        },
-                        enhancedAnalysis: generateEnhancedAnalysis(game, homeInjuries, awayInjuries, homeForm, awayForm)
-                    };
-                    
-                } catch (error) {
-                    console.error('Error enhancing game:', error);
-                    return game;
-                }
-            })
-        );
-
-        console.log('Enhanced games:', enhancedGames);
-
-        // Calculate statistics
-        const stats = calculateStatistics(enhancedGames);
-        updateStatistics(stats);
-
-        // ⭐⭐ BANKROLL PANEL IN SIDEBAR EINFÜGEN ⭐⭐
+         // ⭐⭐ BANKROLL PANEL EINFÜGEN ⭐⭐
         const sidebar = document.querySelector('.sidebar');
         const existingBankrollPanel = document.querySelector('.bankroll-panel');
         if (existingBankrollPanel) {
@@ -562,9 +495,13 @@ async function loadGames() {
         const bankrollPanelHTML = createBankrollPanel();
         sidebar.insertAdjacentHTML('afterbegin', bankrollPanelHTML);
 
-        // 🔥 PROBLEM 1: Premium Picks - WENIGER STRENGE KRITERIEN
+        // Calculate statistics
+        const stats = calculateStatistics(games);
+        updateStatistics(stats);
+
+        // Premium Picks
         premiumPicksDiv.innerHTML = "";
-        let premiumPicks = enhancedGames
+        let premiumPicks = games
             .filter(g => {
                 const kiScore = g.kiScore || 0;
                 const maxValue = Math.max(
@@ -573,7 +510,6 @@ async function loadGames() {
                     g.value?.away || 0,
                     g.value?.over25 || 0
                 );
-                // VIEL WENIGER STRENGE KRITERIEN
                 return (kiScore > 0.55 || maxValue > 0.05) && (g.confidence || 0) > 0.6;
             })
             .sort((a, b) => {
@@ -583,9 +519,8 @@ async function loadGames() {
             })
             .slice(0, 3);
 
-        // Fallback: Wenn immer noch keine, nimm einfach die ersten 3 Spiele
-        if (premiumPicks.length === 0 && enhancedGames.length > 0) {
-            premiumPicks = enhancedGames.slice(0, 3);
+        if (premiumPicks.length === 0 && games.length > 0) {
+            premiumPicks = games.slice(0, 3);
         }
         
         if (premiumPicks.length > 0) {
@@ -598,14 +533,13 @@ async function loadGames() {
                 <div class="loading">
                     <i class="fas fa-info-circle" style="color: #6b7280;"></i>
                     <div>Keine Premium Picks für heute</div>
-                    <div style="font-size: 0.8rem; margin-top: 0.5rem;">Versuche ein anderes Datum</div>
                 </div>
             `;
         }
 
-        // 🔥 PROBLEM 2: Top Value Bets - BESSERE SORTIERUNG
+        // Top Value Bets
         topValueBetsDiv.innerHTML = "";
-        const valueBets = enhancedGames
+        const valueBets = games
             .sort((a, b) => {
                 const aValue = Math.max(
                     a.value?.home || 0,
@@ -631,14 +565,12 @@ async function loadGames() {
             topValueBetsDiv.innerHTML = `<div class="loading">Keine Value Bets gefunden</div>`;
         }
 
-        // 🔥 PROBLEM 3: Top Over 2.5 - NIEDRIGERE SCHWELLE
+        // Top Over 2.5
         topOver25Div.innerHTML = "";
-        const overGames = enhancedGames
-            .filter(g => (g.over25 || 0) > 0.4) // Niedrigere Schwelle: 40% statt 50%
+        const overGames = games
+            .filter(g => (g.over25 || 0) > 0.4)
             .sort((a, b) => (b.over25 || 0) - (a.over25 || 0))
             .slice(0, 5);
-        
-        console.log('Over 2.5 Games found:', overGames.length, overGames);
         
         if (overGames.length > 0) {
             overGames.forEach(game => {
@@ -648,9 +580,9 @@ async function loadGames() {
             topOver25Div.innerHTML = `<div class="loading">Keine Over 2.5 Spiele gefunden</div>`;
         }
 
-        // Top Games (Nächste 5 beste Spiele nach KI-Score)
+        // Top Games
         topGamesDiv.innerHTML = "";
-        const topGames = enhancedGames
+        const topGames = games
             .filter(g => !premiumPicks.includes(g) && !valueBets.includes(g) && !overGames.includes(g))
             .sort((a, b) => (b.kiScore || 0) - (a.kiScore || 0))
             .slice(0, 5);
@@ -665,7 +597,7 @@ async function loadGames() {
 
         // Alle anderen Spiele
         gamesDiv.innerHTML = "";
-        const otherGames = enhancedGames.filter(g => 
+        const otherGames = games.filter(g => 
             !premiumPicks.includes(g) && 
             !topGames.includes(g) && 
             !valueBets.includes(g) && 
@@ -680,12 +612,15 @@ async function loadGames() {
             });
         }
 
+        console.log('All games loaded successfully');
+
     } catch (err) {
         console.error("Fehler beim Laden:", err);
         const errorHTML = `
             <div class="loading">
                 <i class="fas fa-exclamation-triangle" style="color: #dc2626;"></i>
                 <div>Fehler beim Laden: ${err.message}</div>
+                <div style="font-size: 0.8rem; margin-top: 0.5rem;">Bitte versuche es später erneut</div>
             </div>
         `;
         premiumPicksDiv.innerHTML = topGamesDiv.innerHTML = gamesDiv.innerHTML = topValueBetsDiv.innerHTML = topOver25Div.innerHTML = errorHTML;
@@ -698,3 +633,5 @@ window.addEventListener("load", loadGames);
 
 // Auto-refresh every 5 minutes
 setInterval(loadGames, 5 * 60 * 1000);
+
+console.log('App initialized successfully');
