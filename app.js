@@ -62,7 +62,7 @@ function createTrendBadge(trend) {
 }
 
 function createProgressBar(label, value, type) {
-    const percentage = Math.round(value * 100);
+    const percentage = Math.round((value || 0) * 100);
     const container = document.createElement("div");
     container.className = "metric";
     
@@ -92,8 +92,15 @@ function createGameElement(game, type = 'standard') {
         minute: '2-digit'
     });
 
-    const bestValue = Math.max(game.value.home, game.value.draw, game.value.away, game.value.over25);
-    const bestValueType = Object.entries(game.value).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+    // BUG FIX: NaN Problem beheben
+    const homeValue = game.value?.home || 0;
+    const drawValue = game.value?.draw || 0;
+    const awayValue = game.value?.away || 0;
+    const over25Value = game.value?.over25 || 0;
+    
+    const bestValue = Math.max(homeValue, drawValue, awayValue, over25Value);
+    const bestValueType = Object.entries(game.value || {})
+        .reduce((a, b) => (a[1] || 0) > (b[1] || 0) ? a : b)[0];
 
     // Premium Badge für Top-Spiele
     const premiumBadge = type === 'premium' ? `<span class="premium-badge">💎 TOP PICK</span>` : '';
@@ -102,33 +109,33 @@ function createGameElement(game, type = 'standard') {
         <div class="game-header">
             <div class="teams">
                 <div class="team">
-                    <img src="${game.homeLogo}" alt="${game.home}" class="team-logo">
+                    <img src="${game.homeLogo || 'https://flagsapi.com/EU/flat/64.png'}" alt="${game.home}" class="team-logo">
                     <span>${game.home}</span>
                 </div>
                 <div class="vs">vs</div>
                 <div class="team">
-                    <img src="${game.awayLogo}" alt="${game.away}" class="team-logo">
+                    <img src="${game.awayLogo || 'https://flagsapi.com/EU/flat/64.png'}" alt="${game.away}" class="team-logo">
                     <span>${game.away}</span>
                 </div>
             </div>
             <div class="game-meta">
-                <div class="league">${game.league} ${premiumBadge}</div>
+                <div class="league">${game.league || 'Unknown League'} ${premiumBadge}</div>
                 <div>${formattedDate}</div>
             </div>
         </div>
         
         <div class="metrics-grid">
-            ${createProgressBar('Heimsieg', game.prob.home, 'home').outerHTML}
-            ${createProgressBar('Unentschieden', game.prob.draw, 'draw').outerHTML}
-            ${createProgressBar('Auswärtssieg', game.prob.away, 'away').outerHTML}
+            ${createProgressBar('Heimsieg', game.prob?.home, 'home').outerHTML}
+            ${createProgressBar('Unentschieden', game.prob?.draw, 'draw').outerHTML}
+            ${createProgressBar('Auswärtssieg', game.prob?.away, 'away').outerHTML}
             ${createProgressBar('Over 2.5', game.over25, 'over').outerHTML}
             ${createProgressBar('BTTS', game.btts, 'btts').outerHTML}
         </div>
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
             <div style="display: flex; gap: 0.5rem; align-items: center;">
-                ${createTrendBadge(game.trend).outerHTML}
-                ${createKIBadge(game.confidence).outerHTML}
+                ${createTrendBadge(game.trend || 'Balanced').outerHTML}
+                ${createKIBadge(game.confidence || 0.5).outerHTML}
             </div>
             <div style="font-size: 0.875rem; color: #059669; font-weight: 600;">
                 Best Value: ${(bestValue * 100).toFixed(1)}% (${bestValueType})
@@ -146,10 +153,10 @@ function createGameElement(game, type = 'standard') {
                 KI-Analyse
             </div>
             <div class="analysis-text">
-                ${game.analysis.summary}
+                ${game.analysis.summary || 'Keine Analyse verfügbar'}
             </div>
             <div style="margin-top: 0.5rem; font-size: 0.875rem; font-weight: 600; color: #2563eb;">
-                <i class="fas fa-check-circle"></i> ${game.analysis.recommendation}
+                <i class="fas fa-check-circle"></i> ${game.analysis.recommendation || 'Keine Empfehlung'}
             </div>
         `;
         gameEl.appendChild(analysisSection);
@@ -159,18 +166,39 @@ function createGameElement(game, type = 'standard') {
 }
 
 function updateStatistics(games) {
-    const premiumGames = games.filter(g => g.kiScore > 0.8 && Math.max(g.value.home, g.value.draw, g.value.away, g.value.over25) > 0.15);
-    const featuredGames = games.filter(g => g.kiScore > 0.7);
-    const highValueGames = games.filter(g => Math.max(g.value.home, g.value.draw, g.value.away, g.value.over25) > 0.1);
-    const strongTrendGames = games.filter(g => g.trend.includes('Strong') || g.trend === 'Home' || g.trend === 'Away');
+    const premiumGames = games.filter(g => {
+        const kiScore = g.kiScore || 0.5;
+        const maxValue = Math.max(
+            g.value?.home || 0,
+            g.value?.draw || 0, 
+            g.value?.away || 0,
+            g.value?.over25 || 0
+        );
+        return kiScore > 0.75 && maxValue > 0.1;
+    });
+    
+    const featuredGames = games.filter(g => (g.kiScore || 0.5) > 0.7);
+    const highValueGames = games.filter(g => {
+        const maxValue = Math.max(
+            g.value?.home || 0,
+            g.value?.draw || 0,
+            g.value?.away || 0,
+            g.value?.over25 || 0
+        );
+        return maxValue > 0.1;
+    });
+    
+    const strongTrendGames = games.filter(g => 
+        g.trend?.includes('Strong') || g.trend === 'Home' || g.trend === 'Away'
+    );
     
     totalMatchesEl.textContent = games.length;
     premiumCountEl.textContent = `${premiumGames.length} Premium`;
     featuredCountEl.textContent = `${featuredGames.length} Spiele`;
     allGamesCountEl.textContent = `${games.length} Spiele`;
 
-    const avgConfidence = games.reduce((sum, game) => sum + (game.confidence || 0.5), 0) / games.length;
-    const over25Rate = games.reduce((sum, game) => sum + (game.over25 || 0), 0) / games.length;
+    const avgConfidence = games.reduce((sum, game) => sum + (game.confidence || 0.5), 0) / games.length || 0;
+    const over25Rate = games.reduce((sum, game) => sum + (game.over25 || 0), 0) / games.length || 0;
 
     avgConfidenceEl.textContent = `${Math.round(avgConfidence * 100)}%`;
     highValueBetsEl.textContent = highValueGames.length;
@@ -212,56 +240,95 @@ async function loadGames() {
         if (teamInput.value) {
             const query = teamInput.value.toLowerCase();
             games = games.filter(g => 
-                g.home.toLowerCase().includes(query) || 
-                g.away.toLowerCase().includes(query)
+                g.home?.toLowerCase().includes(query) || 
+                g.away?.toLowerCase().includes(query)
             );
         }
 
         // Update statistics
         updateStatistics(games);
 
-        // Premium Picks (Top 3 mit höchstem KI-Score und Value)
+        // BUG FIX: Premium Picks mit sicherer Filterung
         premiumPicksDiv.innerHTML = "";
         const premiumPicks = games
-            .filter(g => g.kiScore > 0.75 && Math.max(g.value.home, g.value.draw, g.value.away, g.value.over25) > 0.1)
-            .sort((a, b) => b.kiScore - a.kiScore)
+            .filter(g => {
+                const kiScore = g.kiScore || 0.5;
+                const maxValue = Math.max(
+                    g.value?.home || 0,
+                    g.value?.draw || 0,
+                    g.value?.away || 0,
+                    g.value?.over25 || 0
+                );
+                return kiScore > 0.75 && maxValue > 0.1;
+            })
+            .sort((a, b) => (b.kiScore || 0.5) - (a.kiScore || 0.5))
             .slice(0, 3);
         
-        premiumPicks.forEach(game => {
-            premiumPicksDiv.appendChild(createGameElement(game, 'premium'));
-        });
+        if (premiumPicks.length > 0) {
+            premiumPicks.forEach(game => {
+                premiumPicksDiv.appendChild(createGameElement(game, 'premium'));
+            });
+        } else {
+            premiumPicksDiv.innerHTML = `<div class="loading">Keine Premium Picks gefunden</div>`;
+        }
 
         // Top Games (Nächste 5 beste Spiele)
         topGamesDiv.innerHTML = "";
         const topGames = games
             .filter(g => !premiumPicks.includes(g))
-            .sort((a, b) => b.kiScore - a.kiScore)
+            .sort((a, b) => (b.kiScore || 0.5) - (a.kiScore || 0.5))
             .slice(0, 5);
         
-        topGames.forEach(game => {
-            topGamesDiv.appendChild(createGameElement(game, 'featured'));
-        });
+        if (topGames.length > 0) {
+            topGames.forEach(game => {
+                topGamesDiv.appendChild(createGameElement(game, 'featured'));
+            });
+        } else {
+            topGamesDiv.innerHTML = `<div class="loading">Keine Top Spiele gefunden</div>`;
+        }
 
         // Top Value Bets
         topValueBetsDiv.innerHTML = "";
         const valueBets = games
-            .sort((a, b) => Math.max(...Object.values(b.value)) - Math.max(...Object.values(a.value)))
+            .sort((a, b) => {
+                const aValue = Math.max(
+                    a.value?.home || 0,
+                    a.value?.draw || 0,
+                    a.value?.away || 0,
+                    a.value?.over25 || 0
+                );
+                const bValue = Math.max(
+                    b.value?.home || 0,
+                    b.value?.draw || 0,
+                    b.value?.away || 0,
+                    b.value?.over25 || 0
+                );
+                return bValue - aValue;
+            })
             .slice(0, 5);
         
-        valueBets.forEach(game => {
-            topValueBetsDiv.appendChild(createGameElement(game));
-        });
+        if (valueBets.length > 0) {
+            valueBets.forEach(game => {
+                topValueBetsDiv.appendChild(createGameElement(game));
+            });
+        } else {
+            topValueBetsDiv.innerHTML = `<div class="loading">Keine Value Bets gefunden</div>`;
+        }
 
         // Top Over 2.5
         topOver25Div.innerHTML = "";
         const overGames = games
-            .filter(g => g.over25 > 0.5)
-            .sort((a, b) => b.over25 - a.over25)
+            .filter(g => (g.over25 || 0) > 0.5)
+            .sort((a, b) => (b.over25 || 0) - (a.over25 || 0))
             .slice(0, 5);
         
-        overGames.forEach(game => {
-            topOver25Div.appendChild(createGameElement(game));
-        });
+        if (overGames.length > 0) {
+            overGames.forEach(game => {
+                topOver25Div.appendChild(createGameElement(game));
+            });
+        } else {
+            topOver25Div.innerHTML = `<div class="loading">Keine Over 2.5 Spiele gefunden</div>`;
+        }
 
         // Alle anderen Spiele
         gamesDiv.innerHTML = "";
@@ -280,7 +347,7 @@ async function loadGames() {
         gamesDiv.innerHTML = `
             <div class="loading">
                 <i class="fas fa-exclamation-triangle" style="color: #dc2626;"></i>
-                <div>Fehler beim Laden</div>
+                <div>Fehler beim Laden: ${err.message}</div>
             </div>
         `;
     }
