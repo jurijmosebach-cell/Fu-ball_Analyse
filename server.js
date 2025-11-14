@@ -476,9 +476,31 @@ app.get('/api/games', async (req, res) => {
         };
 
         // Caching
-        cache.set(cacheKey, {
-            data: responseData.response,
-            timestamp: Date.now()
-        });
+cache.set(cacheKey, {
+    data: responseData.response,
+    timestamp: Date.now()
+});
 
+res.json(responseData);
+
+} catch (error) {
+    console.error('❌ Professional API Error:', error);
+    res.status(500).json({
+        error: error.message,
+        info: {
+            date: req.query.date,
+            source: "api_error", 
+            message: "Fehler beim Laden der Spieldaten"
+        }
+    });
+}
+});
+
+// Server starten
+app.listen(PORT, () => {
+    console.log(`🚀 Professional Server running on port ${PORT}`);
+    console.log(`🤖 ProFoot Analytics v4.0.0 - Alle Top-Ligen`);
+    console.log(`📍 Health check: http://localhost:${PORT}/health`);
+    console.log(`🏆 Unterstützte Ligen: Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Championship, Primeira Liga, European Championship`);
+});
     
