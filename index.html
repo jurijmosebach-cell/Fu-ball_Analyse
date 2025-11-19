@@ -441,6 +441,7 @@
             padding: 0.75rem 1.25rem;
             border-radius: 20px;
         }
+
         .game-meta {
             text-align: right;
         }
@@ -627,7 +628,7 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Epic Sidebar */
+         /* Epic Sidebar */
         .sidebar {
             display: flex;
             flex-direction: column;
@@ -850,7 +851,8 @@
                 </div>
             </div>
         </header>
-             <!-- Epic Controls -->
+
+        <!-- Epic Controls -->
         <section class="controls">
             <div class="controls-grid">
                 <div class="form-group">
@@ -915,7 +917,7 @@
                             <i class="fas fa-trending-up"></i>
                             TOP VALUE-WETTEN
                         </h2>
-                        <span class="card-badge">Value > 5%</span>
+                        <span class="card-badge">Value > 8%</span>
                     </div>
                     <div class="game-list" id="topValueBets"></div>
                 </section>
@@ -959,9 +961,6 @@
 
             <!-- Right Sidebar -->
             <div class="sidebar">
-                <!-- Bankroll Panel -->
-                <div id="bankrollPanel"></div>
-
                 <!-- Quick Stats -->
                 <section class="card">
                     <div class="card-header">
@@ -989,7 +988,6 @@
                         </div>
                     </div>
                 </section>
-
                 <!-- Additional Stats -->
                 <section class="card">
                     <div class="card-header">
@@ -1017,240 +1015,6 @@
         </div>
     </div>
 
-    <script>
-        // Hier würde der gesamte JavaScript-Code aus app.js eingefügt werden
-        // Für die Demonstration wird hier nur ein Platzhalter eingefügt
-        console.log("Epische ProFoot Analytics - Geladen!");
-        
-        // Set today's date as default
-        document.getElementById('date').value = new Date().toISOString().split('T')[0];
-        
-        // Placeholder für die Bankroll-Panel-Funktionalität
-        document.getElementById('bankrollPanel').innerHTML = `
-            <div class="bankroll-panel">
-                <div class="bankroll-header" style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 1.5rem;
-                    padding-bottom: 1.5rem;
-                    border-bottom: 2px solid rgba(100, 116, 139, 0.3);
-                ">
-                    <h3 style="margin: 0; font-size: 1.3rem; font-weight: 800; color: white;">
-                        <i class="fas fa-wallet" style="color: var(--success);"></i> 
-                        EPISCHES BANKROLL MANAGEMENT
-                    </h3>
-                    <span class="bankroll-amount" style="
-                        font-size: 1.75rem;
-                        font-weight: 900;
-                        color: var(--success);
-                        background: rgba(15, 23, 42, 0.7);
-                        padding: 0.75rem 1.5rem;
-                        border-radius: 14px;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                        border: 1px solid rgba(100, 116, 139, 0.3);
-                    ">€1,000.00</span>
-                </div>
-                
-                <div class="bankroll-stats" style="
-                    display: grid;
-                    grid-template-columns: repeat(3, 1fr);
-                    gap: 1.5rem;
-                    margin-bottom: 1.5rem;
-                ">
-                    <div class="bankroll-stat" style="
-                        background: rgba(15, 23, 42, 0.7);
-                        padding: 1.5rem;
-                        border-radius: 14px;
-                        text-align: center;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-                        border: 1px solid rgba(100, 116, 139, 0.3);
-                    ">
-                        <div style="font-size: 0.9rem; color: var(--gray-light); font-weight: 700; margin-bottom: 0.75rem;">Win Rate</div>
-                        <div style="font-size: 1.5rem; font-weight: 900; color: var(--success);">
-                            54.2%
-                        </div>
-                    </div>
-                    <div class="bankroll-stat" style="
-                        background: rgba(15, 23, 42, 0.7);
-                        padding: 1.5rem;
-                        border-radius: 14px;
-                        text-align: center;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-                        border: 1px solid rgba(100, 116, 139, 0.3);
-                    ">
-                        <div style="font-size: 0.9rem; color: var(--gray-light); font-weight: 700; margin-bottom: 0.75rem;">ROI</div>
-                        <div style="font-size: 1.5rem; font-weight: 900; color: var(--success);">
-                            8.7%
-                        </div>
-                    </div>
-                    <div class="bankroll-stat" style="
-                        background: rgba(15, 23, 42, 0.7);
-                        padding: 1.5rem;
-                        border-radius: 14px;
-                        text-align: center;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-                        border: 1px solid rgba(100, 116, 139, 0.3);
-                    ">
-                        <div style="font-size: 0.9rem; color: var(--gray-light); font-weight: 700; margin-bottom: 0.75rem;">Aktuelle Serie</div>
-                        <div style="font-size: 1.5rem; font-weight: 900; color: var(--success);">
-                            +3
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bankroll-recommendations">
-                    <div style="font-size: 1rem; font-weight: 800; color: white; margin-bottom: 1rem;">
-                        <i class="fas fa-lightbulb"></i> EPISCHE EMPFEHLUNGEN
-                    </div>
-                    <div class="recommendation" style="
-                        background: rgba(254, 243, 199, 0.1);
-                        border: 1px solid rgba(245, 158, 11, 0.3);
-                        border-left: 4px solid var(--accent);
-                        padding: 1.5rem;
-                        border-radius: 12px;
-                        margin-bottom: 1rem;
-                        display: flex;
-                        align-items: flex-start;
-                        gap: 1rem;
-                    ">
-                        <i class="fas fa-exclamation-triangle" style="color: var(--accent); margin-top: 0.1rem;"></i>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 800; color: white; margin-bottom: 0.5rem;">
-                                Win Rate über 50%
-                            </div>
-                            <div style="font-size: 0.9rem; color: var(--gray-light);">
-                                Aktuelle Strategie beibehalten
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Placeholder für die Load-Funktion
-        document.getElementById('loadBtn').addEventListener('click', function() {
-            const premiumPicksDiv = document.getElementById("premiumPicks");
-            premiumPicksDiv.innerHTML = `
-                <div class="loading">
-                    <div class="loading-spinner"></div>
-                    <div>EPISCHE KI-ANALYSE GESTARTET...</div>
-                </div>
-            `;
-            
-            // Simuliere das Laden von Daten
-            setTimeout(() => {
-                premiumPicksDiv.innerHTML = `
-                    <div class="game-item premium">
-                        <div class="game-header">
-                            <div class="teams">
-                                <div class="team">
-                                    <img src="https://flagsapi.com/DE/flat/64.png" alt="Bayern Munich" class="team-logo">
-                                    <span>Bayern Munich</span>
-                                </div>
-                                <div class="vs">vs</div>
-                                <div class="team">
-                                    <img src="https://flagsapi.com/DE/flat/64.png" alt="Borussia Dortmund" class="team-logo">
-                                    <span>Borussia Dortmund</span>
-                                </div>
-                            </div>
-                            <div class="game-meta">
-                                <div class="league">Bundesliga <span class="premium-badge">💎 TOP PICK</span></div>
-                                <div class="game-date">Heute, 18:30</div>
-                            </div>
-                        </div>
-                        
-                        <div class="metrics-grid">
-                            <div class="metric">
-                                <div class="metric-label">
-                                    <span>Heimsieg</span>
-                                    <span class="metric-value">68%</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill progress-home" style="width: 68%"></div>
-                                </div>
-                            </div>
-                            <div class="metric">
-                                <div class="metric-label">
-                                    <span>Unentschieden</span>
-                                    <span class="metric-value">18%</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill progress-draw" style="width: 18%"></div>
-                                </div>
-                            </div>
-                            <div class="metric">
-                                <div class="metric-label">
-                                    <span>Auswärtssieg</span>
-                                    <span class="metric-value">14%</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill progress-away" style="width: 14%"></div>
-                                </div>
-                            </div>
-                            <div class="metric">
-                                <div class="metric-label">
-                                    <span>Over 2.5</span>
-                                    <span class="metric-value">72%</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill progress-over" style="width: 72%"></div>
-                                </div>
-                            </div>
-                            <div class="metric">
-                                <div class="metric-label">
-                                    <span>BTTS</span>
-                                    <span class="metric-value">65%</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill progress-btts" style="width: 65%"></div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
-                            <div style="display: flex; gap: 0.75rem; align-items: center;">
-                                <span class="trend-indicator trend-home">
-                                    <i class="fas fa-arrow-up"></i> Strong Home
-                                </span>
-                                <span class="ki-badge ki-high">
-                                    <i class="fas fa-robot"></i> 89%
-                                </span>
-                            </div>
-                            <div style="font-size: 0.95rem; color: var(--success); font-weight: 800;">
-                                Best Value: 12.5% (home)
-                            </div>
-                        </div>
-                        
-                        <div class="analysis-section">
-                            <div class="analysis-title">
-                                <i class="fas fa-chart-line"></i> EPISCHE KI-ANALYSE
-                            </div>
-                            <div class="analysis-text">
-                                Bayern Munich dominiert mit starker Heimplatzpräsenz und hoher Siegwahrscheinlichkeit von 68%. 
-                                Over 2.5 Tore mit 72% Wahrscheinlichkeit ist ebenfalls sehr wahrscheinlich. 
-                                <strong>Heimsieg und Over 2.5 Tore empfehlenswert.</strong>
-                            </div>
-                        </div>
-                        
-                        <div style="font-size: 0.9rem; color: var(--success); font-weight: 800; margin-top: 1rem;">
-                            <i class="fas fa-coins"></i> Empfohlener Einsatz: €45
-                        </div>
-                    </div>
-                `;
-                       // Update Statistik
-                document.getElementById('totalMatches').textContent = '24';
-                document.getElementById('premiumPicks').textContent = '3';
-                document.getElementById('updateTime').textContent = new Date().toLocaleTimeString('de-DE', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                });
-                document.getElementById('avgConfidence').textContent = '82%';
-                document.getElementById('highValueBets').textContent = '7';
-                document.getElementById('strongTrends').textContent = '5';
-                document.getElementById('over25Rate').textContent = '58%';
-            }, 2000);
-        });
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
