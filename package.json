@@ -1,17 +1,15 @@
 {
-  "name": "xg-value-tool",
-  "version": "2.0.0",
-  "description": "KI-gestütztes xG-Value- und Trendanalyse-Tool für professionelle Fußballwetten",
+  "name": "profoot-analytics",
+  "version": "5.0.0",
+  "description": "Epische KI-gestützte Fußballanalyse mit HDH-Analyse",
   "type": "module",
-  "main": "server.js",
+  "main": "server-real.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
-    "build": "echo 'No build step required for Render'"
+    "start": "node server-real.js",
+    "dev": "node --watch server-real.js"
   },
   "dependencies": {
     "express": "^4.19.2",
-    "node-fetch": "^3.3.2",
     "simple-statistics": "^7.8.3"
   },
   "engines": {
@@ -19,14 +17,12 @@
   },
   "keywords": [
     "football",
-    "xg",
     "betting",
     "analysis",
-    "trend",
-    "value",
     "machine-learning",
-    "ai"
+    "ai",
+    "sports-analytics"
   ],
-  "author": "Dein Name",
+  "author": "ProFoot Analytics",
   "license": "MIT"
 }
