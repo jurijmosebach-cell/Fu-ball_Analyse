@@ -1,8 +1,9 @@
-// server.js — Professionelle KI-Fußballanalyse mit allen Ligen
+// server-real.js — Professioneller Server mit echten API-Daten
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { ProfessionalCalculator } from './professional-calculations.js';
+import { HDAAnalyzer } from './hda-analyzer.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,12 +14,13 @@ const PORT = process.env.PORT || 10000;
 // API Keys
 const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_API_KEY;
 
-// Professionelle KI-Module initialisieren
-const proCalculator = new ProfessionalCalculator();
-
 // Middleware
 app.use(express.static(__dirname));
 app.use(express.json());
+
+// Professionelle KI-Module initialisieren
+const proCalculator = new ProfessionalCalculator();
+const hdaAnalyzer = new HDAAnalyzer();
 
 // Routes
 app.get('/', (req, res) => {
@@ -29,16 +31,12 @@ app.get('/health', (req, res) => {
     res.json({ 
         status: 'OK', 
         timestamp: new Date().toISOString(),
-        version: '4.0.0',
-        features: ['Alle Top-Ligen', 'Professionelle Berechnungen', 'Echte API-Daten']
+        version: '5.0.0',
+        features: ['Echte API-Daten', 'Professionelle KI-Analyse', 'HDH-Analyse']
     });
 });
 
-// Cache
-const cache = new Map();
-const CACHE_DURATION = 10 * 60 * 1000;
-
-// Professioneller Football Data Service
+// PROFESSIONELLE FOOTBALL DATA SERVICE
 class ProfessionalFootballDataService {
     constructor(apiKey) {
         this.apiKey = apiKey;
@@ -47,7 +45,7 @@ class ProfessionalFootballDataService {
 
     async getMatchesByDate(date) {
         if (!this.apiKey) {
-            console.log('⚠️  Kein API Key - Keine Demo-Daten mehr');
+            console.log('❌ Kein Football-Data API Key konfiguriert');
             return [];
         }
 
@@ -80,107 +78,36 @@ class ProfessionalFootballDataService {
                 return matchDate === date && (match.status === 'SCHEDULED' || match.status === 'TIMED' || match.status === 'LIVE');
             }) || [];
 
-            console.log(`✅ Found ${filteredMatches.length} real matches for ${date}`);
+            console.log(`✅ ${filteredMatches.length} echte Spiele gefunden für ${date}`);
             
             return filteredMatches;
 
         } catch (error) {
-            console.log('❌ Professional API error:', error.message);
-            console.log('🔄 Keine Demo-Daten mehr - nur echte API-Daten');
+            console.log('❌ Football-Data API error:', error.message);
             return [];
         }
     }
 }
 
-// Vereinfachter Sports DB Service
-class SportsDBService {
-    constructor() {
-        this.baseURL = 'https://www.thesportsdb.com/api/v1/json/3';
-    }
-
-    async getTeamForm(teamName) {
-        return {
-            form: 0.5 + (Math.random() * 0.4),
-            attackStrength: 0.7 + (Math.random() * 0.6),
-            defenseStrength: 0.6 + (Math.random() * 0.6)
-        };
-    }
-}
-
-const footballDataService = new ProfessionalFootballDataService(FOOTBALL_DATA_KEY);
-const sportsDBService = new SportsDBService();
-
-// ERWEITERTE PROFESSIONELLE TEAM-STRENGTHS DATENBANK
+// PROFESSIONELLE TEAM-STRENGTHS FÜR xG-BERECHNUNG
 const PROFESSIONAL_TEAM_STRENGTHS = {
-    // Premier League (PL)
-    "Manchester City": { attack: 2.45, defense: 0.75, homeStrength: 1.25, awayStrength: 1.15 },
-    "Liverpool": { attack: 2.35, defense: 0.85, homeStrength: 1.22, awayStrength: 1.18 },
-    "Arsenal": { attack: 2.15, defense: 0.82, homeStrength: 1.20, awayStrength: 1.10 },
-    "Chelsea": { attack: 1.85, defense: 1.25, homeStrength: 1.15, awayStrength: 1.05 },
-    "Tottenham": { attack: 1.95, defense: 1.35, homeStrength: 1.18, awayStrength: 1.08 },
-    "Manchester United": { attack: 1.72, defense: 1.42, homeStrength: 1.16, awayStrength: 1.02 },
-    "Newcastle": { attack: 1.82, defense: 1.22, homeStrength: 1.14, awayStrength: 1.04 },
-    "Brighton": { attack: 1.92, defense: 1.45, homeStrength: 1.12, awayStrength: 1.06 },
-    "West Ham": { attack: 1.68, defense: 1.38, homeStrength: 1.13, awayStrength: 1.03 },
-    "Aston Villa": { attack: 1.75, defense: 1.32, homeStrength: 1.14, awayStrength: 1.04 },
-
-    // Primera Division (PD) - La Liga
-    "Real Madrid": { attack: 2.35, defense: 0.78, homeStrength: 1.22, awayStrength: 1.15 },
-    "Barcelona": { attack: 2.25, defense: 0.85, homeStrength: 1.20, awayStrength: 1.12 },
-    "Atletico Madrid": { attack: 1.85, defense: 0.88, homeStrength: 1.18, awayStrength: 1.08 },
-    "Sevilla": { attack: 1.65, defense: 1.35, homeStrength: 1.14, awayStrength: 1.01 },
-    "Valencia": { attack: 1.58, defense: 1.42, homeStrength: 1.12, awayStrength: 1.00 },
-    "Villarreal": { attack: 1.72, defense: 1.38, homeStrength: 1.13, awayStrength: 1.02 },
-    "Real Sociedad": { attack: 1.68, defense: 1.25, homeStrength: 1.13, awayStrength: 1.03 },
-
-    // Ligue 1 (FL1)
-    "PSG": { attack: 2.40, defense: 0.82, homeStrength: 1.22, awayStrength: 1.12 },
-    "Marseille": { attack: 1.75, defense: 1.20, homeStrength: 1.12, awayStrength: 1.02 },
-    "Monaco": { attack: 1.82, defense: 1.28, homeStrength: 1.13, awayStrength: 1.03 },
-    "Lyon": { attack: 1.68, defense: 1.35, homeStrength: 1.11, awayStrength: 1.01 },
-    "Lille": { attack: 1.62, defense: 1.22, homeStrength: 1.12, awayStrength: 1.02 },
-    "Nice": { attack: 1.58, defense: 1.18, homeStrength: 1.11, awayStrength: 1.01 },
-
-    // Championship (ELC)
-    "Leicester": { attack: 1.85, defense: 1.15, homeStrength: 1.14, awayStrength: 1.04 },
-    "Leeds": { attack: 1.78, defense: 1.22, homeStrength: 1.13, awayStrength: 1.03 },
-    "Southampton": { attack: 1.72, defense: 1.28, homeStrength: 1.12, awayStrength: 1.02 },
-    "Ipswich": { attack: 1.65, defense: 1.32, homeStrength: 1.11, awayStrength: 1.01 },
-    "West Brom": { attack: 1.58, defense: 1.25, homeStrength: 1.10, awayStrength: 1.00 },
-
-    // Primeira Liga (PPL)
-    "Benfica": { attack: 1.95, defense: 0.95, homeStrength: 1.16, awayStrength: 1.06 },
-    "Porto": { attack: 1.88, defense: 0.92, homeStrength: 1.15, awayStrength: 1.05 },
-    "Sporting": { attack: 1.82, defense: 0.98, homeStrength: 1.14, awayStrength: 1.04 },
-    "Braga": { attack: 1.68, defense: 1.15, homeStrength: 1.12, awayStrength: 1.02 },
-
-    // European Championship (EC) - Nationalteams
-    "Germany": { attack: 2.15, defense: 0.92, homeStrength: 1.18, awayStrength: 1.08 },
-    "France": { attack: 2.25, defense: 0.88, homeStrength: 1.20, awayStrength: 1.10 },
-    "England": { attack: 2.18, defense: 0.85, homeStrength: 1.19, awayStrength: 1.09 },
-    "Spain": { attack: 2.12, defense: 0.90, homeStrength: 1.17, awayStrength: 1.07 },
-    "Italy": { attack: 2.05, defense: 0.82, homeStrength: 1.16, awayStrength: 1.06 },
-    "Portugal": { attack: 2.08, defense: 0.95, homeStrength: 1.16, awayStrength: 1.06 },
-    "Netherlands": { attack: 2.02, defense: 0.98, homeStrength: 1.15, awayStrength: 1.05 },
-
-    // Serie A (SA)
-    "Inter Milan": { attack: 2.15, defense: 0.85, homeStrength: 1.18, awayStrength: 1.10 },
-    "Juventus": { attack: 1.95, defense: 0.95, homeStrength: 1.16, awayStrength: 1.08 },
-    "AC Milan": { attack: 1.92, defense: 1.08, homeStrength: 1.15, awayStrength: 1.05 },
-    "Napoli": { attack: 1.88, defense: 1.15, homeStrength: 1.14, awayStrength: 1.04 },
-    "Roma": { attack: 1.82, defense: 1.22, homeStrength: 1.13, awayStrength: 1.03 },
-    "Lazio": { attack: 1.78, defense: 1.18, homeStrength: 1.12, awayStrength: 1.02 },
-    "Atalanta": { attack: 1.85, defense: 1.28, homeStrength: 1.13, awayStrength: 1.03 },
-
-    // Bundesliga
-    "Bayern Munich": { attack: 2.65, defense: 0.68, homeStrength: 1.28, awayStrength: 1.20 },
-    "Borussia Dortmund": { attack: 2.25, defense: 1.12, homeStrength: 1.22, awayStrength: 1.12 },
-    "RB Leipzig": { attack: 2.05, defense: 1.18, homeStrength: 1.18, awayStrength: 1.08 },
-    "Bayer Leverkusen": { attack: 2.15, defense: 1.05, homeStrength: 1.20, awayStrength: 1.10 },
-    "Eintracht Frankfurt": { attack: 1.75, defense: 1.28, homeStrength: 1.15, awayStrength: 1.02 },
-    "Wolfsburg": { attack: 1.68, defense: 1.32, homeStrength: 1.12, awayStrength: 1.01 },
-
-    "default": { attack: 1.45, defense: 1.55, homeStrength: 1.08, awayStrength: 0.95 }
+    "Bayern Munich": { attack: 2.45, defense: 0.75, homeStrength: 1.25, awayStrength: 1.15 },
+    "Borussia Dortmund": { attack: 2.15, defense: 1.12, homeStrength: 1.22, awayStrength: 1.12 },
+    "Manchester City": { attack: 2.40, defense: 0.78, homeStrength: 1.24, awayStrength: 1.14 },
+    "Liverpool": { attack: 2.25, defense: 0.92, homeStrength: 1.21, awayStrength: 1.11 },
+    "Real Madrid": { attack: 2.35, defense: 0.85, homeStrength: 1.23, awayStrength: 1.13 },
+    "Barcelona": { attack: 2.20, defense: 0.95, homeStrength: 1.20, awayStrength: 1.10 },
+    "PSG": { attack: 2.30, defense: 0.88, homeStrength: 1.22, awayStrength: 1.08 },
+    "Inter Milan": { attack: 2.10, defense: 0.90, homeStrength: 1.18, awayStrength: 1.05 },
+    "AC Milan": { attack: 2.05, defense: 1.05, homeStrength: 1.17, awayStrength: 1.03 },
+    "Arsenal": { attack: 2.15, defense: 0.85, homeStrength: 1.19, awayStrength: 1.07 },
+    "Chelsea": { attack: 1.90, defense: 1.20, homeStrength: 1.16, awayStrength: 1.02 },
+    "Atletico Madrid": { attack: 1.85, defense: 0.80, homeStrength: 1.17, awayStrength: 1.04 },
+    "Juventus": { attack: 1.95, defense: 0.95, homeStrength: 1.18, awayStrength: 1.06 },
+    "Napoli": { attack: 1.88, defense: 1.15, homeStrength: 1.16, awayStrength: 1.04 },
+    "Leipzig": { attack: 2.05, defense: 1.15, homeStrength: 1.18, awayStrength: 1.06 },
+    "Leverkusen": { attack: 2.10, defense: 1.08, homeStrength: 1.19, awayStrength: 1.07 },
+    "default": { attack: 1.50, defense: 1.50, homeStrength: 1.10, awayStrength: 0.95 }
 };
 
 function getProfessionalTeamStrength(teamName) {
@@ -192,13 +119,27 @@ function getProfessionalTeamStrength(teamName) {
     return PROFESSIONAL_TEAM_STRENGTHS.default;
 }
 
+function getProfessionalFlag(teamName) {
+    const flagMapping = {
+        "Bayern": "de", "Dortmund": "de", "Leipzig": "de", "Leverkusen": "de", "Frankfurt": "de",
+        "Manchester": "gb", "Liverpool": "gb", "Arsenal": "gb", "Chelsea": "gb", "Tottenham": "gb",
+        "Real": "es", "Barcelona": "es", "Atletico": "es", "Sevilla": "es", "Valencia": "es",
+        "PSG": "fr", "Marseille": "fr", "Lyon": "fr", "Monaco": "fr",
+        "Inter": "it", "Milan": "it", "Juventus": "it", "Napoli": "it", "Roma": "it"
+    };
+    
+    for (const [key, value] of Object.entries(flagMapping)) {
+        if (teamName.toLowerCase().includes(key.toLowerCase())) {
+            return value;
+        }
+    }
+    return "eu";
+}
+
 // PROFESSIONELLE xG-BERECHNUNG
-async function calculateProfessionalXG(homeTeam, awayTeam, isHome = true, league = "") {
+async function calculateProfessionalXG(homeTeam, awayTeam, league = "") {
     const homeStrength = getProfessionalTeamStrength(homeTeam);
     const awayStrength = getProfessionalTeamStrength(awayTeam);
-    
-    const homeForm = await sportsDBService.getTeamForm(homeTeam);
-    const awayForm = await sportsDBService.getTeamForm(awayTeam);
     
     return proCalculator.calculateAdvancedXG(
         homeTeam, 
@@ -211,60 +152,12 @@ async function calculateProfessionalXG(homeTeam, awayTeam, isHome = true, league
 
 // PROFESSIONELLE WAHRSCHEINLICHKEITEN
 function computeProfessionalProbabilities(homeXG, awayXG, league) {
-    return proCalculator.calculateAdvancedProbabilities(homeXG, awayXG);
+    return proCalculator.calculateAdvancedProbabilities(homeXG, awayXG, league);
 }
 
 // PROFESSIONELLE VALUE-BERECHNUNG
 function calculateProfessionalValue(probabilities) {
     return proCalculator.calculateAdvancedValue(probabilities);
-}
-
-// PROFESSIONELLE ODDS
-function generateProfessionalOdds(probabilities) {
-    return proCalculator.generateProfessionalOdds(probabilities);
-}
-
-function getProfessionalFlag(teamName) {
-    const flagMapping = {
-        // Premier League
-        "Manchester": "gb", "Liverpool": "gb", "Chelsea": "gb", "Arsenal": "gb",
-        "Tottenham": "gb", "Newcastle": "gb", "Brighton": "gb", "West Ham": "gb",
-        "Aston Villa": "gb", "Everton": "gb", "Wolves": "gb", "Crystal Palace": "gb",
-        
-        // Championship
-        "Leicester": "gb", "Leeds": "gb", "Southampton": "gb", "Ipswich": "gb",
-        "West Brom": "gb",
-        
-        // Primera Division
-        "Real": "es", "Barcelona": "es", "Atletico": "es", "Sevilla": "es",
-        "Valencia": "es", "Villarreal": "es", "Real Sociedad": "es",
-        
-        // Bundesliga
-        "Bayern": "de", "Dortmund": "de", "Leipzig": "de", "Leverkusen": "de",
-        "Frankfurt": "de", "Wolfsburg": "de", "Stuttgart": "de", "Bremen": "de",
-        
-        // Serie A
-        "Juventus": "it", "Inter": "it", "Milan": "it", "Napoli": "it",
-        "Roma": "it", "Lazio": "it", "Fiorentina": "it", "Atalanta": "it",
-        
-        // Ligue 1
-        "PSG": "fr", "Marseille": "fr", "Monaco": "fr", "Lyon": "fr",
-        "Lille": "fr", "Nice": "fr", "Rennes": "fr",
-        
-        // Primeira Liga
-        "Benfica": "pt", "Porto": "pt", "Sporting": "pt", "Braga": "pt",
-        
-        // European Championship
-        "Germany": "de", "France": "fr", "England": "gb", "Spain": "es",
-        "Italy": "it", "Portugal": "pt", "Netherlands": "nl"
-    };
-    
-    for (const [key, value] of Object.entries(flagMapping)) {
-        if (teamName.toLowerCase().includes(key.toLowerCase())) {
-            return value;
-        }
-    }
-    return "eu";
 }
 
 // PROFESSIONELLE TREND-ANALYSE
@@ -348,6 +241,12 @@ function generateProfessionalAnalysis(homeTeam, awayTeam, probabilities, trend, 
     return analysis;
 }
 
+// CACHE FÜR PERFORMANCE
+const cache = new Map();
+const CACHE_DURATION = 10 * 60 * 1000; // 10 Minuten
+
+const footballDataService = new ProfessionalFootballDataService(FOOTBALL_DATA_KEY);
+
 // PROFESSIONELLE HAUPT-API ROUTE
 app.get('/api/games', async (req, res) => {
     try {
@@ -359,7 +258,7 @@ app.get('/api/games', async (req, res) => {
         // Cache prüfen
         const cached = cache.get(cacheKey);
         if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-            console.log('✅ Serving from professional cache');
+            console.log('✅ Serving from cache');
             return res.json({ 
                 response: cached.data,
                 info: { source: 'cache', date: requestedDate, cached: true }
@@ -370,6 +269,7 @@ app.get('/api/games', async (req, res) => {
         const matches = await footballDataService.getMatchesByDate(requestedDate);
         
         if (matches.length === 0) {
+            console.log('❌ Keine Spiele für dieses Datum gefunden');
             return res.json({
                 response: [],
                 info: {
@@ -394,7 +294,7 @@ app.get('/api/games', async (req, res) => {
                     console.log(`🔍 Analyzing: ${homeTeam} vs ${awayTeam} (${league})`);
                     
                     // PROFESSIONELLE xG-BERECHNUNG
-                    const xgData = await calculateProfessionalXG(homeTeam, awayTeam, true, league);
+                    const xgData = await calculateProfessionalXG(homeTeam, awayTeam, league);
                     
                     // WAHRSCHEINLICHKEITEN
                     const probabilities = computeProfessionalProbabilities(xgData.home, xgData.away, league);
@@ -402,11 +302,11 @@ app.get('/api/games', async (req, res) => {
                     // VALUE-BERECHNUNG
                     const value = calculateProfessionalValue(probabilities);
                     
-                    // ODDS
-                    const odds = generateProfessionalOdds(probabilities);
-                    
                     // TREND-ANALYSE
                     const trend = computeProfessionalTrend(probabilities, xgData);
+                    
+                    // HDH-ANALYSE
+                    const hdaAnalysis = await hdaAnalyzer.analyzeHDA(homeTeam, awayTeam, league);
                     
                     // ANALYSE
                     const analysis = generateProfessionalAnalysis(homeTeam, awayTeam, probabilities, trend, xgData, value);
@@ -436,7 +336,6 @@ app.get('/api/games', async (req, res) => {
                         
                         // Value & Odds
                         value: value,
-                        odds: odds,
                         
                         // KI-Analyse
                         trend: trend,
@@ -448,6 +347,9 @@ app.get('/api/games', async (req, res) => {
                             value.over25 || 0
                         ) * 0.2),
                         analysis: analysis,
+                        
+                        // HDH-Analyse
+                        hdaAnalysis: hdaAnalysis,
                         
                         timestamp: new Date().toISOString()
                     };
@@ -470,37 +372,36 @@ app.get('/api/games', async (req, res) => {
                 date: requestedDate,
                 total: validGames.length,
                 source: "football_data_api",
-                version: "4.0.0",
+                version: "5.0.0",
                 timestamp: new Date().toISOString()
             }
         };
 
         // Caching
-cache.set(cacheKey, {
-    data: responseData.response,
-    timestamp: Date.now()
-});
+        cache.set(cacheKey, {
+            data: responseData.response,
+            timestamp: Date.now()
+        });
 
-res.json(responseData);
+        res.json(responseData);
 
-} catch (error) {
-    console.error('❌ Professional API Error:', error);
-    res.status(500).json({
-        error: error.message,
-        info: {
-            date: req.query.date,
-            source: "api_error", 
-            message: "Fehler beim Laden der Spieldaten"
-        }
-    });
-}
+    } catch (error) {
+        console.error('❌ Professional API Error:', error);
+        res.status(500).json({
+            error: error.message,
+            info: {
+                date: req.query.date,
+                source: "api_error", 
+                message: "Fehler beim Laden der Spieldaten"
+            }
+        });
+    }
 });
 
 // Server starten
 app.listen(PORT, () => {
     console.log(`🚀 Professional Server running on port ${PORT}`);
-    console.log(`🤖 ProFoot Analytics v4.0.0 - Alle Top-Ligen`);
+    console.log(`🤖 ProFoot Analytics v5.0.0 - Echte API-Daten`);
     console.log(`📍 Health check: http://localhost:${PORT}/health`);
-    console.log(`🏆 Unterstützte Ligen: Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Championship, Primeira Liga, European Championship`);
+    console.log(`🏆 Unterstützte Ligen: Alle Top-Ligen über Football-Data.org`);
 });
-    
