@@ -263,44 +263,9 @@ class SimpleBankrollManager {
     }
 }
 
-class SimpleFormAnalyzer {
-    analyzeTeamForm(teamName) {
-        return {
-            currentForm: 0.5 + (Math.random() * 0.4),
-            formMomentum: (Math.random() - 0.5) * 0.3,
-            overallRating: 0.5 + (Math.random() * 0.4)
-        };
-    }
-}
-
-class SimpleInjuryTracker {
-    async getTeamInjuries(teamName) {
-        const injuryCount = Math.floor(Math.random() * 2);
-        const injuries = [];
-        
-        for (let i = 0; i < injuryCount; i++) {
-            injuries.push({
-                name: `Spieler ${i+1}`,
-                position: ['goalkeeper', 'defender', 'midfielder', 'forward'][Math.floor(Math.random() * 4)],
-                severity: ['minor', 'moderate', 'major'][Math.floor(Math.random() * 3)]
-            });
-        }
-        
-        return {
-            team: teamName,
-            missingPlayers: injuries,
-            overallImpact: injuries.length * 0.2,
-            attackImpact: injuries.filter(i => i.position === 'forward' || i.position === 'midfielder').length * 0.25,
-            defenseImpact: injuries.filter(i => i.position === 'goalkeeper' || i.position === 'defender').length * 0.25
-        };
-    }
-}
-
 // ⭐⭐ INITIALISIERUNG DER MODULE ⭐⭐
 const confidenceCalculator = new AdvancedConfidenceCalculator();
 const bankrollManager = new SimpleBankrollManager();
-const formAnalyzer = new SimpleFormAnalyzer();
-const injuryTracker = new SimpleInjuryTracker();
 
 // Set today's date as default
 dateInput.value = new Date().toISOString().split('T')[0];
@@ -311,76 +276,31 @@ function createBankrollPanel() {
     const recommendations = bankrollManager.getBankrollRecommendations();
     
     const bankrollHTML = `
-        <div class="bankroll-panel" style="
-            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border: 2px solid #e2e8f0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        ">
-            <div class="bankroll-header" style="
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 1rem;
-                padding-bottom: 1rem;
-                border-bottom: 2px solid #cbd5e1;
-            ">
-                <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #1e293b;">
+        <div class="bankroll-panel">
+            <div class="bankroll-header">
+                <h3>
                     <i class="fas fa-wallet" style="color: #059669;"></i> 
-                    Bankroll Management
+                    EPISCHES BANKROLL MANAGEMENT
                 </h3>
-                <span class="bankroll-amount" style="
-                    font-size: 1.5rem;
-                    font-weight: 800;
-                    color: #059669;
-                    background: white;
-                    padding: 0.5rem 1rem;
-                    border-radius: 12px;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                ">€${metrics.bankroll.toFixed(2)}</span>
+                <span class="bankroll-amount">€${metrics.bankroll.toFixed(2)}</span>
             </div>
             
-            <div class="bankroll-stats" style="
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 1rem;
-                margin-bottom: 1rem;
-            ">
-                <div class="bankroll-stat" style="
-                    background: white;
-                    padding: 1rem;
-                    border-radius: 12px;
-                    text-align: center;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-                ">
-                    <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; margin-bottom: 0.5rem;">Win Rate</div>
-                    <div style="font-size: 1.25rem; font-weight: 800; color: ${metrics.winRate > 50 ? '#059669' : '#dc2626'};">
+            <div class="bankroll-stats">
+                <div class="bankroll-stat">
+                    <div>Win Rate</div>
+                    <div style="color: ${metrics.winRate > 50 ? '#059669' : '#dc2626'};">
                         ${metrics.winRate.toFixed(1)}%
                     </div>
                 </div>
-                <div class="bankroll-stat" style="
-                    background: white;
-                    padding: 1rem;
-                    border-radius: 12px;
-                    text-align: center;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-                ">
-                    <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; margin-bottom: 0.5rem;">ROI</div>
-                    <div style="font-size: 1.25rem; font-weight: 800; color: ${metrics.roi > 0 ? '#059669' : '#dc2626'};">
+                <div class="bankroll-stat">
+                    <div>ROI</div>
+                    <div style="color: ${metrics.roi > 0 ? '#059669' : '#dc2626'};">
                         ${metrics.roi.toFixed(1)}%
                     </div>
                 </div>
-                <div class="bankroll-stat" style="
-                    background: white;
-                    padding: 1rem;
-                    border-radius: 12px;
-                    text-align: center;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-                ">
-                    <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; margin-bottom: 0.5rem;">Aktuelle Serie</div>
-                    <div style="font-size: 1.25rem; font-weight: 800; color: ${metrics.currentStreak > 0 ? '#059669' : '#dc2626'};">
+                <div class="bankroll-stat">
+                    <div>Aktuelle Serie</div>
+                    <div style="color: ${metrics.currentStreak > 0 ? '#059669' : '#dc2626'};">
                         ${metrics.currentStreak > 0 ? '+' : ''}${metrics.currentStreak}
                     </div>
                 </div>
@@ -388,30 +308,13 @@ function createBankrollPanel() {
             
             ${recommendations.length > 0 ? `
                 <div class="bankroll-recommendations">
-                    <div style="font-size: 0.9rem; font-weight: 700; color: #374151; margin-bottom: 0.75rem;">
-                        <i class="fas fa-lightbulb"></i> Empfehlungen
-                    </div>
+                    <div>EPISCHE EMPFEHLUNGEN</div>
                     ${recommendations.map(rec => `
-                        <div class="recommendation" style="
-                            background: ${rec.type === 'warning' ? '#fef3c7' : rec.type === 'danger' ? '#fee2e2' : '#d1fae5'};
-                            border: 1px solid ${rec.type === 'warning' ? '#fbbf24' : rec.type === 'danger' ? '#f87171' : '#34d399'};
-                            border-left: 4px solid ${rec.type === 'warning' ? '#f59e0b' : rec.type === 'danger' ? '#dc2626' : '#059669'};
-                            padding: 1rem;
-                            border-radius: 8px;
-                            margin-bottom: 0.75rem;
-                            display: flex;
-                            align-items: flex-start;
-                            gap: 0.75rem;
-                        ">
-                            <i class="fas fa-${rec.type === 'warning' ? 'exclamation-triangle' : rec.type === 'danger' ? 'exclamation-circle' : 'check-circle'}" 
-                               style="color: ${rec.type === 'warning' ? '#d97706' : rec.type === 'danger' ? '#dc2626' : '#059669'}; margin-top: 0.1rem;"></i>
-                            <div style="flex: 1;">
-                                <div style="font-weight: 700; color: ${rec.type === 'warning' ? '#92400e' : rec.type === 'danger' ? '#991b1b' : '#065f46'}; margin-bottom: 0.25rem;">
-                                    ${rec.message}
-                                </div>
-                                <div style="font-size: 0.85rem; color: #6b7280;">
-                                    ${rec.action}
-                                </div>
+                        <div class="recommendation">
+                            <i class="fas fa-${rec.type === 'warning' ? 'exclamation-triangle' : rec.type === 'danger' ? 'exclamation-circle' : 'check-circle'}"></i>
+                            <div>
+                                <div>${rec.message}</div>
+                                <div>${rec.action}</div>
                             </div>
                         </div>
                     `).join('')}
@@ -502,26 +405,12 @@ function createGameElement(game, type = 'standard') {
 
     const premiumBadge = type === 'premium' ? `<span class="premium-badge">💎 TOP PICK</span>` : '';
 
-    // Bankroll Empfehlung
+    / Bankroll Empfehlung
     const bankrollInfo = game.bankroll && game.bankroll.recommendedStake > 0 
-        ? `<div style="font-size: 0.8rem; color: #059669; font-weight: 600; margin-top: 0.5rem;">
+        ? `<div style="font-size: 0.9rem; color: #059669; font-weight: 700; margin-top: 1rem;">
              <i class="fas fa-coins"></i> Empfohlener Einsatz: €${game.bankroll.recommendedStake}
            </div>`
         : '';
-
-    // ⭐⭐ KONFIDENZ-DETAILS ANZEIGEN ⭐⭐
-    const confidenceDetails = type === 'premium' ? `
-        <div style="font-size: 0.75rem; color: #6b7280; margin-top: 0.5rem; padding: 0.5rem; background: #f8fafc; border-radius: 6px;">
-            <div style="display: flex; justify-content: space-between;">
-                <span>Datenqualität:</span>
-                <span style="font-weight: 600;">${Math.round((game.confidenceFactors?.dataQuality || 0.7) * 100)}%</span>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-                <span>Vorhersagestabilität:</span>
-                <span style="font-weight: 600;">${Math.round((game.confidenceFactors?.predictionStability || 0.7) * 100)}%</span>
-            </div>
-        </div>
-    ` : '';
 
     gameEl.innerHTML = `
         <div class="game-header">
@@ -538,7 +427,7 @@ function createGameElement(game, type = 'standard') {
             </div>
             <div class="game-meta">
                 <div class="league">${game.league || 'Unknown League'} ${premiumBadge}</div>
-                <div>${formattedDate}</div>
+                <div class="game-date">${formattedDate}</div>
             </div>
         </div>
         
@@ -550,17 +439,28 @@ function createGameElement(game, type = 'standard') {
             ${createProgressBar('BTTS', game.btts, 'btts').outerHTML}
         </div>
         
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
                 ${createTrendBadge(game.trend || 'Balanced').outerHTML}
                 ${createKIBadge(game.confidence || 0.5).outerHTML}
             </div>
-            <div style="font-size: 0.875rem; color: #059669; font-weight: 600;">
+            <div style="font-size: 0.95rem; color: #059669; font-weight: 800;">
                 Best Value: ${(bestValue * 100).toFixed(1)}% (${bestValueType})
             </div>
         </div>
+        
+        ${game.analysis ? `
+            <div class="analysis-section">
+                <div class="analysis-title">
+                    <i class="fas fa-chart-line"></i> EPISCHE KI-ANALYSE
+                </div>
+                <div class="analysis-text">
+                    ${game.analysis.summary || 'Keine Analyse verfügbar.'}
+                </div>
+            </div>
+        ` : ''}
+        
         ${bankrollInfo}
-        ${confidenceDetails}
     `;
 
     return gameEl;
@@ -626,7 +526,7 @@ function updateStatistics(stats) {
     });
 }
 
-// ⭐⭐ ERWEITERTE LOADGAMES FUNKTION MIT PRÄZISER KONFIDENZ ⭐⭐
+// ⭐⭐ KORRIGIERTE LOADGAMES FUNKTION ⭐⭐
 async function loadGames() {
     try {
         console.log('Loading games with advanced confidence calculation...');
@@ -635,7 +535,7 @@ async function loadGames() {
         premiumPicksDiv.innerHTML = topGamesDiv.innerHTML = gamesDiv.innerHTML = topValueBetsDiv.innerHTML = topOver25Div.innerHTML = `
             <div class="loading">
                 <div class="loading-spinner"></div>
-                <div>KI analysiert Spiele mit erweiterter Konfidenz-Berechnung...</div>
+                <div>EPISCHE KI-ANALYSE GESTARTET...</div>
             </div>
         `;
 
@@ -650,13 +550,20 @@ async function loadGames() {
         }
         
         const data = await res.json();
-        console.log('API Response received');
+        console.log('API Response received:', data);
 
-        if (!data || !Array.isArray(data.response)) {
-            throw new Error('Invalid API response format');
+        // WICHTIG: Korrekte Datenstruktur prüfen
+        let games = [];
+        if (data && data.response && Array.isArray(data.response)) {
+            games = data.response;
+        } else if (Array.isArray(data)) {
+            games = data;
+        } else {
+            console.error('Unexpected data format:', data);
+            throw new Error('Unerwartetes Datenformat von der API');
         }
 
-        let games = data.response.slice();
+        console.log('Games loaded:', games.length);
 
         // Apply filters
         if (leagueSelect.value) {
@@ -672,7 +579,7 @@ async function loadGames() {
 
         console.log('Games after filtering:', games.length);
 
-        // ⭐⭐ ERWEITERTE KONFIDENZ-BERECHNUNG FÜR JEDES SPIEL ⭐⭐
+           // ⭐⭐ ERWEITERTE KONFIDENZ-BERECHNUNG FÜR JEDES SPIEL ⭐⭐
         const enhancedGames = games.map(game => {
             try {
                 // Berechne präzise Konfidenz
@@ -762,19 +669,20 @@ async function loadGames() {
         }
         
         if (premiumPicks.length > 0) {
-            console.log('Displaying premium picks with advanced confidence:', premiumPicks.length);
+            console.log('Displaying premium picks:', premiumPicks.length);
             premiumPicks.forEach(game => {
                 premiumPicksDiv.appendChild(createGameElement(game, 'premium'));
             });
         } else {
             premiumPicksDiv.innerHTML = `
                 <div class="loading">
-                    <i class="fas fa-info-circle" style="color: #6b7280;"></i>
+                    <i class="fas fa-info-circle"></i>
                     <div>Keine Premium Picks für heute</div>
                 </div>
             `;
-         } 
-           // Top Value Bets
+        }
+
+        // Top Value Bets
         topValueBetsDiv.innerHTML = "";
         const valueBets = enhancedGames
             .sort((a, b) => {
@@ -816,8 +724,7 @@ async function loadGames() {
         } else {
             topOver25Div.innerHTML = `<div class="loading">Keine Over 2.5 Spiele gefunden</div>`;
         }
-
-        // Top Games
+        / Top Games
         topGamesDiv.innerHTML = "";
         const topGames = enhancedGames
             .filter(g => !premiumPicks.includes(g) && !valueBets.includes(g) && !overGames.includes(g))
@@ -849,15 +756,15 @@ async function loadGames() {
             });
         }
 
-        console.log('All games loaded with advanced confidence calculation');
+        console.log('All games loaded successfully');
 
     } catch (err) {
         console.error("Fehler beim Laden:", err);
         const errorHTML = `
             <div class="loading">
-                <i class="fas fa-exclamation-triangle" style="color: #dc2626;"></i>
+                <i class="fas fa-exclamation-triangle"></i>
                 <div>Fehler beim Laden: ${err.message}</div>
-                <div style="font-size: 0.8rem; margin-top: 0.5rem;">Bitte versuche es später erneut</div>
+                <div style="font-size: 0.9rem; margin-top: 0.75rem;">Bitte versuche es später erneut</div>
             </div>
         `;
         premiumPicksDiv.innerHTML = topGamesDiv.innerHTML = gamesDiv.innerHTML = topValueBetsDiv.innerHTML = topOver25Div.innerHTML = errorHTML;
@@ -871,5 +778,5 @@ window.addEventListener("load", loadGames);
 // Auto-refresh every 5 minutes
 setInterval(loadGames, 5 * 60 * 1000);
 
-console.log('App with advanced confidence calculation initialized');
-        
+console.log('Epische ProFoot Analytics - Initialisiert!');
+    
