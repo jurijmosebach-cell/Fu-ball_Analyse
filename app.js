@@ -1,3 +1,4 @@
+// app-enhanced.js — Professionelle Frontend-Implementation
 // DOM Elements
 const premiumPicksDiv = document.getElementById("premiumPicks");
 const topGamesDiv = document.getElementById("topGames");
@@ -20,25 +21,286 @@ const strongTrendsEl = document.getElementById("strongTrends");
 const over25RateEl = document.getElementById("over25Rate");
 const updateTimeEl = document.getElementById("updateTime");
 
+// ⭐⭐ ERWEITERTE KI-KONFIDENZ MODULE ⭐⭐
+class AdvancedConfidenceCalculator {
+    constructor() {
+        this.leagueFactors = {
+            "Premier League": { dataQuality: 0.95, predictability: 0.88 },
+            "Bundesliga": { dataQuality: 0.92, predictability: 0.91 },
+            "La Liga": { dataQuality: 0.90, predictability: 0.86 },
+            "Serie A": { dataQuality: 0.88, predictability: 0.84 },
+            "Ligue 1": { dataQuality: 0.85, predictability: 0.82 },
+            "Champions League": { dataQuality: 0.96, predictability: 0.89 },
+            "Europa League": { dataQuality: 0.92, predictability: 0.85 },
+            "Championship": { dataQuality: 0.82, predictability: 0.78 },
+            "default": { dataQuality: 0.80, predictability: 0.75 }
+        };
+    }
+
+    calculateAdvancedConfidence(game, probabilities, xgData) {
+        const baseConfidence = this.calculateBaseConfidence(probabilities);
+        const dataQualityScore = this.calculateDataQuality(game);
+        const predictionStability = this.calculatePredictionStability(probabilities, xgData);
+        const marketEfficiency = this.calculateMarketEfficiency(game.league);
+        
+        const weights = {
+            baseConfidence: 0.35,
+            dataQuality: 0.25,
+            predictionStability: 0.25,
+            marketEfficiency: 0.15
+        };
+        
+        let totalConfidence = (
+            baseConfidence * weights.baseConfidence +
+            dataQualityScore * weights.dataQuality +
+            predictionStability * weights.predictionStability +
+            marketEfficiency * weights.marketEfficiency
+        );
+        
+        totalConfidence *= this.applyTeamFamiliarity(game.home, game.away);
+        totalConfidence *= this.applyMatchContext(game);
+        
+        return Math.max(0.1, Math.min(0.98, totalConfidence));
+    }
+
+    calculateBaseConfidence(probabilities) {
+        const { home, draw, away } = probabilities;
+        const maxProb = Math.max(home, draw, away);
+        
+        let clarityScore = 0;
+        if (maxProb > 0.7) {
+            clarityScore = 0.9 + (maxProb - 0.7) * 0.5;
+        } else if (maxProb > 0.6) {
+            clarityScore = 0.8 + (maxProb - 0.6);
+        } else if (maxProb > 0.55) {
+            clarityScore = 0.7 + (maxProb - 0.55) * 2;
+        } else {
+            clarityScore = 0.5 + (maxProb - 0.5) * 4;
+        }
+        
+        const sortedProbs = [home, draw, away].sort((a, b) => b - a);
+        const probabilityGap = sortedProbs[0] - sortedProbs[1];
+        const gapBonus = Math.min(0.2, probabilityGap * 0.8);
+        
+        return Math.min(0.95, clarityScore + gapBonus);
+    }
+
+    calculateDataQuality(game) {
+        const leagueFactor = this.leagueFactors[game.league] || this.leagueFactors.default;
+        return leagueFactor.dataQuality;
+    }
+
+    calculatePredictionStability(probabilities, xgData) {
+        const { home, away } = xgData;
+        const totalXG = home + away;
+        
+        let xgStability = 0;
+        if (totalXG > 3.5) {
+            xgStability = 0.9;
+        } else if (totalXG > 2.5) {
+            xgStability = 0.8;
+        } else if (totalXG > 1.8) {
+            xgStability = 0.7;
+        } else {
+            xgStability = 0.6;
+        }
+        
+        const probStability = 1 - (Math.abs(probabilities.home - probabilities.away) * 0.5);
+        
+        return (xgStability * 0.6 + probStability * 0.4);
+    }
+
+    calculateMarketEfficiency(league) {
+        const efficiencyScores = {
+            "Premier League": 0.95,
+            "Bundesliga": 0.92,
+            "La Liga": 0.90,
+            "Serie A": 0.88,
+            "Ligue 1": 0.85,
+            "Champions League": 0.93,
+            "Europa League": 0.87,
+            "default": 0.75
+        };
+        
+        return efficiencyScores[league] || efficiencyScores.default;
+    }
+
+    applyTeamFamiliarity(homeTeam, awayTeam) {
+        const knownTeams = [
+            "Manchester City", "Liverpool", "Chelsea", "Arsenal", "Tottenham",
+            "Bayern Munich", "Borussia Dortmund", "RB Leipzig", "Bayer Leverkusen",
+            "Real Madrid", "Barcelona", "Atletico Madrid", "Sevilla",
+            "Juventus", "Inter Milan", "AC Milan", "Napoli", "Roma",
+            "PSG", "Marseille", "Monaco", "Lyon"
+        ];
+        
+        const homeFamiliarity = knownTeams.includes(homeTeam) ? 1.05 : 0.95;
+        const awayFamiliarity = knownTeams.includes(awayTeam) ? 1.05 : 0.95;
+        
+        return (homeFamiliarity + awayFamiliarity) / 2;
+    }
+
+    applyMatchContext(game) {
+        let contextFactor = 1.0;
+        
+        const derbies = [
+            ["Manchester United", "Manchester City"],
+            ["Liverpool", "Everton"],
+            ["Real Madrid", "Barcelona"],
+            ["Bayern Munich", "Borussia Dortmund"],
+            ["AC Milan", "Inter Milan"],
+            ["Arsenal", "Tottenham"]
+        ];
+        
+        const isDerby = derbies.some(derby => 
+            (derby.includes(game.home) && derby.includes(game.away))
+        );
+        
+        if (isDerby) {
+            contextFactor *= 0.85;
+        }
+        
+        if (game.league.includes("Champions League") || game.league.includes("Europa League")) {
+            contextFactor *= 1.08;
+        }
+        
+        return contextFactor;
+    }
+}
+
+class SimpleBankrollManager {
+    constructor() {
+        this.bankroll = 1000;
+        this.riskProfile = 'medium';
+        this.bettingHistory = [];
+        this.performance = {
+            totalBets: 0, wins: 0, losses: 0, pushes: 0,
+            totalStaked: 0, totalReturn: 0, roi: 0,
+            currentStreak: 0, longestWinStreak: 0, longestLossStreak: 0
+        };
+        this.loadFromLocalStorage();
+    }
+
+    calculateValueStake(value, probability, baseStake = 25) {
+        if (value <= 0) return 0;
+        const stake = baseStake * (1 + (value * 3)) * (probability * 1.5);
+        const maxStake = this.bankroll * 0.05;
+        return Math.max(5, Math.min(Math.round(stake), maxStake));
+    }
+
+    getPerformanceMetrics() {
+        const winRate = this.performance.totalBets > 0 
+            ? (this.performance.wins / this.performance.totalBets) * 100 
+            : 0;
+        return {
+            bankroll: this.bankroll,
+            winRate: winRate,
+            roi: this.performance.roi,
+            totalBets: this.performance.totalBets,
+            currentStreak: this.performance.currentStreak
+        };
+    }
+
+    getBankrollRecommendations() {
+        const metrics = this.getPerformanceMetrics();
+        const recommendations = [];
+        
+        if (metrics.winRate < 45) {
+            recommendations.push({
+                type: 'warning',
+                message: 'Win Rate unter 45%',
+                action: 'Stake-Größen reduzieren'
+            });
+        }
+        
+        if (metrics.currentStreak < -3) {
+            recommendations.push({
+                type: 'danger',
+                message: `Verlustserie: ${Math.abs(metrics.currentStreak)} Spiele`,
+                action: 'Pause einlegen'
+            });
+        }
+        
+        return recommendations;
+    }
+
+    loadFromLocalStorage() {
+        try {
+            const data = JSON.parse(localStorage.getItem('profoot_bankroll'));
+            if (data) {
+                this.bankroll = data.bankroll || 1000;
+                this.performance = data.performance || this.performance;
+            }
+        } catch (e) {
+            console.log('Could not load bankroll data');
+        }
+    }
+}
+
+// ⭐⭐ INITIALISIERUNG DER MODULE ⭐⭐
+const confidenceCalculator = new AdvancedConfidenceCalculator();
+const bankrollManager = new SimpleBankrollManager();
+
 // Set today's date as default
 dateInput.value = new Date().toISOString().split('T')[0];
 
-// Debug Funktion
-function debugGameData(game, title) {
-    console.log(`🔍 ${title}:`, {
-        home: game.home,
-        away: game.away,
-        league: game.league,
-        prob: game.prob,
-        over25: game.over25,
-        btts: game.btts,
-        value: game.value,
-        trend: game.trend,
-        confidence: game.confidence
-    });
+// ⭐⭐ BANKROLL PANEL ERSTELLEN ⭐⭐
+function createBankrollPanel() {
+    const metrics = bankrollManager.getPerformanceMetrics();
+    const recommendations = bankrollManager.getBankrollRecommendations();
+    
+    const bankrollHTML = `
+        <div class="bankroll-panel">
+            <div class="bankroll-header">
+                <h3>
+                    <i class="fas fa-wallet"></i> 
+                    EPISCHES BANKROLL MANAGEMENT
+                </h3>
+                <span class="bankroll-amount">€${metrics.bankroll.toFixed(2)}</span>
+            </div>
+            
+            <div class="bankroll-stats">
+                <div class="bankroll-stat">
+                    <div>Win Rate</div>
+                    <div style="color: ${metrics.winRate > 50 ? '#059669' : '#dc2626'};">
+                        ${metrics.winRate.toFixed(1)}%
+                    </div>
+                </div>
+                <div class="bankroll-stat">
+                    <div>ROI</div>
+                    <div style="color: ${metrics.roi > 0 ? '#059669' : '#dc2626'};">
+                        ${metrics.roi.toFixed(1)}%
+                    </div>
+                </div>
+                <div class="bankroll-stat">
+                    <div>Aktuelle Serie</div>
+                    <div style="color: ${metrics.currentStreak > 0 ? '#059669' : '#dc2626'};">
+                        ${metrics.currentStreak > 0 ? '+' : ''}${metrics.currentStreak}
+                    </div>
+                </div>
+            </div>
+            
+            ${recommendations.length > 0 ? `
+                <div class="bankroll-recommendations">
+                    <div>EPISCHE EMPFEHLUNGEN</div>
+                    ${recommendations.map(rec => `
+                        <div class="recommendation ${rec.type}">
+                            <i class="fas fa-${rec.type === 'warning' ? 'exclamation-triangle' : rec.type === 'danger' ? 'exclamation-circle' : 'check-circle'}"></i>
+                            <div>
+                                <div>${rec.message}</div>
+                                <div>${rec.action}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+        </div>
+    `;
+    
+    return bankrollHTML;
 }
 
-// Vereinfachte Utility Functions
+// Utility Functions
 function createKIBadge(confidence) {
     const badge = document.createElement("span");
     badge.className = `ki-badge ${confidence > 0.8 ? 'ki-high' : confidence > 0.7 ? 'ki-medium' : confidence > 0.6 ? 'ki-low' : 'ki-very-low'}`;
@@ -88,6 +350,53 @@ function createProgressBar(label, value, type) {
     `;
     
     return container;
+}
+
+function createHDASection(hdaAnalysis) {
+    if (!hdaAnalysis) return '';
+    
+    const section = document.createElement('div');
+    section.className = 'hda-analysis-section';
+    
+    const bestRecommendation = hdaAnalysis.recommendations && hdaAnalysis.recommendations.length > 0 
+        ? hdaAnalysis.recommendations[0] 
+        : null;
+
+    section.innerHTML = `
+        <div class="analysis-header">
+            <i class="fas fa-chart-bar"></i>
+            <span>PROFESSIONELLE HDH-ANALYSE</span>
+        </div>
+        
+        <div class="hda-grid">
+            <div class="hda-stat">
+                <div class="hda-label">Historische Siegquote</div>
+                <div class="hda-value">${Math.round((hdaAnalysis.basicStats?.homeWinRate || 0.5) * 100)}%</div>
+            </div>
+            
+            <div class="hda-stat">
+                <div class="hda-label">H2H Bilanz</div>
+                <div class="hda-value">${hdaAnalysis.h2hAnalysis?.homeWins || 0}-${hdaAnalysis.h2hAnalysis?.draws || 0}-${hdaAnalysis.h2hAnalysis?.awayWins || 0}</div>
+            </div>
+            
+            <div class="hda-stat">
+                <div class="hda-label">HDH Confidence</div>
+                <div class="hda-value">${Math.round((hdaAnalysis.predictions?.confidence || 0.5) * 100)}%</div>
+            </div>
+        </div>
+        
+        ${bestRecommendation ? `
+            <div class="hda-recommendations">
+                <div class="hda-rec-title">TOP EMPFEHLUNG:</div>
+                <div class="hda-recommendation ${bestRecommendation.type}">
+                    <span class="rec-market">${bestRecommendation.market}</span>
+                    <span class="rec-value">${((bestRecommendation.value || 0) * 100).toFixed(1)}% Value</span>
+                </div>
+            </div>
+        ` : ''}
+    `;
+    
+    return section;
 }
 
 // KORRIGIERTE createGameElement Funktion
@@ -180,6 +489,14 @@ function createGameElement(game, type = 'standard') {
             </div>
         ` : ''}
     `;
+
+     // HDH-Analyse hinzufügen
+    if (game.hdaAnalysis) {
+        const hdaSection = createHDASection(game.hdaAnalysis);
+        if (hdaSection) {
+            gameEl.appendChild(hdaSection);
+        }
+    }
 
     return gameEl;
 }
@@ -299,11 +616,6 @@ async function loadGames() {
             console.log(`🔍 Nach Team gefiltert: ${games.length} Spiele`);
         }
 
-        // Debug: Zeige die ersten 3 Spiele an
-        games.slice(0, 3).forEach((game, index) => {
-            debugGameData(game, `Spiel ${index + 1}`);
-        });
-
         // Calculate statistics
         const stats = calculateStatistics(games);
         updateStatistics(stats);
@@ -402,6 +714,16 @@ async function loadGames() {
             gamesDiv.innerHTML = `<div class="loading">Keine weiteren Spiele</div>`;
         }
 
+        // Bankroll Panel einfügen
+        const sidebar = document.querySelector('.sidebar');
+        const existingBankrollPanel = document.querySelector('.bankroll-panel');
+        if (existingBankrollPanel) {
+            existingBankrollPanel.remove();
+        }
+        
+        const bankrollPanelHTML = createBankrollPanel();
+        sidebar.insertAdjacentHTML('afterbegin', bankrollPanelHTML);
+
         console.log('✅ Alle Spiele erfolgreich geladen und angezeigt');
 
     } catch (err) {
@@ -431,3 +753,4 @@ window.addEventListener("load", loadGames);
 setInterval(loadGames, 5 * 60 * 1000);
 
 console.log('🚀 Epische ProFoot Analytics - Initialisiert!');
+    
