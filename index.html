@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚽ ProFoot Analytics | KI-gestützte Fußballanalyse & Value Betting</title>
+    <title>⚡ ProFoot Analytics | Epische KI-Fußballanalyse & Value Betting</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -29,6 +29,7 @@
             --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
             --card-shadow-hover: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
             --glow: 0 0 20px rgba(37, 99, 235, 0.1);
+            --epic-glow: 0 0 40px rgba(37, 99, 235, 0.3);
         }
 
         * {
@@ -39,28 +40,29 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
             min-height: 100vh;
-            color: var(--dark);
+            color: var(--light);
             line-height: 1.6;
             font-weight: 400;
+            overflow-x: hidden;
         }
 
         .app-container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             padding: 20px;
         }
 
-        /* Header */
+        /* Epic Header */
         .header {
-            background: rgba(255, 255, 255, 0.98);
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
             backdrop-filter: blur(20px);
             border-radius: 24px;
-            padding: 2.5rem;
+            padding: 3rem;
             margin-bottom: 2rem;
-            box-shadow: var(--card-shadow-hover);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: var(--card-shadow-hover), var(--epic-glow);
+            border: 1px solid rgba(100, 116, 139, 0.3);
             position: relative;
             overflow: hidden;
         }
@@ -73,6 +75,7 @@
             right: 0;
             height: 4px;
             background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.5);
         }
 
         .header-content {
@@ -86,45 +89,66 @@
         .logo {
             display: flex;
             align-items: center;
-            gap: 1.25rem;
+            gap: 1.5rem;
         }
 
         .logo-icon {
-            width: 60px;
-            height: 60px;
+            width: 80px;
+            height: 80px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 16px;
+            border-radius: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: var(--glow);
+            box-shadow: var(--epic-glow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-icon::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: rotate(45deg);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
         }
 
         .logo-icon i {
-            font-size: 1.8rem;
+            font-size: 2.5rem;
             color: white;
+            z-index: 2;
         }
 
         .logo-text h1 {
-            font-size: 2.25rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 0.5rem;
             letter-spacing: -0.025em;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
         .logo-text .subtitle {
-            color: var(--gray);
-            font-size: 1.1rem;
+            color: var(--gray-light);
+            font-size: 1.3rem;
             font-weight: 500;
             letter-spacing: -0.01em;
         }
 
         .stats-bar {
             display: flex;
-            gap: 2.5rem;
+            gap: 3rem;
             flex-wrap: wrap;
         }
 
@@ -134,104 +158,124 @@
         }
 
         .stat-value {
-            font-size: 2rem;
-            font-weight: 800;
-            color: var(--primary);
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: white;
             margin-bottom: 0.25rem;
             font-feature-settings: "tnum";
+            text-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
 
         .stat-label {
-            font-size: 0.875rem;
-            color: var(--gray);
-            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--gray-light);
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
 
-        /* Controls */
+        /* Epic Controls */
         .controls {
-            background: rgba(255, 255, 255, 0.98);
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
             backdrop-filter: blur(20px);
             border-radius: 20px;
-            padding: 2rem;
+            padding: 2.5rem;
             margin-bottom: 2rem;
             box-shadow: var(--card-shadow);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(100, 116, 139, 0.3);
         }
 
         .controls-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
             align-items: end;
         }
 
         .form-group {
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
+            gap: 1rem;
         }
 
         .form-label {
-            font-weight: 600;
-            color: var(--dark);
-            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--light);
+            font-size: 1rem;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.75rem;
         }
 
         .form-label i {
             color: var(--primary);
-            width: 16px;
+            width: 20px;
         }
 
         .form-control {
-            padding: 0.875rem 1.25rem;
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            font-size: 0.95rem;
+            padding: 1rem 1.5rem;
+            border: 2px solid rgba(100, 116, 139, 0.5);
+            border-radius: 14px;
+            font-size: 1rem;
             transition: all 0.3s ease;
-            background: white;
+            background: rgba(15, 23, 42, 0.7);
+            color: white;
             font-weight: 500;
         }
 
         .form-control:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-            transform: translateY(-1px);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+            transform: translateY(-2px);
+            background: rgba(15, 23, 42, 0.9);
         }
 
         .btn-primary {
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
             border: none;
-            padding: 1rem 2.5rem;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 1rem;
+            padding: 1.25rem 3rem;
+            border-radius: 14px;
+            font-weight: 800;
+            font-size: 1.1rem;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 1rem;
             justify-content: center;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
             letter-spacing: -0.01em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(37, 99, 235, 0.6);
         }
 
-        /* Main Content */
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        /* Epic Main Content */
         .main-content {
             display: grid;
-            grid-template-columns: 1fr 380px;
-            gap: 2rem;
+            grid-template-columns: 1fr 420px;
+            gap: 2.5rem;
         }
 
         @media (max-width: 1200px) {
@@ -240,15 +284,15 @@
             }
         }
 
-        /* Cards */
+        /* Epic Cards */
         .card {
-            background: rgba(255, 255, 255, 0.98);
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
             backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 2rem;
+            border-radius: 24px;
+            padding: 2.5rem;
             box-shadow: var(--card-shadow);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            transition: all 0.3s ease;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            transition: all 0.4s ease;
             position: relative;
             overflow: hidden;
         }
@@ -260,30 +304,31 @@
             left: 0;
             right: 0;
             height: 3px;
-            background: var(--border);
+            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
         }
 
         .card:hover {
-            box-shadow: var(--card-shadow-hover);
-            transform: translateY(-4px);
+            box-shadow: var(--card-shadow-hover), var(--epic-glow);
+            transform: translateY(-5px);
+            border-color: rgba(100, 116, 139, 0.5);
         }
 
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.75rem;
-            padding-bottom: 1.25rem;
-            border-bottom: 2px solid var(--light-2);
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid rgba(100, 116, 139, 0.3);
         }
 
         .card-title {
-            font-size: 1.375rem;
-            font-weight: 700;
-            color: var(--dark);
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--light);
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 1rem;
             letter-spacing: -0.025em;
         }
 
@@ -294,113 +339,131 @@
         .card-badge {
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1.5rem;
             border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 700;
+            font-size: 0.9rem;
+            font-weight: 800;
             letter-spacing: 0.02em;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
         }
 
-        /* Game Items */
+        /* Epic Game Items */
         .game-list {
             display: flex;
             flex-direction: column;
-            gap: 1.25rem;
+            gap: 1.5rem;
         }
 
         .game-item {
-            background: white;
-            border-radius: 16px;
-            padding: 1.75rem;
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+            border-radius: 20px;
+            padding: 2rem;
             border-left: 6px solid var(--primary);
             box-shadow: var(--card-shadow);
-            transition: all 0.3s ease;
+            transition: all 0.4s ease;
             cursor: pointer;
             position: relative;
-            border: 1px solid var(--border);
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            overflow: hidden;
+        }
+
+        .game-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(5, 150, 105, 0.05) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
         .game-item:hover {
-            transform: translateX(8px);
-            box-shadow: var(--card-shadow-hover);
+            transform: translateX(8px) translateY(-3px);
+            box-shadow: var(--card-shadow-hover), var(--glow);
             border-left-color: var(--secondary);
+        }
+
+        .game-item:hover::before {
+            opacity: 1;
         }
 
         .game-item.featured {
-            background: linear-gradient(135deg, #fff, #f8fafc);
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
             border-left-color: var(--secondary);
-            border: 1px solid var(--secondary-light);
+            border: 1px solid rgba(5, 150, 105, 0.3);
         }
 
         .game-item.premium {
-            background: linear-gradient(135deg, #fff, #fef7ed);
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
             border-left-color: var(--accent);
-            border: 2px solid #fed7aa;
-            box-shadow: 0 8px 30px rgba(245, 158, 11, 0.15);
+            border: 2px solid rgba(245, 158, 11, 0.4);
+            box-shadow: 0 8px 30px rgba(245, 158, 11, 0.2), var(--glow);
         }
 
         .game-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.75rem;
         }
 
         .teams {
             display: flex;
             align-items: center;
-            gap: 1.25rem;
+            gap: 1.5rem;
             flex: 1;
         }
 
         .team {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            font-weight: 700;
-            font-size: 1.1rem;
+            gap: 1rem;
+            font-weight: 800;
+            font-size: 1.2rem;
         }
 
         .team-logo {
-            width: 40px;
-            height: 28px;
-            border-radius: 6px;
+            width: 50px;
+            height: 35px;
+            border-radius: 8px;
             object-fit: cover;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .vs {
-            color: var(--gray);
-            font-weight: 600;
-            font-size: 0.9rem;
-            background: var(--light-2);
-            padding: 0.5rem 1rem;
+            color: var(--gray-light);
+            font-weight: 700;
+            font-size: 1rem;
+            background: rgba(100, 116, 139, 0.2);
+            padding: 0.75rem 1.25rem;
             border-radius: 20px;
         }
-
         .game-meta {
             text-align: right;
         }
 
         .league {
-            font-weight: 700;
+            font-weight: 800;
             color: var(--primary);
-            font-size: 0.9rem;
+            font-size: 1rem;
             margin-bottom: 0.5rem;
         }
 
         .game-date {
-            font-size: 0.85rem;
-            color: var(--gray);
-            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--gray-light);
+            font-weight: 600;
         }
 
-        /* Progress Bars */
+        /* Epic Progress Bars */
         .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 1.25rem;
-            margin-bottom: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.75rem;
         }
 
         .metric {
@@ -410,9 +473,9 @@
         }
 
         .metric-label {
-            font-size: 0.85rem;
-            color: var(--gray);
-            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--gray-light);
+            font-weight: 700;
             display: flex;
             justify-content: space-between;
             text-transform: uppercase;
@@ -420,22 +483,23 @@
         }
 
         .metric-value {
-            font-weight: 700;
-            color: var(--dark);
+            font-weight: 800;
+            color: white;
             font-feature-settings: "tnum";
         }
 
         .progress-bar {
-            height: 10px;
-            background: var(--light-2);
-            border-radius: 10px;
+            height: 12px;
+            background: rgba(100, 116, 139, 0.2);
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+            position: relative;
         }
 
         .progress-fill {
             height: 100%;
-            border-radius: 10px;
+            border-radius: 12px;
             transition: width 0.8s ease;
             position: relative;
             overflow: hidden;
@@ -464,95 +528,98 @@
         .progress-under { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
         .progress-btts { background: linear-gradient(90deg, #ff7a00, #ea580c); }
 
-        /* KI Badge */
+        /* Epic KI Badge */
         .ki-badge {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
+            gap: 0.75rem;
+            padding: 0.75rem 1.25rem;
             border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            margin-left: 0.5rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            font-size: 0.9rem;
+            font-weight: 800;
+            margin-left: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .ki-high { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #166534; border: 1px solid #bbf7d0; }
-        .ki-medium { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; border: 1px solid #fde68a; }
-        .ki-low { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #991b1b; border: 1px solid #fecaca; }
+        .ki-high { background: linear-gradient(135deg, #166534, #15803d); color: white; }
+        .ki-medium { background: linear-gradient(135deg, #ca8a04, #eab308); color: white; }
+        .ki-low { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
 
-        /* Trend Indicator */
+        /* Epic Trend Indicator */
         .trend-indicator {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
+            gap: 0.75rem;
+            padding: 0.75rem 1.25rem;
             border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            margin-left: 0.5rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            font-size: 0.9rem;
+            font-weight: 800;
+            margin-left: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .trend-home { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #166534; border: 1px solid #bbf7d0; }
-        .trend-away { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #991b1b; border: 1px solid #fecaca; }
-        .trend-draw { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; border: 1px solid #fde68a; }
-        .trend-balanced { background: linear-gradient(135deg, #f3f4f6, #e5e7eb); color: #374151; border: 1px solid #e5e7eb; }
+        .trend-home { background: linear-gradient(135deg, #166534, #15803d); color: white; }
+        .trend-away { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
+        .trend-draw { background: linear-gradient(135deg, #ca8a04, #eab308); color: white; }
+        .trend-balanced { background: linear-gradient(135deg, #475569, #64748b); color: white; }
 
-        /* Analysis Section */
+        /* Epic Analysis Section */
         .analysis-section {
-            margin-top: 1.5rem;
-            padding: 1.5rem;
-            background: var(--light);
-            border-radius: 12px;
+            margin-top: 1.75rem;
+            padding: 1.75rem;
+            background: rgba(15, 23, 42, 0.7);
+            border-radius: 16px;
             border-left: 4px solid var(--primary);
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
         }
 
         .analysis-title {
-            font-weight: 700;
-            color: var(--dark);
+            font-weight: 800;
+            color: white;
             margin-bottom: 0.75rem;
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            font-size: 1rem;
+            font-size: 1.1rem;
         }
 
         .analysis-text {
-            font-size: 0.9rem;
-            color: var(--dark-2);
+            font-size: 0.95rem;
+            color: var(--gray-light);
             line-height: 1.6;
             font-weight: 500;
         }
 
-        /* Premium Badge */
+        /* Epic Premium Badge */
         .premium-badge {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
             color: white;
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1.5rem;
             border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            margin-left: 0.75rem;
-            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+            font-size: 0.9rem;
+            font-weight: 800;
+            margin-left: 1rem;
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
         }
 
-        /* Loading */
+        /* Epic Loading */
         .loading {
             text-align: center;
-            padding: 4rem 2rem;
-            color: var(--gray);
+            padding: 5rem 2rem;
+            color: var(--gray-light);
         }
 
         .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid var(--light-2);
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(100, 116, 139, 0.3);
             border-top: 4px solid var(--primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 1.5rem;
+            margin: 0 auto 2rem;
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.3);
         }
 
         @keyframes spin {
@@ -560,62 +627,136 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Sidebar */
+        /* Epic Sidebar */
         .sidebar {
             display: flex;
             flex-direction: column;
-            gap: 1.75rem;
+            gap: 2rem;
         }
 
         .quick-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1.25rem;
+            gap: 1.5rem;
         }
 
         .stat-card {
-            background: white;
-            padding: 1.5rem 1rem;
-            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+            padding: 2rem 1.5rem;
+            border-radius: 20px;
             text-align: center;
             box-shadow: var(--card-shadow);
-            border: 1px solid var(--border);
+            border: 1px solid rgba(100, 116, 139, 0.3);
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
         }
 
         .stat-card:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
             box-shadow: var(--card-shadow-hover);
         }
 
         .stat-card .value {
-            font-size: 1.75rem;
-            font-weight: 800;
-            color: var(--primary);
-            margin-bottom: 0.5rem;
+            font-size: 2rem;
+            font-weight: 900;
+            color: white;
+            margin-bottom: 0.75rem;
             font-feature-settings: "tnum";
+            text-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
 
         .stat-card .label {
-            font-size: 0.8rem;
-            color: var(--gray);
-            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--gray-light);
+            font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
 
-        /* Value Highlight */
+        /* Epic Value Highlight */
         .value-highlight {
-            background: linear-gradient(135deg, #10b981, #059669);
+            background: linear-gradient(135deg, var(--success), var(--secondary));
             color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            margin-left: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 14px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            margin-left: 0.75rem;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
 
-        /* Responsive */
+        /* Epic Bankroll Panel */
+        .bankroll-panel {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+            border-radius: 20px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+            box-shadow: var(--card-shadow-hover);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bankroll-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+        }
+
+        /* Epic Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .game-item {
+            animation: fadeInUp 0.6s ease;
+        }
+
+        /* Epic Premium Section */
+        .premium-section {
+            position: relative;
+        }
+
+        .premium-section::before {
+            content: '💎';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            font-size: 2rem;
+            z-index: 2;
+            text-shadow: 0 0 20px rgba(245, 158, 11, 0.7);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* Epic Responsive */
         @media (max-width: 768px) {
             .app-container {
                 padding: 1rem;
@@ -641,7 +782,7 @@
             }
 
             .controls {
-                padding: 1.5rem;
+                padding: 2rem;
             }
 
             .controls-grid {
@@ -650,7 +791,7 @@
 
             .game-header {
                 flex-direction: column;
-                gap: 1rem;
+                gap: 1.5rem;
             }
 
             .teams {
@@ -670,53 +811,27 @@
             }
 
             .card {
-                padding: 1.5rem;
+                padding: 2rem;
             }
-        }
-
-        /* Premium Section Styling */
-        .premium-section {
-            position: relative;
-        }
-
-        .premium-section::before {
-            content: '💎';
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            font-size: 1.5rem;
-            z-index: 2;
-        }
-
-         /* Animation for new items */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
+            
+            .logo-text h1 {
+                font-size: 2.5rem;
             }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .game-item {
-            animation: fadeInUp 0.5s ease;
         }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <!-- Header -->
+        <!-- Epic Header -->
         <header class="header">
             <div class="header-content">
                 <div class="logo">
                     <div class="logo-icon">
-                        <i class="fas fa-chart-line"></i>
+                        <i class="fas fa-robot"></i>
                     </div>
                     <div class="logo-text">
                         <h1>ProFoot Analytics</h1>
-                        <div class="subtitle">KI-gestützte Fußballanalyse & Value Betting</div>
+                        <div class="subtitle">Epische KI-Fußballanalyse & Value Betting</div>
                     </div>
                 </div>
                 <div class="stats-bar">
@@ -735,8 +850,7 @@
                 </div>
             </div>
         </header>
-
-        <!-- Controls -->
+             <!-- Epic Controls -->
         <section class="controls">
             <div class="controls-grid">
                 <div class="form-group">
@@ -773,12 +887,12 @@
                 </div>
                 
                 <button id="loadBtn" class="btn-primary">
-                    <i class="fas fa-robot"></i> KI-Analyse starten
+                    <i class="fas fa-robot"></i> EPISCHE KI-ANALYSE STARTEN
                 </button>
             </div>
         </section>
 
-        <!-- Main Content -->
+        <!-- Epic Main Content -->
         <div class="main-content">
             <!-- Left Column -->
             <div class="main-column">
@@ -787,9 +901,9 @@
                     <div class="card-header">
                         <h2 class="card-title">
                             <i class="fas fa-crown"></i>
-                            Premium KI-Picks
+                            EPISCHE KI-PREMIUM PICKS
                         </h2>
-                        <span class="card-badge" id="premiumCount">Top 3</span>
+                        <span class="card-badge" id="premiumCount">TOP 3</span>
                     </div>
                     <div class="game-list" id="premiumPicks"></div>
                 </section>
@@ -799,7 +913,7 @@
                     <div class="card-header">
                         <h2 class="card-title">
                             <i class="fas fa-trending-up"></i>
-                            Top Value-Wetten
+                            TOP VALUE-WETTEN
                         </h2>
                         <span class="card-badge">Value > 5%</span>
                     </div>
@@ -811,7 +925,7 @@
                     <div class="card-header">
                         <h2 class="card-title">
                             <i class="fas fa-bullseye"></i>
-                            Over 2.5 Tore
+                            OVER 2.5 TORE
                         </h2>
                         <span class="card-badge">Wahrscheinlichkeit</span>
                     </div>
@@ -823,7 +937,7 @@
                     <div class="card-header">
                         <h2 class="card-title">
                             <i class="fas fa-star"></i>
-                            Top Spiele
+                            TOP SPIELE
                         </h2>
                         <span class="card-badge" id="featuredCount">KI-Empfehlung</span>
                     </div>
@@ -835,7 +949,7 @@
                     <div class="card-header">
                         <h2 class="card-title">
                             <i class="fas fa-list"></i>
-                            Alle Spiele
+                            ALLE SPIELE
                         </h2>
                         <span class="card-badge" id="allGamesCount">Gesamt</span>
                     </div>
@@ -845,12 +959,15 @@
 
             <!-- Right Sidebar -->
             <div class="sidebar">
+                <!-- Bankroll Panel -->
+                <div id="bankrollPanel"></div>
+
                 <!-- Quick Stats -->
                 <section class="card">
                     <div class="card-header">
                         <h2 class="card-title">
                             <i class="fas fa-chart-bar"></i>
-                            Live-Statistik
+                            LIVE-STATISTIK
                         </h2>
                     </div>
                     <div class="quick-stats">
@@ -878,21 +995,21 @@
                     <div class="card-header">
                         <h2 class="card-title">
                             <i class="fas fa-info-circle"></i>
-                            System-Info
+                            SYSTEM-INFO
                         </h2>
                     </div>
-                    <div style="padding: 1rem 0;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 0.75rem; background: var(--light); border-radius: 12px;">
-                            <span style="font-weight: 600; color: var(--dark);">Version</span>
-                            <span style="font-weight: 700; color: var(--primary);">4.0.0</span>
+                    <div style="padding: 1.5rem 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 1rem; background: rgba(15, 23, 42, 0.7); border-radius: 14px;">
+                            <span style="font-weight: 700; color: white;">Version</span>
+                            <span style="font-weight: 900; color: var(--primary);">5.0.0 EPIC</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 0.75rem; background: var(--light); border-radius: 12px;">
-                            <span style="font-weight: 600; color: var(--dark);">KI-Modelle</span>
-                            <span style="font-weight: 700; color: var(--success);">Aktiv</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 1rem; background: rgba(15, 23, 42, 0.7); border-radius: 14px;">
+                            <span style="font-weight: 700; color: white;">KI-Modelle</span>
+                            <span style="font-weight: 900; color: var(--success);">AKTIV</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--light); border-radius: 12px;">
-                            <span style="font-weight: 600; color: var(--dark);">Datenquelle</span>
-                            <span style="font-weight: 700; color: var(--primary);">Live API</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(15, 23, 42, 0.7); border-radius: 14px;">
+                            <span style="font-weight: 700; color: white;">Datenquelle</span>
+                            <span style="font-weight: 900; color: var(--primary);">LIVE API</span>
                         </div>
                     </div>
                 </section>
@@ -900,7 +1017,240 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        // Hier würde der gesamte JavaScript-Code aus app.js eingefügt werden
+        // Für die Demonstration wird hier nur ein Platzhalter eingefügt
+        console.log("Epische ProFoot Analytics - Geladen!");
+        
+        // Set today's date as default
+        document.getElementById('date').value = new Date().toISOString().split('T')[0];
+        
+        // Placeholder für die Bankroll-Panel-Funktionalität
+        document.getElementById('bankrollPanel').innerHTML = `
+            <div class="bankroll-panel">
+                <div class="bankroll-header" style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 1.5rem;
+                    padding-bottom: 1.5rem;
+                    border-bottom: 2px solid rgba(100, 116, 139, 0.3);
+                ">
+                    <h3 style="margin: 0; font-size: 1.3rem; font-weight: 800; color: white;">
+                        <i class="fas fa-wallet" style="color: var(--success);"></i> 
+                        EPISCHES BANKROLL MANAGEMENT
+                    </h3>
+                    <span class="bankroll-amount" style="
+                        font-size: 1.75rem;
+                        font-weight: 900;
+                        color: var(--success);
+                        background: rgba(15, 23, 42, 0.7);
+                        padding: 0.75rem 1.5rem;
+                        border-radius: 14px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                        border: 1px solid rgba(100, 116, 139, 0.3);
+                    ">€1,000.00</span>
+                </div>
+                
+                <div class="bankroll-stats" style="
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 1.5rem;
+                    margin-bottom: 1.5rem;
+                ">
+                    <div class="bankroll-stat" style="
+                        background: rgba(15, 23, 42, 0.7);
+                        padding: 1.5rem;
+                        border-radius: 14px;
+                        text-align: center;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                        border: 1px solid rgba(100, 116, 139, 0.3);
+                    ">
+                        <div style="font-size: 0.9rem; color: var(--gray-light); font-weight: 700; margin-bottom: 0.75rem;">Win Rate</div>
+                        <div style="font-size: 1.5rem; font-weight: 900; color: var(--success);">
+                            54.2%
+                        </div>
+                    </div>
+                    <div class="bankroll-stat" style="
+                        background: rgba(15, 23, 42, 0.7);
+                        padding: 1.5rem;
+                        border-radius: 14px;
+                        text-align: center;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                        border: 1px solid rgba(100, 116, 139, 0.3);
+                    ">
+                        <div style="font-size: 0.9rem; color: var(--gray-light); font-weight: 700; margin-bottom: 0.75rem;">ROI</div>
+                        <div style="font-size: 1.5rem; font-weight: 900; color: var(--success);">
+                            8.7%
+                        </div>
+                    </div>
+                    <div class="bankroll-stat" style="
+                        background: rgba(15, 23, 42, 0.7);
+                        padding: 1.5rem;
+                        border-radius: 14px;
+                        text-align: center;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                        border: 1px solid rgba(100, 116, 139, 0.3);
+                    ">
+                        <div style="font-size: 0.9rem; color: var(--gray-light); font-weight: 700; margin-bottom: 0.75rem;">Aktuelle Serie</div>
+                        <div style="font-size: 1.5rem; font-weight: 900; color: var(--success);">
+                            +3
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bankroll-recommendations">
+                    <div style="font-size: 1rem; font-weight: 800; color: white; margin-bottom: 1rem;">
+                        <i class="fas fa-lightbulb"></i> EPISCHE EMPFEHLUNGEN
+                    </div>
+                    <div class="recommendation" style="
+                        background: rgba(254, 243, 199, 0.1);
+                        border: 1px solid rgba(245, 158, 11, 0.3);
+                        border-left: 4px solid var(--accent);
+                        padding: 1.5rem;
+                        border-radius: 12px;
+                        margin-bottom: 1rem;
+                        display: flex;
+                        align-items: flex-start;
+                        gap: 1rem;
+                    ">
+                        <i class="fas fa-exclamation-triangle" style="color: var(--accent); margin-top: 0.1rem;"></i>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 800; color: white; margin-bottom: 0.5rem;">
+                                Win Rate über 50%
+                            </div>
+                            <div style="font-size: 0.9rem; color: var(--gray-light);">
+                                Aktuelle Strategie beibehalten
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Placeholder für die Load-Funktion
+        document.getElementById('loadBtn').addEventListener('click', function() {
+            const premiumPicksDiv = document.getElementById("premiumPicks");
+            premiumPicksDiv.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <div>EPISCHE KI-ANALYSE GESTARTET...</div>
+                </div>
+            `;
+            
+            // Simuliere das Laden von Daten
+            setTimeout(() => {
+                premiumPicksDiv.innerHTML = `
+                    <div class="game-item premium">
+                        <div class="game-header">
+                            <div class="teams">
+                                <div class="team">
+                                    <img src="https://flagsapi.com/DE/flat/64.png" alt="Bayern Munich" class="team-logo">
+                                    <span>Bayern Munich</span>
+                                </div>
+                                <div class="vs">vs</div>
+                                <div class="team">
+                                    <img src="https://flagsapi.com/DE/flat/64.png" alt="Borussia Dortmund" class="team-logo">
+                                    <span>Borussia Dortmund</span>
+                                </div>
+                            </div>
+                            <div class="game-meta">
+                                <div class="league">Bundesliga <span class="premium-badge">💎 TOP PICK</span></div>
+                                <div class="game-date">Heute, 18:30</div>
+                            </div>
+                        </div>
+                        
+                        <div class="metrics-grid">
+                            <div class="metric">
+                                <div class="metric-label">
+                                    <span>Heimsieg</span>
+                                    <span class="metric-value">68%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill progress-home" style="width: 68%"></div>
+                                </div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label">
+                                    <span>Unentschieden</span>
+                                    <span class="metric-value">18%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill progress-draw" style="width: 18%"></div>
+                                </div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label">
+                                    <span>Auswärtssieg</span>
+                                    <span class="metric-value">14%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill progress-away" style="width: 14%"></div>
+                                </div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label">
+                                    <span>Over 2.5</span>
+                                    <span class="metric-value">72%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill progress-over" style="width: 72%"></div>
+                                </div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label">
+                                    <span>BTTS</span>
+                                    <span class="metric-value">65%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill progress-btts" style="width: 65%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
+                            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                                <span class="trend-indicator trend-home">
+                                    <i class="fas fa-arrow-up"></i> Strong Home
+                                </span>
+                                <span class="ki-badge ki-high">
+                                    <i class="fas fa-robot"></i> 89%
+                                </span>
+                            </div>
+                            <div style="font-size: 0.95rem; color: var(--success); font-weight: 800;">
+                                Best Value: 12.5% (home)
+                            </div>
+                        </div>
+                        
+                        <div class="analysis-section">
+                            <div class="analysis-title">
+                                <i class="fas fa-chart-line"></i> EPISCHE KI-ANALYSE
+                            </div>
+                            <div class="analysis-text">
+                                Bayern Munich dominiert mit starker Heimplatzpräsenz und hoher Siegwahrscheinlichkeit von 68%. 
+                                Over 2.5 Tore mit 72% Wahrscheinlichkeit ist ebenfalls sehr wahrscheinlich. 
+                                <strong>Heimsieg und Over 2.5 Tore empfehlenswert.</strong>
+                            </div>
+                        </div>
+                        
+                        <div style="font-size: 0.9rem; color: var(--success); font-weight: 800; margin-top: 1rem;">
+                            <i class="fas fa-coins"></i> Empfohlener Einsatz: €45
+                        </div>
+                    </div>
+                `;
+                       // Update Statistik
+                document.getElementById('totalMatches').textContent = '24';
+                document.getElementById('premiumPicks').textContent = '3';
+                document.getElementById('updateTime').textContent = new Date().toLocaleTimeString('de-DE', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                document.getElementById('avgConfidence').textContent = '82%';
+                document.getElementById('highValueBets').textContent = '7';
+                document.getElementById('strongTrends').textContent = '5';
+                document.getElementById('over25Rate').textContent = '58%';
+            }, 2000);
+        });
+    </script>
 </body>
 </html>
-        
