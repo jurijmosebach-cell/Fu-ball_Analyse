@@ -1,4 +1,4 @@
-// app-enhanced.js — Professionelle Frontend-Implementation
+// app-enhanced.js — Professionelle Frontend-Implementation mit Multi-Market Trends
 // DOM Elements
 const premiumPicksDiv = document.getElementById("premiumPicks");
 const topGamesDiv = document.getElementById("topGames");
@@ -300,36 +300,182 @@ function createBankrollPanel() {
     return bankrollHTML;
 }
 
+// ⭐⭐ ERWEITERTE TREND-BADGES FÜR MULTI-MARKET ⭐⭐
+function createAdvancedTrendBadge(trendAnalysis) {
+    if (!trendAnalysis || !trendAnalysis.allTrends) {
+        return createTrendBadgeElement({ 
+            market: "balanced", 
+            description: "Ausgeglichen",
+            probability: 0.5 
+        });
+    }
+    
+    const container = document.createElement("div");
+    container.style.display = "flex";
+    container.style.flexDirection = "column";
+    container.style.gap = "0.5rem";
+    container.style.width = "100%";
+    
+    // Primary Trend (max 1)
+    const primaryTrend = trendAnalysis.primaryTrend;
+    if (primaryTrend && primaryTrend.market !== "balanced") {
+        const primaryBadge = createTrendBadgeElement(primaryTrend, false);
+        container.appendChild(primaryBadge);
+    }
+    
+    // Secondary Trends (max 2)
+    const secondaryTrends = trendAnalysis.allTrends
+        .filter(trend => trend !== primaryTrend)
+        .slice(0, 2);
+    
+    secondaryTrends.forEach(trend => {
+        const secondaryBadge = createTrendBadgeElement(trend, true);
+        container.appendChild(secondaryBadge);
+    });
+    
+    // Fallback wenn keine Trends
+    if (container.children.length === 0) {
+        const balancedBadge = createTrendBadgeElement({ 
+            market: "balanced", 
+            description: "Ausgeglichen",
+            probability: 0.5 
+        }, false);
+        container.appendChild(balancedBadge);
+    }
+    
+    return container;
+}
+
+function createTrendBadgeElement(trend, isSecondary = false) {
+    const badge = document.createElement("div");
+    const trendClass = `trend-${trend.market}`;
+    
+    badge.className = `trend-indicator ${trendClass} ${isSecondary ? 'secondary' : ''}`;
+    badge.style.marginLeft = "0";
+    badge.style.marginBottom = isSecondary ? "0.25rem" : "0";
+    
+    const icons = {
+        "home": "fas fa-home",
+        "away": "fas fa-route", 
+        "draw": "fas fa-minus",
+        "over25": "fas fa-arrow-up",
+        "under25": "fas fa-arrow-down",
+        "btts_yes": "fas fa-exchange-alt",
+        "btts_no": "fas fa-times",
+        "goal_fest": "fas fa-fire",
+        "defensive_battle": "fas fa-shield-alt",
+        "high_quality": "fas fa-star",
+        "balanced": "fas fa-equals"
+    };
+    
+    const marketLabels = {
+        "home": "HEIM",
+        "away": "AUSWÄRTS", 
+        "draw": "UNENTSCHIEDEN",
+        "over25": "OVER 2.5",
+        "under25": "UNDER 2.5",
+        "btts_yes": "BTTS JA",
+        "btts_no": "BTTS NEIN",
+        "goal_fest": "TOR-FEST",
+        "defensive_battle": "DEFENSIV",
+        "high_quality": "HOHE QUALITÄT",
+        "balanced": "AUSGEGLICHEN"
+    };
+    
+    const icon = icons[trend.market] || 'fas fa-chart-line';
+    const label = marketLabels[trend.market] || trend.market.toUpperCase();
+    const probability = Math.round(trend.probability * 100);
+    
+    badge.innerHTML = `
+        <i class="${icon}"></i>
+        ${label} 
+        <span style="margin-left: 0.5rem; font-size: 0.8em; font-weight: 900;">
+            ${probability}%
+        </span>
+    `;
+    
+    if (isSecondary) {
+        badge.style.opacity = "0.7";
+        badge.style.fontSize = "0.8rem";
+        badge.style.padding = "0.5rem 0.75rem";
+    }
+    
+    return badge;
+}
+
+// ⭐⭐ ERWEITERTE TREND-STATISTIK BERECHNUNG ⭐⭐
+function calculateAdvancedStatistics(games) {
+    const total = games.length;
+    const premium = Math.min(3, total);
+    const featured = Math.min(5, total);
+    
+    // Value Bets zählen
+    const highValue = games.filter(g => {
+        const maxValue = Math.max(
+            g.value?.home || 0,
+            g.value?.draw || 0,
+            g.value?.away || 0,
+            g.value?.over25 || 0
+        );
+        return maxValue > 0.05;
+    }).length;
+
+    // Starke Trends zählen (Confidence > 70%)
+    const strongTrends = games.filter(g => {
+        const trendAnalysis = g.trendAnalysis;
+        return trendAnalysis && 
+               trendAnalysis.allTrends && 
+               trendAnalysis.allTrends.some(trend => trend.confidence > 0.7);
+    }).length;
+
+    // Over 2.5 Spiele zählen
+    const over25Games = games.filter(g => (g.over25 || 0) > 0.5).length;
+    
+    // BTTS Spiele zählen
+    const bttsGames = games.filter(g => (g.btts || 0) > 0.6).length;
+    
+    // Durchschnittliche Confidence
+    const avgConfidence = games.length > 0 ? 
+        games.reduce((sum, game) => sum + (game.confidence || 0.5), 0) / games.length : 0;
+    
+    // Over 2.5 Rate
+    const over25Rate = games.length > 0 ? 
+        games.reduce((sum, game) => sum + (game.over25 || 0), 0) / games.length : 0;
+
+    return {
+        total: total,
+        premium: premium,
+        featured: featured,
+        highValue: highValue,
+        strongTrends: strongTrends,
+        over25Games: over25Games,
+        bttsGames: bttsGames,
+        avgConfidence: avgConfidence,
+        over25Rate: over25Rate
+    };
+}
+
+function updateAdvancedStatistics(stats) {
+    totalMatchesEl.textContent = stats.total;
+    premiumCountEl.textContent = `${stats.premium} Premium`;
+    featuredCountEl.textContent = `${stats.featured} Spiele`;
+    allGamesCountEl.textContent = `${stats.total} Spiele`;
+
+    avgConfidenceEl.textContent = `${Math.round(stats.avgConfidence * 100)}%`;
+    highValueBetsEl.textContent = stats.highValue;
+    strongTrendsEl.textContent = stats.strongTrends;
+    over25RateEl.textContent = `${Math.round(stats.over25Rate * 100)}%`;
+    updateTimeEl.textContent = new Date().toLocaleTimeString('de-DE', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+}
+
 // Utility Functions
 function createKIBadge(confidence) {
     const badge = document.createElement("span");
     badge.className = `ki-badge ${confidence > 0.8 ? 'ki-high' : confidence > 0.7 ? 'ki-medium' : confidence > 0.6 ? 'ki-low' : 'ki-very-low'}`;
     badge.innerHTML = `<i class="fas fa-robot"></i> ${Math.round(confidence * 100)}%`;
-    return badge;
-}
-
-function createTrendBadge(trend) {
-    if (!trend) trend = 'Balanced';
-    
-    const badge = document.createElement("span");
-    const trendType = trend.toLowerCase().includes('home') ? 'home' : 
-                     trend.toLowerCase().includes('away') ? 'away' : 
-                     trend.toLowerCase().includes('draw') ? 'draw' : 'balanced';
-    
-    badge.className = `trend-indicator trend-${trendType}`;
-    
-    const icons = {
-        "Strong Home": "fas fa-arrow-up", 
-        "Home": "fas fa-arrow-up",
-        "Slight Home": "fas fa-arrow-up-right", 
-        "Strong Away": "fas fa-arrow-up",
-        "Away": "fas fa-arrow-up", 
-        "Slight Away": "fas fa-arrow-up-right",
-        "Draw": "fas fa-minus", 
-        "Balanced": "fas fa-equals"
-    };
-    
-    badge.innerHTML = `<i class="${icons[trend] || 'fas fa-chart-line'}"></i> ${trend}`;
     return badge;
 }
 
@@ -399,7 +545,7 @@ function createHDASection(hdaAnalysis) {
     return section;
 }
 
-// KORRIGIERTE createGameElement Funktion
+// ⭐⭐ VERBESSERTE GAME-ELEMENT ERSTELLUNG ⭐⭐
 function createGameElement(game, type = 'standard') {
     console.log(`🎮 Creating game element: ${game.home} vs ${game.away}`);
     
@@ -439,7 +585,12 @@ function createGameElement(game, type = 'standard') {
     const over25Prob = game.over25 || 0.5;
     const bttsProb = game.btts || 0.5;
     const confidence = game.confidence || 0.5;
-    const trend = game.trend || 'Balanced';
+
+    // ERWEITERTE TREND-ANALYSE verwenden
+    const trendAnalysis = game.trendAnalysis || {
+        primaryTrend: { market: "balanced", description: "Ausgeglichen", probability: 0.5 },
+        allTrends: []
+    };
 
     gameEl.innerHTML = `
         <div class="game-header">
@@ -468,13 +619,17 @@ function createGameElement(game, type = 'standard') {
             ${createProgressBar('BTTS', bttsProb, 'btts').outerHTML}
         </div>
         
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
-            <div style="display: flex; gap: 0.75rem; align-items: center;">
-                ${createTrendBadge(trend).outerHTML}
-                ${createKIBadge(confidence).outerHTML}
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 1.5rem; gap: 1rem;">
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; flex: 1;">
+                <!-- ERWEITERTE TREND-BADGES -->
+                ${createAdvancedTrendBadge(trendAnalysis).outerHTML}
             </div>
-            <div style="font-size: 0.95rem; color: #059669; font-weight: 800;">
-                Best Value: ${(bestValue * 100).toFixed(1)}% (${bestValueType})
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
+                ${createKIBadge(confidence).outerHTML}
+                <div style="font-size: 0.95rem; color: #059669; font-weight: 800; text-align: right;">
+                    Best Value: ${(bestValue * 100).toFixed(1)}%<br>
+                    <span style="font-size: 0.8rem; color: #6b7280;">${bestValueType}</span>
+                </div>
             </div>
         </div>
         
@@ -486,11 +641,23 @@ function createGameElement(game, type = 'standard') {
                 <div class="analysis-text">
                     ${game.analysis.summary || 'Keine Analyse verfügbar.'}
                 </div>
+                ${game.analysis.keyFactors && game.analysis.keyFactors.length > 0 ? `
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(100, 116, 139, 0.3);">
+                        <div style="font-size: 0.9rem; font-weight: 700; color: white; margin-bottom: 0.5rem;">
+                            Key Factors:
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                            ${game.analysis.keyFactors.map(factor => 
+                                `<span style="background: rgba(37, 99, 235, 0.2); padding: 0.25rem 0.5rem; border-radius: 8px; font-size: 0.8rem; border: 1px solid rgba(37, 99, 235, 0.3);">${factor}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                ` : ''}
             </div>
         ` : ''}
     `;
 
-     // HDH-Analyse hinzufügen
+    // HDH-Analyse hinzufügen
     if (game.hdaAnalysis) {
         const hdaSection = createHDASection(game.hdaAnalysis);
         if (hdaSection) {
@@ -500,71 +667,19 @@ function createGameElement(game, type = 'standard') {
 
     return gameEl;
 }
-
-function calculateStatistics(games) {
-    const total = games.length;
-    const premium = Math.min(3, total);
-    const featured = Math.min(5, total);
-    const highValue = games.filter(g => {
-        const maxValue = Math.max(
-            g.value?.home || 0,
-            g.value?.draw || 0,
-            g.value?.away || 0,
-            g.value?.over25 || 0
-        );
-        return maxValue > 0.05;
-    }).length;
-
-    const strongTrends = games.filter(g => 
-        g.trend && (g.trend.includes('Strong') || g.trend === 'Home' || g.trend === 'Away')
-    ).length;
-
-    const over25Games = games.filter(g => (g.over25 || 0) > 0.4).length;
-    
-    const avgConfidence = games.length > 0 ? 
-        games.reduce((sum, game) => sum + (game.confidence || 0.5), 0) / games.length : 0;
-    
-    const over25Rate = games.length > 0 ? 
-        games.reduce((sum, game) => sum + (game.over25 || 0), 0) / games.length : 0;
-
-    return {
-        total: total,
-        premium: premium,
-        featured: featured,
-        highValue: highValue,
-        strongTrends: strongTrends,
-        over25Games: over25Games,
-        avgConfidence: avgConfidence,
-        over25Rate: over25Rate
-    };
-}
-
-function updateStatistics(stats) {
-    totalMatchesEl.textContent = stats.total;
-    premiumCountEl.textContent = `${stats.premium} Premium`;
-    featuredCountEl.textContent = `${stats.featured} Spiele`;
-    allGamesCountEl.textContent = `${stats.total} Spiele`;
-
-    avgConfidenceEl.textContent = `${Math.round(stats.avgConfidence * 100)}%`;
-    highValueBetsEl.textContent = stats.highValue;
-    strongTrendsEl.textContent = stats.strongTrends;
-    over25RateEl.textContent = `${Math.round(stats.over25Rate * 100)}%`;
-    updateTimeEl.textContent = new Date().toLocaleTimeString('de-DE', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-    });
-}
-
 // ⭐⭐ VERBESSERTE LOADGAMES FUNKTION ⭐⭐
 async function loadGames() {
     try {
-        console.log('🔄 Starte KI-Analyse...');
+        console.log('🔄 Starte erweiterte KI-Analyse mit Multi-Market Trends...');
         
         // Show loading state
         const loadingHTML = `
             <div class="loading">
                 <div class="loading-spinner"></div>
-                <div>EPISCHE KI-ANALYSE GESTARTET...</div>
+                <div>ERWEITERTE MULTI-MARKET ANALYSE...</div>
+                <div style="font-size: 0.9rem; margin-top: 0.5rem; color: #94a3b8;">
+                    Analysiere HDH, Over/Under, BTTS & Spezialmärkte
+                </div>
             </div>
         `;
         
@@ -616,9 +731,9 @@ async function loadGames() {
             console.log(`🔍 Nach Team gefiltert: ${games.length} Spiele`);
         }
 
-        // Calculate statistics
-        const stats = calculateStatistics(games);
-        updateStatistics(stats);
+        // ERWEITERTE STATISTIK berechnen
+        const stats = calculateAdvancedStatistics(games);
+        updateAdvancedStatistics(stats);
 
         // Premium Picks (erste 3 Spiele)
         premiumPicksDiv.innerHTML = "";
@@ -752,5 +867,4 @@ window.addEventListener("load", loadGames);
 // Auto-refresh every 5 minutes
 setInterval(loadGames, 5 * 60 * 1000);
 
-console.log('🚀 Epische ProFoot Analytics - Initialisiert!');
-    
+console.log('🚀 Erweiterte ProFoot Analytics - Multi-Market Trends Initialisiert!');
