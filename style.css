@@ -1,4 +1,4 @@
-/* styles-enhanced.css - Episches ProFoot Analytics CSS mit Multi-Market Trends */
+/* styles-enhanced.css - Episches ProFoot Analytics CSS mit Multi-Market Trends & H2H */
 :root {
     --primary: #2563eb;
     --primary-dark: #1d4ed8;
@@ -648,6 +648,130 @@ body {
     font-weight: 500;
 }
 
+/* ⭐⭐ H2H ANALYSE STYLES ⭐⭐ */
+.h2h-analysis-section {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: rgba(15, 23, 42, 0.8);
+    border-radius: 12px;
+    border-left: 4px solid #8b5cf6;
+}
+
+.h2h-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.h2h-stat {
+    text-align: center;
+    padding: 0.75rem;
+    background: rgba(30, 41, 59, 0.6);
+    border-radius: 8px;
+}
+
+.h2h-label {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.h2h-value {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: white;
+}
+
+.h2h-trends {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: rgba(30, 41, 59, 0.4);
+    border-radius: 8px;
+}
+
+.h2h-trend-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.trend-label {
+    font-size: 0.7rem;
+    color: #94a3b8;
+}
+
+.trend-value {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: white;
+}
+
+.h2h-predictions {
+    border-top: 1px solid rgba(100, 116, 139, 0.3);
+    padding-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.h2h-pred-title {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.h2h-pred-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+.h2h-pred-item {
+    text-align: center;
+    padding: 0.5rem;
+    background: rgba(30, 41, 59, 0.6);
+    border-radius: 6px;
+    font-size: 0.8rem;
+}
+
+.h2h-pred-item div:first-child {
+    color: #94a3b8;
+    margin-bottom: 0.25rem;
+}
+
+.pred-value {
+    font-weight: 800;
+    color: white;
+    font-size: 0.9rem;
+}
+
+.h2h-confidence {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: rgba(139, 92, 246, 0.2);
+    border-radius: 8px;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.confidence-label {
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+.confidence-value {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #8b5cf6;
+}
+
 /* HDH Analyse Styles */
 .hda-analysis-section {
     margin-top: 1.5rem;
@@ -1085,6 +1209,20 @@ body {
         grid-template-columns: 1fr;
     }
 
+    .h2h-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .h2h-trends {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .h2h-pred-grid {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+    }
+
     .bankroll-stats {
         grid-template-columns: 1fr;
     }
@@ -1115,5 +1253,9 @@ body {
     
     .trend-indicator i {
         font-size: 0.6rem;
+    }
+    
+    .h2h-stats-grid {
+        grid-template-columns: 1fr;
     }
 }
