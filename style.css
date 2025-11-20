@@ -1,4 +1,4 @@
-/* styles-enhanced.css - Episches ProFoot Analytics CSS */
+/* styles-enhanced.css - Episches ProFoot Analytics CSS mit Multi-Market Trends */
 :root {
     --primary: #2563eb;
     --primary-dark: #1d4ed8;
@@ -521,6 +521,88 @@ body {
 .progress-under { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
 .progress-btts { background: linear-gradient(90deg, #ff7a00, #ea580c); }
 
+/* ⭐⭐ ERWEITERTE TREND-BADGE STYLES ⭐⭐ */
+.trend-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 800;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255,255,255,0.1);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* HDH Trends */
+.trend-home { 
+    background: linear-gradient(135deg, #166534, #15803d); 
+    color: white; 
+}
+
+.trend-away { 
+    background: linear-gradient(135deg, #dc2626, #b91c1c); 
+    color: white; 
+}
+
+.trend-draw { 
+    background: linear-gradient(135deg, #ca8a04, #eab308); 
+    color: white; 
+}
+
+/* Goals Trends */
+.trend-over25 { 
+    background: linear-gradient(135deg, #dc2626, #b91c1c); 
+    color: white; 
+}
+
+.trend-under25 { 
+    background: linear-gradient(135deg, #059669, #047857); 
+    color: white; 
+}
+
+/* BTTS Trends */
+.trend-btts_yes { 
+    background: linear-gradient(135deg, #7c3aed, #6d28d9); 
+    color: white; 
+}
+
+.trend-btts_no { 
+    background: linear-gradient(135deg, #475569, #374151); 
+    color: white; 
+}
+
+/* Special Trends */
+.trend-goal_fest { 
+    background: linear-gradient(135deg, #ea580c, #dc2626); 
+    color: white; 
+}
+
+.trend-defensive_battle { 
+    background: linear-gradient(135deg, #1e40af, #1e3a8a); 
+    color: white; 
+}
+
+.trend-high_quality { 
+    background: linear-gradient(135deg, #f59e0b, #d97706); 
+    color: white; 
+}
+
+.trend-balanced { 
+    background: linear-gradient(135deg, #475569, #64748b); 
+    color: white; 
+}
+
+/* Secondary Trend Styles */
+.trend-indicator.secondary {
+    opacity: 0.7;
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+    margin-left: 0;
+}
+
 /* Epic KI Badge */
 .ki-badge {
     display: inline-flex;
@@ -538,25 +620,6 @@ body {
 .ki-high { background: linear-gradient(135deg, #166534, #15803d); color: white; }
 .ki-medium { background: linear-gradient(135deg, #ca8a04, #eab308); color: white; }
 .ki-low { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
-
-/* Epic Trend Indicator */
-.trend-indicator {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1.25rem;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    font-weight: 800;
-    margin-left: 0.75rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255,255,255,0.1);
-}
-
-.trend-home { background: linear-gradient(135deg, #166534, #15803d); color: white; }
-.trend-away { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
-.trend-draw { background: linear-gradient(135deg, #ca8a04, #eab308); color: white; }
-.trend-balanced { background: linear-gradient(135deg, #475569, #64748b); color: white; }
 
 /* Epic Analysis Section */
 .analysis-section {
@@ -1029,6 +1092,28 @@ body {
     .main-content {
         grid-template-columns: 1fr;
     }
+
+    /* Responsive Trend Badges */
+    .trend-indicator {
+        font-size: 0.8rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .trend-indicator.secondary {
+        font-size: 0.7rem;
+        padding: 0.4rem 0.75rem;
+    }
 }
 
-  
+/* Additional Mobile Optimizations */
+@media (max-width: 480px) {
+    .trend-indicator {
+        font-size: 0.7rem;
+        padding: 0.4rem 0.75rem;
+        gap: 0.5rem;
+    }
+    
+    .trend-indicator i {
+        font-size: 0.6rem;
+    }
+}
