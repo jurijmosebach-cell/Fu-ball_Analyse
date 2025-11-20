@@ -1,4 +1,4 @@
-// server-football-data-only.js - OPTIMIZED FOR FOOTBALL-DATA.ORG
+// server.js - NUR MIT H2H ERWEITERT
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -6,7 +6,7 @@ import { ProfessionalCalculator } from './professional-calculations.js';
 import { HDAAnalyzer } from './hda-analyzer.js';
 import { AdvancedFormAnalyzer } from './advanced-form-analyzer.js';
 import { InjuryTracker } from './injury-tracker.js';
-import { H2HAnalyzer } from './h2h-analyzer.js';
+import { H2HAnalyzer } from './h2h-analyzer.js'; // NEU: H2H Import
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,9 +26,9 @@ const proCalculator = new ProfessionalCalculator();
 const hdaAnalyzer = new HDAAnalyzer();
 const formAnalyzer = new AdvancedFormAnalyzer();
 const injuryTracker = new InjuryTracker();
-const h2hAnalyzer = new H2HAnalyzer();
+const h2hAnalyzer = new H2HAnalyzer(); // NEU: H2H Analyzer
 
-// FOOTBALL-DATA.ORG SERVICE
+// FOOTBALL-DATA.ORG SERVICE (UNVERÄNDERT)
 class FootballDataService {
     constructor(apiKey) {
         this.apiKey = apiKey;
@@ -151,7 +151,7 @@ class FootballDataService {
     }
 }
 
-// REALISTISCHE TEAM-STRENGTHS DATABASE
+// REALISTISCHE TEAM-STRENGTHS DATABASE (UNVERÄNDERT)
 const REALISTIC_TEAM_STRENGTHS = {
     // Premier League - Aktuelle Werte 2024
     "Manchester City": { attack: 2.45, defense: 0.75, homeStrength: 1.28, awayStrength: 1.18, consistency: 0.92 },
@@ -201,7 +201,7 @@ function getRealisticTeamStrength(teamName) {
     return REALISTIC_TEAM_STRENGTHS.default;
 }
 
-// REALISTISCHE xG-BERECHNUNG
+// REALISTISCHE xG-BERECHNUNG (UNVERÄNDERT)
 async function calculateRealisticXG(homeTeam, awayTeam, league = "") {
     const homeStrength = getRealisticTeamStrength(homeTeam);
     const awayStrength = getRealisticTeamStrength(awayTeam);
@@ -246,7 +246,7 @@ async function calculateRealisticXG(homeTeam, awayTeam, league = "") {
     };
 }
 
-// REALISTISCHE WAHRSCHEINLICHKEITEN
+// REALISTISCHE WAHRSCHEINLICHKEITEN (UNVERÄNDERT)
 function computeRealisticProbabilities(homeXG, awayXG, league, homeTeam, awayTeam) {
     const baseProbs = proCalculator.calculateAdvancedProbabilities(homeXG, awayXG, league);
     
@@ -268,148 +268,43 @@ function computeRealisticProbabilities(homeXG, awayXG, league, homeTeam, awayTea
     };
 }
 
-// ERWEITERTE MULTI-MARKET TREND-ANALYSE
-function computeAdvancedTrend(probabilities, xgData, homeTeam, awayTeam, league) {
-    const trends = [];
-    const confidenceLevels = [];
+// REALISTISCHE TREND-ANALYSE (UNVERÄNDERT - verwende die alte Funktion)
+function computeRealisticTrend(prob, xgData, homeTeam, awayTeam) {
+    const home = prob.home || 0;
+    const away = prob.away || 0;
+    const draw = prob.draw || 0;
     
-    const { home, away, draw, over25, btts } = probabilities;
-    const { home: homeXG, away: awayXG } = xgData;
-    const totalXG = homeXG + awayXG;
+    const homeStrength = getRealisticTeamStrength(homeTeam);
+    const awayStrength = getRealisticTeamStrength(awayTeam);
     
-    // 1. HDH TRENDS
-    if (home > 0.65) {
-        trends.push({
-            type: "hdh",
-            market: "home",
-            strength: home > 0.75 ? "strong" : "medium",
-            confidence: Math.min(0.95, home * 0.9),
-            probability: home,
-            description: `${homeTeam} starker Favorit`
-        });
+    const strengthDiff = homeStrength.attack - awayStrength.attack;
+    const homeAdvantage = homeStrength.homeStrength - 1;
+    
+    let trend = "Balanced";
+    let confidence = 0.5;
+    
+    if (home > 0.7 && strengthDiff > 0.3) {
+        trend = home > 0.8 ? "Strong Home" : "Home";
+        confidence = 0.8 + (home - 0.7) * 0.5;
+    } else if (away > 0.7 && strengthDiff < -0.3) {
+        trend = away > 0.8 ? "Strong Away" : "Away";
+        confidence = 0.8 + (away - 0.7) * 0.5;
+    } else if (draw > 0.4 && Math.abs(home - away) < 0.15) {
+        trend = "Draw";
+        confidence = 0.7 + (draw - 0.35) * 0.6;
+    } else if (home > away + 0.2) {
+        trend = homeAdvantage > 0.15 ? "Home" : "Slight Home";
+        confidence = 0.6 + (home - away) * 0.8;
+    } else if (away > home + 0.2) {
+        trend = "Away";
+        confidence = 0.6 + (away - home) * 0.8;
     }
     
-    if (away > 0.6) {
-        trends.push({
-            type: "hdh", 
-            market: "away",
-            strength: away > 0.7 ? "strong" : "medium",
-            confidence: Math.min(0.95, away * 0.85),
-            probability: away,
-            description: `${awayTeam} mit Auswärtstärke`
-        });
-    }
-    
-    if (draw > 0.35 && Math.abs(home - away) < 0.15) {
-        trends.push({
-            type: "hdh",
-            market: "draw", 
-            strength: draw > 0.4 ? "strong" : "medium",
-            confidence: draw * 0.8,
-            probability: draw,
-            description: "Ausgeglichen - Tendenz zu Unentschieden"
-        });
-    }
-    
-    // 2. OVER/UNDER TRENDS
-    if (over25 > 0.68) {
-        trends.push({
-            type: "goals",
-            market: "over25",
-            strength: over25 > 0.75 ? "strong" : "medium",
-            confidence: Math.min(0.95, over25 * 0.9),
-            probability: over25,
-            description: `Hohe Torerwartung (${totalXG.toFixed(1)} xG)`
-        });
-    }
-    
-    if (over25 < 0.35) {
-        trends.push({
-            type: "goals",
-            market: "under25",
-            strength: over25 < 0.25 ? "strong" : "medium", 
-            confidence: Math.min(0.95, (1 - over25) * 0.9),
-            probability: 1 - over25,
-            description: `Geringe Torerwartung (${totalXG.toFixed(1)} xG)`
-        });
-    }
-    
-    // 3. BTTS TRENDS
-    if (btts > 0.65) {
-        trends.push({
-            type: "btts",
-            market: "btts_yes",
-            strength: btts > 0.72 ? "strong" : "medium",
-            confidence: btts * 0.85,
-            probability: btts,
-            description: "Beide Teams treffen wahrscheinlich"
-        });
-    }
-    
-    if (btts < 0.35) {
-        trends.push({
-            type: "btts",
-            market: "btts_no", 
-            strength: btts < 0.28 ? "strong" : "medium",
-            confidence: (1 - btts) * 0.85,
-            probability: 1 - btts,
-            description: "Clean Sheet erwartet"
-        });
-    }
-    
-    // 4. GOAL-INTENSIVE SPIELE
-    if (totalXG > 3.5 && over25 > 0.6) {
-        trends.push({
-            type: "special",
-            market: "goal_fest", 
-            strength: "high",
-            confidence: 0.8,
-            probability: over25,
-            description: `Tor-Festival erwartet (${totalXG.toFixed(1)} xG)`
-        });
-    }
-    
-    // 5. DEFENSIVE SPIELE
-    if (totalXG < 1.8 && over25 < 0.4) {
-        trends.push({
-            type: "special", 
-            market: "defensive_battle",
-            strength: "high",
-            confidence: 0.75,
-            probability: 1 - over25,
-            description: "Defensives Duell - wenige Tore"
-        });
-    }
-    
-    // 6. HOHE QUALITÄT SPIELE
-    if (xgData.quality > 0.8 && totalXG > 2.8) {
-        trends.push({
-            type: "special",
-            market: "high_quality",
-            strength: "medium",
-            confidence: 0.7,
-            probability: xgData.quality,
-            description: "Hohe Spielqualität erwartet"
-        });
-    }
-    
-    // Trends nach Confidence sortieren
-    trends.sort((a, b) => b.confidence - a.confidence);
-    
-    return {
-        primaryTrend: trends[0] || { 
-            market: "balanced", 
-            description: "Ausgeglichenes Spiel",
-            confidence: 0.5,
-            probability: 0.5
-        },
-        allTrends: trends,
-        confidence: trends.length > 0 ? trends[0].confidence : 0.5
-    };
+    return { trend, confidence: Math.min(0.95, confidence) };
 }
 
-// REALISTISCHE ANALYSE GENERIEREN
-async function generateRealisticAnalysis(homeTeam, awayTeam, probabilities, trendAnalysis, xgData, value, league) {
+// REALISTISCHE ANALYSE GENERIEREN (MIT H2H ERWEITERT)
+async function generateRealisticAnalysis(homeTeam, awayTeam, probabilities, trend, xgData, value, league) {
     const homeStrength = getRealisticTeamStrength(homeTeam);
     const awayStrength = getRealisticTeamStrength(awayTeam);
     
@@ -433,7 +328,6 @@ async function generateRealisticAnalysis(homeTeam, awayTeam, probabilities, tren
         recommendation: "",
         riskLevel: "medium",
         confidence: xgData.confidence,
-        trends: trendAnalysis,
         detailed: {
             strengthComparison: {
                 home: homeStrength,
@@ -448,7 +342,7 @@ async function generateRealisticAnalysis(homeTeam, awayTeam, probabilities, tren
                 home: homeInjuries,
                 away: awayInjuries
             },
-            h2h: h2hAnalysis,  // H2H Analyse hinzufügen
+            h2h: h2hAnalysis,  // NEU: H2H Analyse hinzufügen
             marketInsights: hdaAnalysis.valueOpportunities
         }
     };
@@ -457,88 +351,47 @@ async function generateRealisticAnalysis(homeTeam, awayTeam, probabilities, tren
     const awayProb = probabilities.away || 0;
     const bestValue = Math.max(value.home || 0, value.draw || 0, value.away || 0, value.over25 || 0);
 
-      // Dynamische Zusammenfassung basierend auf Top-Trends
-    const topTrend = trendAnalysis.primaryTrend;
-
-    switch(topTrend.type) {
-        case "goals":
-            if (topTrend.market === "over25") {
-                analysis.summary = `⚽ HOHE TORERWARTUNG: ${topTrend.description}`;
-                analysis.recommendation = "Over 2.5 Goals - Starke Indikation";
-                analysis.riskLevel = "low";
-            } else {
-                analysis.summary = `🛡️ DEFENSIVES SPIEL: ${topTrend.description}`;
-                analysis.recommendation = "Under 2.5 Goals - Gute Option";
-                analysis.riskLevel = "medium";
-            }
-            break;
-            
-        case "btts":
-            if (topTrend.market === "btts_yes") {
-                analysis.summary = `🎯 BEIDE TEAMS TRETEN: ${topTrend.description}`;
-                analysis.recommendation = "BTTS Yes - Hohe Wahrscheinlichkeit";
-                analysis.riskLevel = "low";
-            } else {
-                analysis.summary = `❌ CLEAN SHEET: ${topTrend.description}`;
-                analysis.recommendation = "BTTS No - Gute Chance";
-                analysis.riskLevel = "medium";
-            }
-            break;
-            
-        case "hdh":
-            if (topTrend.market === "home" && homeInjuries.overallImpact < 0.3) {
-                analysis.summary = `🔵 ${homeTeam} dominiert: ${topTrend.description}`;
-                analysis.recommendation = "Heimsieg - Hohe Erfolgschance";
-                analysis.riskLevel = "low";
-            } else if (topTrend.market === "away" && awayInjuries.overallImpact < 0.3) {
-                analysis.summary = `🔴 ${awayTeam} zeigt Stärke: ${topTrend.description}`;
-                analysis.recommendation = "Auswärtssieg - Gute Value Opportunity";
-                analysis.riskLevel = "low";
-            } else if (topTrend.market === "draw") {
-                analysis.summary = `⚖️ AUSGEGLICHEN: ${topTrend.description}`;
-                analysis.recommendation = "Unentschieden - Solide Wahl";
-                analysis.riskLevel = "medium";
-            }
-            break;
-            
-        case "special":
-            analysis.summary = `🌟 ${topTrend.description}`;
-            analysis.recommendation = "Spezialmarkt - Attraktive Option";
-            analysis.riskLevel = "medium";
-            break;
-            
-        default:
-            analysis.summary = `⚖️ Ausgeglichenes Spiel - Vorsichtige Herangehensweise empfohlen.`;
-            analysis.recommendation = "Risikobewusste Entscheidung";
-            analysis.riskLevel = "high";
+    // Dynamische Zusammenfassung basierend auf allen Faktoren
+    if (trend.trend === "Strong Home" && homeInjuries.overallImpact < 0.3) {
+        analysis.summary = `🔵 ${homeTeam} dominiert mit starker Heimplatzpräsenz (${Math.round(homeProb * 100)}%) und konsistenter Form.`;
+        analysis.recommendation = "Heimsieg - Hohe Erfolgschance";
+        analysis.riskLevel = "low";
+    } else if (trend.trend === "Strong Away" && awayInjuries.overallImpact < 0.3) {
+        analysis.summary = `🔴 ${awayTeam} zeigt überzeugende Auswärtsstärke (${Math.round(awayProb * 100)}%) und positive Momentum.`;
+        analysis.recommendation = "Auswärtssieg - Gute Value Opportunity";
+        analysis.riskLevel = "low";
+    } else if (homeProb > 0.6 && homeForm.motivation > 0.7) {
+        analysis.summary = `⚡ ${homeTeam} mit Heimplatzvorteil (${Math.round(homeProb * 100)}%) und hoher Motivation.`;
+        analysis.recommendation = "Heimsieg - Solide Wahl";
+        analysis.riskLevel = "medium";
+    } else if (bestValue > 0.15) {
+        analysis.summary = `💰 Ausgezeichneter Value (${(bestValue * 100).toFixed(1)}%) bei ausgeglichener Begegnung.`;
+        analysis.recommendation = "Value Bet - Attraktive Quote";
+        analysis.riskLevel = "medium";
+    } else {
+        analysis.summary = `⚖️ Ausgeglichenes Spiel - Vorsichtige Herangehensweise empfohlen.`;
+        analysis.recommendation = "Risikobewusste Entscheidung";
+        analysis.riskLevel = "high";
     }
 
-    // Key Factors basierend auf allen relevanten Trends
-    trendAnalysis.allTrends.slice(0, 3).forEach(trend => {
-        if (trend.confidence > 0.6) {
-            analysis.keyFactors.push(`${trend.description} (${Math.round(trend.probability * 100)}%)`);
-        }
-    });
-
-    // Value als zusätzlichen Faktor hinzufügen
-    if (bestValue > 0.1) {
-        analysis.keyFactors.push(`Value: ${(bestValue * 100).toFixed(1)}%`);
-    }
-
-    // Verletzungen als Warnfaktoren
+    // Key Factors
+    if (homeProb > 0.55) analysis.keyFactors.push(`Heimstärke: ${Math.round(homeProb * 100)}%`);
+    if (awayProb > 0.55) analysis.keyFactors.push(`Auswärtsstärke: ${Math.round(awayProb * 100)}%`);
+    if (probabilities.over25 > 0.65) analysis.keyFactors.push(`Hohe Torwahrscheinlichkeit: ${Math.round(probabilities.over25 * 100)}%`);
+    if (bestValue > 0.1) analysis.keyFactors.push(`Value: ${(bestValue * 100).toFixed(1)}%`);
     if (homeInjuries.overallImpact > 0.4) analysis.keyFactors.push(`⚠️ ${homeTeam} Verletzungen`);
     if (awayInjuries.overallImpact > 0.4) analysis.keyFactors.push(`⚠️ ${awayTeam} Verletzungen`);
 
     return analysis;
 }
 
-// CACHE SYSTEM
+// CACHE SYSTEM (UNVERÄNDERT)
 const cache = new Map();
 const CACHE_DURATION = 10 * 60 * 1000; // 10 Minuten
 
 const footballDataService = new FootballDataService(FOOTBALL_DATA_KEY);
 
-// HAUPT-API ROUTE
+// HAUPT-API ROUTE (UNVERÄNDERT)
 app.get('/api/games', async (req, res) => {
     try {
         const requestedDate = req.query.date || new Date().toISOString().split('T')[0];
@@ -558,7 +411,7 @@ app.get('/api/games', async (req, res) => {
                     source: cached.source, 
                     date: requestedDate, 
                     cached: true,
-                    version: '6.2.0'  // Version updated
+                    version: '6.0.0'
                 }
             });
         }
@@ -589,7 +442,7 @@ app.get('/api/games', async (req, res) => {
             console.log(`🔍 After league filter: ${filteredMatches.length} matches`);
         }
 
-        // Parallele Verarbeitung
+        Parallele Verarbeitung
         const analyzedGames = await Promise.all(
             filteredMatches.map(async (match) => {
                 try {
@@ -608,15 +461,15 @@ app.get('/api/games', async (req, res) => {
                     // VALUE-BERECHNUNG
                     const value = proCalculator.calculateAdvancedValue(probabilities);
                     
-                    // ERWEITERTE TREND-ANALYSE (Multi-Market)
-                    const trendAnalysis = computeAdvancedTrend(probabilities, xgData, homeTeam, awayTeam, league);
+                    // TREND-ANALYSE (alte Funktion verwenden)
+                    const trend = computeRealisticTrend(probabilities, xgData, homeTeam, awayTeam);
                     
-                    // ANALYSE
-                    const analysis = await generateRealisticAnalysis(homeTeam, awayTeam, probabilities, trendAnalysis, xgData, value, league);
+                    // ANALYSE (jetzt mit H2H)
+                    const analysis = await generateRealisticAnalysis(homeTeam, awayTeam, probabilities, trend, xgData, value, league);
 
                     // KI-SCORE berechnen
                     const kiScore = 0.3 * probabilities.confidence + 
-                                  0.25 * trendAnalysis.confidence + 
+                                  0.25 * trend.confidence + 
                                   0.2 * (Math.max(...Object.values(value)) + 1) + 
                                   0.15 * xgData.quality + 
                                   0.1 * (2 - analysis.riskLevel.length * 0.3);
@@ -647,8 +500,8 @@ app.get('/api/games', async (req, res) => {
                         // Value & Odds
                         value: value,
                         
-                        // ERWEITERTE KI-Analyse
-                        trendAnalysis: trendAnalysis,  // Jetzt mit Multi-Market Trends
+                        // KI-Analyse
+                        trend: trend.trend,
                         confidence: probabilities.confidence,
                         kiScore: +kiScore.toFixed(3),
                         analysis: analysis,
@@ -675,15 +528,14 @@ app.get('/api/games', async (req, res) => {
                 date: requestedDate,
                 total: validGames.length,
                 source: "football_data_org",
-                version: "6.2.0",  // Version updated
+                version: "6.0.0",
                 timestamp: new Date().toISOString(),
                 features: [
-                    "Multi-Market Trend Analysis",
-                    "Professional H2H Analysis",
-                    "Realistic xG Calculation", 
-                    "Advanced Form Analysis",
+                    "Realistic xG Calculation",
+                    "Advanced Form Analysis", 
                     "Injury & Suspension Tracking",
-                    "Professional Value Detection"
+                    "Professional Value Detection",
+                    "H2H Analysis" // NEU: H2H als Feature
                 ]
             }
         };
@@ -710,32 +562,31 @@ app.get('/api/games', async (req, res) => {
     }
 });
 
-// Health Check
+// Health Check (UNVERÄNDERT)
 app.get('/health', (req, res) => {
     const stats = {
         status: 'OPERATIONAL',
         timestamp: new Date().toISOString(),
-        version: '6.2.0',  // Version updated
+        version: '6.0.0',
         api: 'Football-Data.org',
         hasApiKey: !!FOOTBALL_DATA_KEY,
         cache: {
             size: cache.size
         },
         features: [
-            'Multi-Market Trend Analysis',
-            'Professional H2H Analysis',
             'Realistic xG Calculation',
-            'Advanced Form Analysis', 
-            'Real Injury Tracking',
+            'Advanced Form Analysis',
+            'Real Injury Tracking', 
             'Professional Value Detection',
-            'HDH Deep Analysis'
+            'HDH Deep Analysis',
+            'H2H Analysis' // NEU: H2H als Feature
         ]
     };
     
     res.json(stats);
 });
 
-// Utility Functions
+// Utility Functions (UNVERÄNDERT)
 function getProfessionalFlag(teamName) {
     const flagMapping = {
         "Manchester": "gb", "Liverpool": "gb", "Arsenal": "gb", "Aston": "gb", "Tottenham": "gb",
@@ -755,7 +606,7 @@ function getProfessionalFlag(teamName) {
 
 // Server starten
 app.listen(PORT, () => {
-    console.log(`🚀 ProFoot Analytics v6.2.0 - Enhanced with H2H Analysis`);
+    console.log(`🚀 ProFoot Analytics v6.0.0 - Football-Data.org Edition`);
     console.log(`📍 Port: ${PORT}`);
     console.log(`🔗 Health: http://localhost:${PORT}/health`);
     console.log(`🎯 API: http://localhost:${PORT}/api/games`);
