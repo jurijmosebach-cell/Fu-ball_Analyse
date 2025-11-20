@@ -1,4 +1,4 @@
-// app-enhanced.js — Professionelle Frontend-Implementation mit Multi-Market Trends
+// app-enhanced.js — Professionelle Frontend-Implementation mit Multi-Market Trends & H2H
 // DOM Elements
 const premiumPicksDiv = document.getElementById("premiumPicks");
 const topGamesDiv = document.getElementById("topGames");
@@ -403,6 +403,86 @@ function createTrendBadgeElement(trend, isSecondary = false) {
     return badge;
 }
 
+// ⭐⭐ H2H ANALYSE SECTION ⭐⭐
+function createH2HSection(h2hAnalysis) {
+    if (!h2hAnalysis) return '';
+    
+    const section = document.createElement('div');
+    section.className = 'h2h-analysis-section';
+    
+    const basicStats = h2hAnalysis.basicStats || {};
+    const predictions = h2hAnalysis.predictions || {};
+    const trends = h2hAnalysis.trendAnalysis || {};
+    
+    section.innerHTML = `
+        <div class="analysis-header">
+            <i class="fas fa-history"></i>
+            <span>PROFESSIONELLE H2H-ANALYSE</span>
+        </div>
+        
+        <div class="h2h-stats-grid">
+            <div class="h2h-stat">
+                <div class="h2h-label">Historische Spiele</div>
+                <div class="h2h-value">${basicStats.totalMatches || 0}</div>
+            </div>
+            <div class="h2h-stat">
+                <div class="h2h-label">Heimsiege</div>
+                <div class="h2h-value">${basicStats.homeWins || 0}</div>
+            </div>
+            <div class="h2h-stat">
+                <div class="h2h-label">Auswärtssiege</div>
+                <div class="h2h-value">${basicStats.awayWins || 0}</div>
+            </div>
+            <div class="h2h-stat">
+                <div class="h2h-label">Unentschieden</div>
+                <div class="h2h-value">${basicStats.draws || 0}</div>
+            </div>
+        </div>
+        
+        <div class="h2h-trends">
+            <div class="h2h-trend-item">
+                <span class="trend-label">Durchschn. Tore:</span>
+                <span class="trend-value">${(basicStats.avgGoalsPerMatch || 0).toFixed(1)}</span>
+            </div>
+            <div class="h2h-trend-item">
+                <span class="trend-label">BTTS Quote:</span>
+                <span class="trend-value">${Math.round((trends.bttsTrend || 0.5) * 100)}%</span>
+            </div>
+            <div class="h2h-trend-item">
+                <span class="trend-label">Over 2.5:</span>
+                <span class="trend-value">${Math.round((trends.over25Trend || 0.5) * 100)}%</span>
+            </div>
+        </div>
+        
+        ${predictions.winProbabilities ? `
+            <div class="h2h-predictions">
+                <div class="h2h-pred-title">H2H-basierte Vorhersagen</div>
+                <div class="h2h-pred-grid">
+                    <div class="h2h-pred-item">
+                        <div>Heimsieg</div>
+                        <div class="pred-value">${Math.round(predictions.winProbabilities.home * 100)}%</div>
+                    </div>
+                    <div class="h2h-pred-item">
+                        <div>Unentschieden</div>
+                        <div class="pred-value">${Math.round(predictions.winProbabilities.draw * 100)}%</div>
+                    </div>
+                    <div class="h2h-pred-item">
+                        <div>Auswärtssieg</div>
+                        <div class="pred-value">${Math.round(predictions.winProbabilities.away * 100)}%</div>
+                    </div>
+                </div>
+            </div>
+        ` : ''}
+        
+        <div class="h2h-confidence">
+            <div class="confidence-label">H2H Konfidenz:</div>
+            <div class="confidence-value">${Math.round((h2hAnalysis.confidence || 0.5) * 100)}%</div>
+        </div>
+    `;
+    
+    return section;
+}
+
 // ⭐⭐ ERWEITERTE TREND-STATISTIK BERECHNUNG ⭐⭐
 function calculateAdvancedStatistics(games) {
     const total = games.length;
@@ -429,6 +509,16 @@ function calculateAdvancedStatistics(games) {
     }).length;
 
     // Over 2.5 Spiele zählen
+    const over25Games = games.filter(g => (g.over25 || 0) > 0.5).length;
+    
+    // BTTS Spiele zählen
+    const bttsGames = games.filter(g => (g.btts || 0) > 0.6).length;
+    
+    // Durchschnittliche Confidence
+    const avgConfidence = games.length > 0 ? 
+        games.reduce((sum, game) => sum + (game.confidence || 0.5), 0) / games.length : 0;
+    
+     // Over 2.5 Spiele zählen
     const over25Games = games.filter(g => (g.over25 || 0) > 0.5).length;
     
     // BTTS Spiele zählen
@@ -544,7 +634,6 @@ function createHDASection(hdaAnalysis) {
     
     return section;
 }
-
 // ⭐⭐ VERBESSERTE GAME-ELEMENT ERSTELLUNG ⭐⭐
 function createGameElement(game, type = 'standard') {
     console.log(`🎮 Creating game element: ${game.home} vs ${game.away}`);
@@ -665,20 +754,29 @@ function createGameElement(game, type = 'standard') {
         }
     }
 
+    // H2H-Analyse hinzufügen
+    if (game.analysis && game.analysis.detailed && game.analysis.detailed.h2h) {
+        const h2hSection = createH2HSection(game.analysis.detailed.h2h);
+        if (h2hSection) {
+            gameEl.appendChild(h2hSection);
+        }
+    }
+
     return gameEl;
 }
+
 // ⭐⭐ VERBESSERTE LOADGAMES FUNKTION ⭐⭐
 async function loadGames() {
     try {
-        console.log('🔄 Starte erweiterte KI-Analyse mit Multi-Market Trends...');
+        console.log('🔄 Starte erweiterte KI-Analyse mit Multi-Market Trends & H2H...');
         
         // Show loading state
         const loadingHTML = `
             <div class="loading">
                 <div class="loading-spinner"></div>
-                <div>ERWEITERTE MULTI-MARKET ANALYSE...</div>
+                <div>ERWEITERTE MULTI-MARKET & H2H ANALYSE...</div>
                 <div style="font-size: 0.9rem; margin-top: 0.5rem; color: #94a3b8;">
-                    Analysiere HDH, Over/Under, BTTS & Spezialmärkte
+                    Analysiere HDH, Over/Under, BTTS, H2H & Spezialmärkte
                 </div>
             </div>
         `;
@@ -867,4 +965,4 @@ window.addEventListener("load", loadGames);
 // Auto-refresh every 5 minutes
 setInterval(loadGames, 5 * 60 * 1000);
 
-console.log('🚀 Erweiterte ProFoot Analytics - Multi-Market Trends Initialisiert!');
+console.log('🚀 Erweiterte ProFoot Analytics - Multi-Market Trends & H2H Initialisiert!');
