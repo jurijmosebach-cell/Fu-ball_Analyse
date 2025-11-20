@@ -6,6 +6,7 @@ import { ProfessionalCalculator } from './professional-calculations.js';
 import { HDAAnalyzer } from './hda-analyzer.js';
 import { AdvancedFormAnalyzer } from './advanced-form-analyzer.js';
 import { InjuryTracker } from './injury-tracker.js';
+import { H2HAnalyzer } from './h2h-analyzer.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,6 +26,7 @@ const proCalculator = new ProfessionalCalculator();
 const hdaAnalyzer = new HDAAnalyzer();
 const formAnalyzer = new AdvancedFormAnalyzer();
 const injuryTracker = new InjuryTracker();
+const h2hAnalyzer = new H2HAnalyzer();
 
 // FOOTBALL-DATA.ORG SERVICE
 class FootballDataService {
@@ -414,6 +416,9 @@ async function generateRealisticAnalysis(homeTeam, awayTeam, probabilities, tren
     // HDH-Analyse
     const hdaAnalysis = await hdaAnalyzer.analyzeHDA(homeTeam, awayTeam, league);
     
+    // H2H-ANALYSE HINZUFÜGEN
+    const h2hAnalysis = await h2hAnalyzer.analyzeH2H(homeTeam, awayTeam, league);
+    
     // Form-Analyse
     const homeForm = await formAnalyzer.analyzeTeamForm(homeTeam);
     const awayForm = await formAnalyzer.analyzeTeamForm(awayTeam);
@@ -443,6 +448,7 @@ async function generateRealisticAnalysis(homeTeam, awayTeam, probabilities, tren
                 home: homeInjuries,
                 away: awayInjuries
             },
+            h2h: h2hAnalysis,  // H2H Analyse hinzufügen
             marketInsights: hdaAnalysis.valueOpportunities
         }
     };
@@ -451,7 +457,7 @@ async function generateRealisticAnalysis(homeTeam, awayTeam, probabilities, tren
     const awayProb = probabilities.away || 0;
     const bestValue = Math.max(value.home || 0, value.draw || 0, value.away || 0, value.over25 || 0);
 
-    // Dynamische Zusammenfassung basierend auf Top-Trends
+      // Dynamische Zusammenfassung basierend auf Top-Trends
     const topTrend = trendAnalysis.primaryTrend;
 
     switch(topTrend.type) {
@@ -552,7 +558,7 @@ app.get('/api/games', async (req, res) => {
                     source: cached.source, 
                     date: requestedDate, 
                     cached: true,
-                    version: '6.1.0'  // Version updated
+                    version: '6.2.0'  // Version updated
                 }
             });
         }
@@ -669,10 +675,11 @@ app.get('/api/games', async (req, res) => {
                 date: requestedDate,
                 total: validGames.length,
                 source: "football_data_org",
-                version: "6.1.0",  // Version updated
+                version: "6.2.0",  // Version updated
                 timestamp: new Date().toISOString(),
                 features: [
                     "Multi-Market Trend Analysis",
+                    "Professional H2H Analysis",
                     "Realistic xG Calculation", 
                     "Advanced Form Analysis",
                     "Injury & Suspension Tracking",
@@ -708,7 +715,7 @@ app.get('/health', (req, res) => {
     const stats = {
         status: 'OPERATIONAL',
         timestamp: new Date().toISOString(),
-        version: '6.1.0',  // Version updated
+        version: '6.2.0',  // Version updated
         api: 'Football-Data.org',
         hasApiKey: !!FOOTBALL_DATA_KEY,
         cache: {
@@ -716,6 +723,7 @@ app.get('/health', (req, res) => {
         },
         features: [
             'Multi-Market Trend Analysis',
+            'Professional H2H Analysis',
             'Realistic xG Calculation',
             'Advanced Form Analysis', 
             'Real Injury Tracking',
@@ -747,7 +755,7 @@ function getProfessionalFlag(teamName) {
 
 // Server starten
 app.listen(PORT, () => {
-    console.log(`🚀 ProFoot Analytics v6.1.0 - Enhanced Multi-Market Trends`);
+    console.log(`🚀 ProFoot Analytics v6.2.0 - Enhanced with H2H Analysis`);
     console.log(`📍 Port: ${PORT}`);
     console.log(`🔗 Health: http://localhost:${PORT}/health`);
     console.log(`🎯 API: http://localhost:${PORT}/api/games`);
