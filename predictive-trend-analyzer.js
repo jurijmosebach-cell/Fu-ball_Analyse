@@ -67,6 +67,28 @@ export class PredictiveTrendAnalyzer {
             btts: 0.65,
             clean_sheets: 0.38
         });
+
+        // Weitere Teams hinzufügen
+        this.teamPatterns.set('Real Madrid', {
+            home_dominance: 0.83,
+            goal_fest: 0.72,
+            btts: 0.55,
+            clean_sheets: 0.48
+        });
+
+        this.teamPatterns.set('Inter Milan', {
+            home_dominance: 0.80,
+            goal_fest: 0.68,
+            btts: 0.50,
+            clean_sheets: 0.52
+        });
+
+        this.teamPatterns.set('Paris Saint-Germain', {
+            home_dominance: 0.86,
+            goal_fest: 0.77,
+            btts: 0.58,
+            clean_sheets: 0.44
+        });
     }
 
     initializeLeagueInsights() {
@@ -106,58 +128,122 @@ export class PredictiveTrendAnalyzer {
             trend_strength: 0.73,
             predictability: 0.71
         });
+
+        this.leagueInsights.set('Ligue 1', {
+            avg_goals: 2.5,
+            home_win_rate: 0.47,
+            over25_rate: 0.46,
+            btts_rate: 0.43,
+            trend_strength: 0.69,
+            predictability: 0.67
+        });
+
+        this.leagueInsights.set('Champions League', {
+            avg_goals: 2.9,
+            home_win_rate: 0.42,
+            over25_rate: 0.55,
+            btts_rate: 0.51,
+            trend_strength: 0.76,
+            predictability: 0.74
+        });
     }
 
+    // FEHLENDE METHODE HINZUGEFÜGT
+    async getHistoricalPatterns(league) {
+        try {
+            // Liga-spezifische Muster zurückgeben
+            const leaguePatterns = this.leagueInsights.get(league) || this.leagueInsights.get('Bundesliga');
+            
+            // Allgemeine historische Muster mit Liga-Anpassung
+            const patterns = {
+                home_dominance: {
+                    ...this.historicalPatterns.get('home_dominance'),
+                    successRate: this.historicalPatterns.get('home_dominance').successRate * leaguePatterns.predictability
+                },
+                goal_fest: {
+                    ...this.historicalPatterns.get('goal_fest'),
+                    successRate: this.historicalPatterns.get('goal_fest').successRate * (leaguePatterns.avg_goals / 3.0)
+                },
+                btts_regular: {
+                    ...this.historicalPatterns.get('btts_regular'),
+                    successRate: this.historicalPatterns.get('btts_regular').successRate * (leaguePatterns.btts_rate / 0.5)
+                },
+                under_value: {
+                    ...this.historicalPatterns.get('under_value'),
+                    successRate: this.historicalPatterns.get('under_value').successRate * (1 - leaguePatterns.over25_rate)
+                },
+                league_specific: leaguePatterns
+            };
+
+            return patterns;
+        } catch (error) {
+            console.error('Error getting historical patterns:', error);
+            // Fallback-Muster zurückgeben
+            return {
+                home_dominance: this.historicalPatterns.get('home_dominance'),
+                goal_fest: this.historicalPatterns.get('goal_fest'),
+                btts_regular: this.historicalPatterns.get('btts_regular'),
+                under_value: this.historicalPatterns.get('under_value'),
+                league_specific: this.leagueInsights.get('Bundesliga')
+            };
+        }
+    }
     // MULTI-DIMENSIONALE TREND-ANALYSE
     async analyzeMultiDimensionalTrends(gameData, historicalPatterns) {
-        const { probabilities, xgData, teams, league, mlFeatures } = gameData;
-        
-        const analysis = {
-            primaryTrend: null,
-            secondaryTrends: [],
-            allTrends: [],
-            confidence: 0,
-            riskAssessment: {},
-            recommendations: [],
-            marketInsights: [],
-            predictiveScore: 0
-        };
+        try {
+            const { probabilities, xgData, teams, league, mlFeatures } = gameData;
+            
+            const analysis = {
+                primaryTrend: null,
+                secondaryTrends: [],
+                allTrends: [],
+                confidence: 0,
+                riskAssessment: {},
+                recommendations: [],
+                marketInsights: [],
+                predictiveScore: 0
+            };
 
-        // Alle Trend-Analysen parallel durchführen
-        const trendAnalyses = await Promise.all([
-            this.analyzeHDHTrends(probabilities, teams, league),
-            this.analyzeGoalTrends(xgData, probabilities, teams, league),
-            this.analyzeBTTSBTrends(probabilities, xgData, teams),
-            this.analyzeMarketTrends(probabilities, league),
-            this.analyzeTeamPatterns(teams.home, teams.away, league),
-            this.analyzeMLTrends(mlFeatures, probabilities)
-        ]);
+            // Alle Trend-Analysen parallel durchführen
+            const trendAnalyses = await Promise.all([
+                this.analyzeHDHTrends(probabilities, teams, league),
+                this.analyzeGoalTrends(xgData, probabilities, teams, league),
+                this.analyzeBTTSBTrends(probabilities, xgData, teams),
+                this.analyzeMarketTrends(probabilities, league),
+                this.analyzeTeamPatterns(teams.home, teams.away, league),
+                this.analyzeMLTrends(mlFeatures, probabilities)
+            ]);
 
-        // Trends kombinieren und gewichten
-        const allTrends = trendAnalyses.flat();
-        analysis.allTrends = this.rankTrendsByStrength(allTrends);
-        
-        // Primären Trend identifizieren
-        analysis.primaryTrend = this.identifyPrimaryTrend(analysis.allTrends);
-        
-        // Sekundäre Trends (Top 3-5)
-        analysis.secondaryTrends = analysis.allTrends
-            .filter(trend => trend !== analysis.primaryTrend)
-            .slice(0, 4);
+            // Trends kombinieren und gewichten
+            const allTrends = trendAnalyses.flat();
+            analysis.allTrends = this.rankTrendsByStrength(allTrends);
+            
+            // Primären Trend identifizieren
+            analysis.primaryTrend = this.identifyPrimaryTrend(analysis.allTrends);
+            
+            // Sekundäre Trends (Top 3-5)
+            analysis.secondaryTrends = analysis.allTrends
+                .filter(trend => trend !== analysis.primaryTrend)
+                .slice(0, 4);
 
-        // Gesamt-Konfidenz berechnen
-        analysis.confidence = this.calculateOverallConfidence(analysis.allTrends);
-        
-        // Risiko-Bewertung
-        analysis.riskAssessment = this.assessTrendRisk(analysis.allTrends, probabilities);
-        
-        // Empfehlungen generieren
-        analysis.recommendations = this.generateTrendRecommendations(analysis);
-        
-        // Predictive Score berechnen
-        analysis.predictiveScore = this.calculatePredictiveScore(analysis);
+            // Gesamt-Konfidenz berechnen
+            analysis.confidence = this.calculateOverallConfidence(analysis.allTrends);
+            
+            // Risiko-Bewertung
+            analysis.riskAssessment = this.assessTrendRisk(analysis.allTrends, probabilities);
+            
+            // Empfehlungen generieren
+            analysis.recommendations = this.generateTrendRecommendations(analysis);
+            
+            // Predictive Score berechnen
+            analysis.predictiveScore = this.calculatePredictiveScore(analysis);
 
-        return analysis;
+            return analysis;
+        } catch (error) {
+            console.error('Error in analyzeMultiDimensionalTrends:', error);
+            // Fallback-Analyse zurückgeben
+            return this.getFallbackTrendAnalysis();
+        }
     }
 
     // HDH TREND-ANALYSE
@@ -336,8 +422,7 @@ export class PredictiveTrendAnalyzer {
 
         return trends;
     }
-
-    // TEAM-SPEZIFISCHE MUSTER
+       // TEAM-SPEZIFISCHE MUSTER
     async analyzeTeamPatterns(homeTeam, awayTeam, league) {
         const trends = [];
         const homePatterns = this.teamPatterns.get(homeTeam);
@@ -367,6 +452,21 @@ export class PredictiveTrendAnalyzer {
                     strength: 'medium',
                     triggers: ['team_attacking_style', 'historical_high_scoring'],
                     historicalSupport: homePatterns.goal_fest
+                });
+            }
+        }
+
+        if (awayPatterns) {
+            // Auswärtsstärke Muster
+            if (awayPatterns.home_dominance > 0.75) {
+                trends.push({
+                    market: 'away',
+                    description: `${awayTeam} starke Auswärtsperformance`,
+                    probability: awayPatterns.home_dominance,
+                    confidence: 0.70,
+                    strength: 'medium',
+                    triggers: ['team_away_performance', 'consistent_travel_form'],
+                    historicalSupport: awayPatterns.home_dominance
                 });
             }
         }
@@ -539,7 +639,7 @@ export class PredictiveTrendAnalyzer {
         const recommendations = [];
         const { primaryTrend, secondaryTrends, riskAssessment } = analysis;
 
-         // Primär-Trend Empfehlung
+        // Primär-Trend Empfehlung
         if (primaryTrend && primaryTrend.confidence > 0.6) {
             recommendations.push({
                 type: 'primary',
@@ -629,7 +729,38 @@ export class PredictiveTrendAnalyzer {
         return Math.max(0.1, Math.min(0.95, score));
     }
 
-    // REAL-TIME TREND UPDATES
+    // FALLBACK FÜR FEHLERBEHANDLUNG
+    getFallbackTrendAnalysis() {
+        return {
+            primaryTrend: {
+                market: 'balanced',
+                description: 'Standard-Analyse aufgrund von Systemfehler',
+                probability: 0.5,
+                confidence: 0.5,
+                strength: 'weak',
+                triggers: ['system_fallback'],
+                historicalSupport: 0.5
+            },
+            secondaryTrends: [],
+            allTrends: [],
+            confidence: 0.5,
+            riskAssessment: {
+                level: 'medium',
+                factors: ['System verwendet Fallback-Analyse'],
+                score: 0.5
+            },
+            recommendations: [{
+                type: 'system_warning',
+                trend: 'all',
+                confidence: 0.5,
+                reasoning: 'System verwendet Standard-Analyse aufgrund von Fehlern',
+                action: 'Vorsichtige Herangehensweise empfohlen'
+            }],
+            marketInsights: [],
+            predictiveScore: 0.5
+        };
+    }
+     // REAL-TIME TREND UPDATES
     async updateTrendWithRealTimeData(trendAnalysis, realTimeData) {
         const updatedTrends = [...trendAnalysis.allTrends];
         
@@ -786,5 +917,3 @@ export class PredictiveTrendAnalyzer {
         }));
     }
 }
-
-    
