@@ -11,6 +11,7 @@ import { MLFeatureEngine } from './ml-feature-engine.js';
 import { AdaptiveLearningSystem } from './adaptive-learning-system.js';
 import { ValueIntelligenceSystem } from './value-intelligence-system.js';
 import { PredictiveTrendAnalyzer } from './predictive-trend-analyzer.js';
+import { SocialSentimentAnalyzer } from './social-sentiment-analyzer.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,6 +36,7 @@ const mlFeatureEngine = new MLFeatureEngine();
 const learningSystem = new AdaptiveLearningSystem();
 const valueIntelligence = new ValueIntelligenceSystem();
 const trendAnalyzer = new PredictiveTrendAnalyzer();
+const sentimentAnalyzer = new SocialSentimentAnalyzer();
 
 // ERWEITERTE TEAM DATENBANK MIT 300+ TEAMS
 const EXPANDED_TEAM_DATABASE = {
@@ -144,7 +146,6 @@ const REALISTIC_TEAM_STRENGTHS = {
         consistency: 0.65, style: "balanced", pressureHandling: 0.70 
     }
 };
-
 // FOOTBALL-DATA.ORG SERVICE MIT ENSEMBLE-INTEGRATION
 class FootballDataService {
     constructor(apiKey) {
@@ -266,7 +267,7 @@ function getRealisticTeamStrength(teamName) {
     return REALISTIC_TEAM_STRENGTHS.default;
 }
 
-// ULTIMATIVE xG-BERECHNUNG MIT ENSEMBLE-MODELLEN
+// ULTIMATIVE xG-BERECHNUNG MIT ENSEMBLE-MODELLEN & SENTIMENT
 async function calculateAdvancedXG(homeTeam, awayTeam, league = "", context = {}) {
     const homeStrength = getRealisticTeamStrength(homeTeam);
     const awayStrength = getRealisticTeamStrength(awayTeam);
@@ -303,6 +304,23 @@ async function calculateAdvancedXG(homeTeam, awayTeam, league = "", context = {}
     const finalHomeXG = homeBaseXG * homeStrength.homeStrength * leagueFactor.goalFactor * homeMomentum;
     const finalAwayXG = awayBaseXG * awayStrength.awayStrength * leagueFactor.goalFactor * awayMomentum;
     
+    // SENTIMENT ANALYSIS INTEGRATION
+    const [homeSentiment, awaySentiment] = await Promise.all([
+        sentimentAnalyzer.analyzeTeamSentiment(homeTeam, {
+            recentForm: homeForm.overallRating > 0.6 ? "good" : "average",
+            nextOpponent: awayTeam,
+            isHomeGame: true
+        }),
+        sentimentAnalyzer.analyzeTeamSentiment(awayTeam, {
+            recentForm: awayForm.overallRating > 0.6 ? "good" : "average",
+            nextOpponent: homeTeam,
+            isHomeGame: false
+        })
+    ]);
+     // Sentiment Impact auf xG anwenden
+    const homeXGWithSentiment = finalHomeXG * (1 + homeSentiment.performanceImpact);
+    const awayXGWithSentiment = finalAwayXG * (1 + awaySentiment.performanceImpact);
+    
     // Confidence mit ML-Features berechnen
     const confidence = calculateAdvancedConfidence(
         ensemblePrediction.confidence, 
@@ -312,9 +330,9 @@ async function calculateAdvancedXG(homeTeam, awayTeam, league = "", context = {}
     );
     
     return {
-        home: Math.max(0.15, Math.min(4.5, +finalHomeXG.toFixed(3))),
-        away: Math.max(0.15, Math.min(4.0, +finalAwayXG.toFixed(3))),
-        quality: (finalHomeXG + finalAwayXG) * 0.2 + (1 - Math.abs(finalHomeXG - finalAwayXG) / (finalHomeXG + finalAwayXG)) * 0.8,
+        home: Math.max(0.15, Math.min(4.5, +homeXGWithSentiment.toFixed(3))),
+        away: Math.max(0.15, Math.min(4.0, +awayXGWithSentiment.toFixed(3))),
+        quality: (homeXGWithSentiment + awayXGWithSentiment) * 0.2 + (1 - Math.abs(homeXGWithSentiment - awayXGWithSentiment) / (homeXGWithSentiment + awayXGWithSentiment)) * 0.8,
         confidence: confidence,
         formImpact: {
             home: weightedHomeForm,
@@ -323,7 +341,11 @@ async function calculateAdvancedXG(homeTeam, awayTeam, league = "", context = {}
             awayMomentum: awayForm.formMomentum
         },
         mlFeatures: mlFeatures,
-        ensemblePrediction: ensemblePrediction
+        ensemblePrediction: ensemblePrediction,
+        sentimentAnalysis: {
+            home: homeSentiment,
+            away: awaySentiment
+        }
     };
 }
 
@@ -413,6 +435,25 @@ async function findSmartValueOpportunities(probabilities, homeTeam, awayTeam, le
     return await valueIntelligence.findSmartValueBets(probabilities, marketOdds);
 }
 
+// SENTIMENT SUMMARY GENERATOR
+function generateSentimentSummary(sentimentAnalysis) {
+    const { home, away } = sentimentAnalysis;
+    
+    let summary = "";
+    
+    if (home.crisisAlerts.length > 0 || away.crisisAlerts.length > 0) {
+        summary = `⚠️ Krisen-Alerts: ${home.crisisAlerts.length} (Heim) / ${away.crisisAlerts.length} (Auswärts)`;
+    } else if (home.sentimentScore > 0.2 && away.sentimentScore > 0.2) {
+        summary = "✅ Beide Teams mit positiver Stimmung";
+    } else if (home.sentimentScore < -0.2 && away.sentimentScore < -0.2) {
+        summary = "🔻 Beide Teams mit negativer Stimmung";
+    } else {
+        summary = `⚖️ Gemischte Stimmung: ${(home.sentimentScore * 100).toFixed(0)}% vs ${(away.sentimentScore * 100).toFixed(0)}%`;
+    }
+    
+    return summary;
+}
+
 // ULTIMATIVE ANALYSE GENERIERUNG
 async function generateUltimateAnalysis(homeTeam, awayTeam, probabilities, trendAnalysis, xgData, value, league, mlFeatures) {
     const homeStrength = getRealisticTeamStrength(homeTeam);
@@ -467,27 +508,32 @@ async function generateUltimateAnalysis(homeTeam, awayTeam, probabilities, trend
                 features: mlFeatures,
                 confidence: xgData.confidence,
                 ensembleBreakdown: xgData.ensemblePrediction
-            }
+            },
+            sentiment: xgData.sentimentAnalysis
         }
     };
-
-    // Dynamische Zusammenfassung basierend auf allen Daten
+     // Dynamische Zusammenfassung basierend auf allen Daten
     const bestValue = Math.max(value.home || 0, value.draw || 0, value.away || 0, value.over25 || 0);
     const topTrend = trendAnalysis.primaryTrend;
+    const sentimentImpact = xgData.sentimentAnalysis;
 
-    // Erweiterte Entscheidungslogik
-    if (topTrend.confidence > 0.8 && bestValue > 0.15) {
-        analysis.summary = `🎯 HOHE KONFIDENZ: ${topTrend.description} mit ${(bestValue * 100).toFixed(1)}% Value`;
-        analysis.recommendation = "Starke Empfehlung - Hohe KI-Konfidenz";
+    // Erweiterte Entscheidungslogik mit Sentiment
+    if (topTrend.confidence > 0.8 && bestValue > 0.15 && sentimentImpact.home.sentimentScore > 0.1) {
+        analysis.summary = `🎯 HOHE KONFIDENZ: ${topTrend.description} mit ${(bestValue * 100).toFixed(1)}% Value & positiver Stimmung`;
+        analysis.recommendation = "Starke Empfehlung - Hohe KI-Konfidenz + Positive Stimmung";
         analysis.riskLevel = "low";
     } else if (topTrend.confidence > 0.7 && bestValue > 0.08) {
         analysis.summary = `📈 GUTE CHANCE: ${topTrend.description} mit ${(bestValue * 100).toFixed(1)}% Value`;
         analysis.recommendation = "Solide Option - Gute Erfolgsaussichten";
         analysis.riskLevel = "medium";
-    } else {
-        analysis.summary = `⚖️ AUSGEGLICHEN: Vorsichtige Herangehensweise empfohlen`;
-        analysis.recommendation = "Risikobewusste Entscheidung";
+    } else if (sentimentImpact.home.crisisAlerts.length > 0 || sentimentImpact.away.crisisAlerts.length > 0) {
+        analysis.summary = `⚠️ VORSICHT: Krisen-Stimmung bei ${sentimentImpact.home.crisisAlerts.length > 0 ? homeTeam : awayTeam}`;
+        analysis.recommendation = "Risikobewusste Entscheidung - Krisensituation";
         analysis.riskLevel = "high";
+    } else {
+        analysis.summary = `⚖️ AUSGEGLICHEN: ${generateSentimentSummary(sentimentImpact)}`;
+        analysis.recommendation = "Risikobewusste Entscheidung";
+        analysis.riskLevel = "medium";
     }
 
     // Key Factors aus allen Quellen
@@ -495,6 +541,7 @@ async function generateUltimateAnalysis(homeTeam, awayTeam, probabilities, trend
         ...trendAnalysis.allTrends.slice(0, 3).map(trend => `${trend.description} (${Math.round(trend.confidence * 100)}%)`),
         `ML Confidence: ${Math.round(mlFeatures.confidence * 100)}%`,
         `Value Opportunity: ${(bestValue * 100).toFixed(1)}%`,
+        `Sentiment Impact: ${(sentimentImpact.home.performanceImpact * 100).toFixed(1)}% / ${(sentimentImpact.away.performanceImpact * 100).toFixed(1)}%`,
         ...valueOpportunities.slice(0, 2).map(opp => `${opp.market}: ${(opp.value * 100).toFixed(1)}%`)
     ];
 
@@ -502,6 +549,8 @@ async function generateUltimateAnalysis(homeTeam, awayTeam, probabilities, trend
     if (homeInjuries.overallImpact > 0.4) analysis.keyFactors.push(`⚠️ ${homeTeam} stark von Verletzungen betroffen`);
     if (awayInjuries.overallImpact > 0.4) analysis.keyFactors.push(`⚠️ ${awayTeam} stark von Verletzungen betroffen`);
     if (mlFeatures.fatigueImpact > 0.3) analysis.keyFactors.push(`🕒 Ermüdungsfaktor beachten`);
+    if (sentimentImpact.home.crisisAlerts.length > 0) analysis.keyFactors.push(`🔥 ${homeTeam} in Krisensituation`);
+    if (sentimentImpact.away.crisisAlerts.length > 0) analysis.keyFactors.push(`🔥 ${awayTeam} in Krisensituation`);
 
     return analysis;
 }
@@ -532,8 +581,8 @@ app.get('/api/games', async (req, res) => {
                     source: cached.source, 
                     date: requestedDate, 
                     cached: true,
-                    version: '7.0.0',
-                    features: ['Ensemble Models', 'ML Features', 'Adaptive Learning', 'Predictive Trends']
+                    version: '8.0.0',
+                    features: ['Ensemble Models', 'ML Features', 'Adaptive Learning', 'Predictive Trends', 'Social Sentiment Analysis']
                 }
             });
         }
@@ -549,7 +598,7 @@ app.get('/api/games', async (req, res) => {
                     total: 0,
                     source: "football_data",
                     message: "Keine Spiele für dieses Datum gefunden",
-                    version: '7.0.0'
+                    version: '8.0.0'
                 }
             });
         }
@@ -578,7 +627,7 @@ app.get('/api/games', async (req, res) => {
                     // ML-Features extrahieren
                     const mlFeatures = await mlFeatureEngine.extractAdvancedFeatures(homeTeam, awayTeam, league);
                     
-      // xG-BERECHNUNG MIT ENSEMBLE
+                    // xG-BERECHNUNG MIT ENSEMBLE & SENTIMENT
                     const xgData = await calculateAdvancedXG(homeTeam, awayTeam, league, mlFeatures);
                     
                     // ENSEMBLE WAHRSCHEINLICHKEITEN
@@ -594,13 +643,15 @@ app.get('/api/games', async (req, res) => {
                     const analysis = await generateUltimateAnalysis(homeTeam, awayTeam, probabilities, trendAnalysis, xgData, value, league, mlFeatures);
 
                     // KI-SCORE MIT ALLEN FAKTOREN
-                    const kiScore = 0.20 * probabilities.confidence + 
-                                  0.18 * trendAnalysis.confidence + 
-                                  0.16 * (Math.max(...Object.values(value)) + 1) + 
-                                  0.14 * xgData.quality + 
-                                  0.12 * (2 - analysis.riskLevel.length * 0.3) +
+                    const kiScore = 0.18 * probabilities.confidence + 
+                                  0.16 * trendAnalysis.confidence + 
+                                  0.14 * (Math.max(...Object.values(value)) + 1) + 
+                                  0.12 * xgData.quality + 
+                                  0.10 * (2 - analysis.riskLevel.length * 0.3) +
                                   0.10 * analysis.detailed.qualityMetrics.balance +
-                                  0.10 * mlFeatures.confidence;
+                                  0.08 * mlFeatures.confidence +
+                                  0.12 * (1 - Math.abs(xgData.sentimentAnalysis.home.performanceImpact) + 
+                                         (1 - Math.abs(xgData.sentimentAnalysis.away.performanceImpact))) / 2;
 
                     return {
                         id: match.id,
@@ -634,6 +685,10 @@ app.get('/api/games', async (req, res) => {
                         kiScore: +kiScore.toFixed(3),
                         analysis: analysis,
                         mlFeatures: mlFeatures,
+                        sentimentImpact: {
+                            home: xgData.sentimentAnalysis.home.performanceImpact,
+                            away: xgData.sentimentAnalysis.away.performanceImpact
+                        },
                         
                         timestamp: new Date().toISOString(),
                         source: match.source || 'football_data',
@@ -642,10 +697,11 @@ app.get('/api/games', async (req, res) => {
                             away: getRealisticTeamStrength(awayTeam)
                         },
                         modelInfo: {
-                            version: '7.0.0',
+                            version: '8.0.0',
                             ensemble: true,
                             mlEnhanced: true,
-                            adaptiveLearning: true
+                            adaptiveLearning: true,
+                            sentimentAnalysis: true
                         }
                     };
                 } catch (error) {
@@ -667,7 +723,7 @@ app.get('/api/games', async (req, res) => {
                 date: requestedDate,
                 total: validGames.length,
                 source: "football_data_org",
-                version: "7.0.0",
+                version: "8.0.0",
                 timestamp: new Date().toISOString(),
                 features: [
                     "Ensemble Prediction Models",
@@ -676,11 +732,18 @@ app.get('/api/games', async (req, res) => {
                     "Predictive Trend Analysis",
                     "Intelligent Value Detection",
                     "Weighted Form Calculation",
-                    "Dynamic League Factors"
+                    "Dynamic League Factors",
+                    "Social Media Sentiment Analysis"
                 ],
                 leagues: Object.keys(EXPANDED_TEAM_DATABASE),
                 teamCount: Object.values(EXPANDED_TEAM_DATABASE).reduce((sum, teams) => sum + teams.length, 0),
-                modelPerformance: await learningSystem.getPerformanceStats()
+                modelPerformance: await learningSystem.getPerformanceStats(),
+                sentimentStats: {
+                    totalTeams: Object.keys(EXPANDED_TEAM_DATABASE).reduce((sum, league) => 
+                        sum + EXPANDED_TEAM_DATABASE[league].length, 0),
+                    crisisDetection: true,
+                    fanMoodAnalysis: true
+                }
             }
         };
 
@@ -701,7 +764,7 @@ app.get('/api/games', async (req, res) => {
                 date: req.query.date,
                 source: "api_error", 
                 message: "Fehler beim Laden der Spieldaten",
-                version: "7.0.0"
+                version: "8.0.0"
             }
         });
     }
@@ -712,7 +775,7 @@ app.get('/health', async (req, res) => {
     const stats = {
         status: 'ULTIMATE OPERATIONAL',
         timestamp: new Date().toISOString(),
-        version: '7.0.0',
+        version: '8.0.0',
         api: 'Football-Data.org',
         hasApiKey: !!FOOTBALL_DATA_KEY,
         cache: {
@@ -726,7 +789,8 @@ app.get('/health', async (req, res) => {
             'Predictive Trend Analysis',
             'Intelligent Value Detection',
             'Weighted Form Calculation',
-            'Dynamic League Factors'
+            'Dynamic League Factors',
+            'Social Media Sentiment Analysis'
         ],
         teamDatabase: {
             totalLeagues: Object.keys(EXPANDED_TEAM_DATABASE).length,
@@ -734,6 +798,7 @@ app.get('/health', async (req, res) => {
             leagues: Object.keys(EXPANDED_TEAM_DATABASE)
         },
         modelStats: await learningSystem.getPerformanceStats(),
+        sentimentStats: sentimentAnalyzer.getTrendPerformanceStats ? await sentimentAnalyzer.getTrendPerformanceStats() : { status: 'active' },
         systemLoad: {
             memory: process.memoryUsage(),
             uptime: process.uptime()
@@ -767,11 +832,12 @@ function getProfessionalFlag(teamName) {
 
 // Server starten
 app.listen(PORT, () => {
-    console.log(`🚀 ULTIMATE ProFoot Analytics v7.0.0 - Ensemble AI System`);
+    console.log(`🚀 ULTIMATE ProFoot Analytics v8.0.0 - Ensemble AI System`);
     console.log(`📍 Port: ${PORT}`);
     console.log(`🔗 Health: http://localhost:${PORT}/health`);
     console.log(`🎯 API: http://localhost:${PORT}/api/games`);
     console.log(`🏆 Using: ${FOOTBALL_DATA_KEY ? 'Football-Data.org API' : 'Enhanced Simulation'}`);
-    console.log(`🤖 Features: Ensemble Models, ML Engine, Adaptive Learning, Predictive Trends`);
+    console.log(`🤖 Features: Ensemble Models, ML Engine, Adaptive Learning, Predictive Trends, Social Sentiment`);
     console.log(`📊 Team Database: ${Object.values(EXPANDED_TEAM_DATABASE).reduce((sum, teams) => sum + teams.length, 0)} teams across ${Object.keys(EXPANDED_TEAM_DATABASE).length} leagues`);
+    console.log(`🧠 Sentiment Analysis: Active for all teams with crisis detection`);
 });
