@@ -1,4 +1,4 @@
-/ server-football-data-only.js - OPTIMIZED FOR FOOTBALL-DATA.ORG
+// server-football-data-only.js - OPTIMIZED FOR FOOTBALL-DATA.ORG
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
