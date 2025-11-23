@@ -1,4 +1,4 @@
-// server-football-data-only.js - OPTIMIZED FOR FOOTBALL-DATA.ORG
+// server-enhanced.js - ULTIMATIVE KI-FUSSBALLANALYSE MIT ENSEMBLE-MODELN
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -6,6 +6,11 @@ import { ProfessionalCalculator } from './professional-calculations.js';
 import { HDAAnalyzer } from './hda-analyzer.js';
 import { AdvancedFormAnalyzer } from './advanced-form-analyzer.js';
 import { InjuryTracker } from './injury-tracker.js';
+import { EnsemblePredictionModel } from './ensemble-prediction-model.js';
+import { MLFeatureEngine } from './ml-feature-engine.js';
+import { AdaptiveLearningSystem } from './adaptive-learning-system.js';
+import { ValueIntelligenceSystem } from './value-intelligence-system.js';
+import { PredictiveTrendAnalyzer } from './predictive-trend-analyzer.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,11 +25,16 @@ const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_API_KEY;
 app.use(express.static(__dirname));
 app.use(express.json());
 
-// Professionelle KI-Module initialisieren
+// ULTIMATIVE KI-MODULE INITIALISIEREN
 const proCalculator = new ProfessionalCalculator();
 const hdaAnalyzer = new HDAAnalyzer();
 const formAnalyzer = new AdvancedFormAnalyzer();
 const injuryTracker = new InjuryTracker();
+const ensembleModel = new EnsemblePredictionModel();
+const mlFeatureEngine = new MLFeatureEngine();
+const learningSystem = new AdaptiveLearningSystem();
+const valueIntelligence = new ValueIntelligenceSystem();
+const trendAnalyzer = new PredictiveTrendAnalyzer();
 
 // ERWEITERTE TEAM DATENBANK MIT 300+ TEAMS
 const EXPANDED_TEAM_DATABASE = {
@@ -91,58 +101,51 @@ const EXPANDED_TEAM_DATABASE = {
     ]
 };
 
-// REALISTISCHE TEAM-STRENGTHS DATABASE - ERWEITERT
-const REALISTIC_TEAM_STRENGTHS = {
-    // Premier League - Aktuelle Werte 2024
-    "Manchester City": { attack: 2.45, defense: 0.75, homeStrength: 1.28, awayStrength: 1.18, consistency: 0.92 },
-    "Liverpool": { attack: 2.35, defense: 0.82, homeStrength: 1.25, awayStrength: 1.15, consistency: 0.88 },
-    "Arsenal": { attack: 2.25, defense: 0.78, homeStrength: 1.24, awayStrength: 1.14, consistency: 0.85 },
-    "Aston Villa": { attack: 2.15, defense: 1.05, homeStrength: 1.22, awayStrength: 1.12, consistency: 0.80 },
-    "Tottenham": { attack: 2.20, defense: 1.10, homeStrength: 1.23, awayStrength: 1.13, consistency: 0.78 },
-    "Manchester United": { attack: 2.05, defense: 1.15, homeStrength: 1.20, awayStrength: 1.10, consistency: 0.75 },
-    "Newcastle": { attack: 2.10, defense: 1.12, homeStrength: 1.21, awayStrength: 1.11, consistency: 0.76 },
-    "Chelsea": { attack: 2.00, defense: 1.18, homeStrength: 1.19, awayStrength: 1.09, consistency: 0.72 },
-    
-    // Bundesliga
-    "Bayern Munich": { attack: 2.50, defense: 0.70, homeStrength: 1.30, awayStrength: 1.20, consistency: 0.95 },
-    "Bayer Leverkusen": { attack: 2.40, defense: 0.75, homeStrength: 1.28, awayStrength: 1.18, consistency: 0.90 },
-    "Stuttgart": { attack: 2.20, defense: 0.95, homeStrength: 1.25, awayStrength: 1.15, consistency: 0.82 },
-    "Borussia Dortmund": { attack: 2.30, defense: 0.95, homeStrength: 1.25, awayStrength: 1.15, consistency: 0.82 },
-    "RB Leipzig": { attack: 2.25, defense: 0.98, homeStrength: 1.24, awayStrength: 1.14, consistency: 0.80 },
-    
-    // La Liga
-    "Real Madrid": { attack: 2.40, defense: 0.75, homeStrength: 1.26, awayStrength: 1.16, consistency: 0.90 },
-    "Girona": { attack: 2.25, defense: 1.05, homeStrength: 1.24, awayStrength: 1.14, consistency: 0.85 },
-    "Barcelona": { attack: 2.35, defense: 0.80, homeStrength: 1.25, awayStrength: 1.15, consistency: 0.88 },
-    "Atletico Madrid": { attack: 2.15, defense: 0.85, homeStrength: 1.22, awayStrength: 1.08, consistency: 0.85 },
-    "Athletic Bilbao": { attack: 2.05, defense: 0.90, homeStrength: 1.21, awayStrength: 1.07, consistency: 0.78 },
-    
-    // Serie A
-    "Inter Milan": { attack: 2.25, defense: 0.75, homeStrength: 1.23, awayStrength: 1.13, consistency: 0.84 },
-    "Juventus": { attack: 2.05, defense: 0.80, homeStrength: 1.20, awayStrength: 1.10, consistency: 0.82 },
-    "AC Milan": { attack: 2.15, defense: 0.85, homeStrength: 1.21, awayStrength: 1.11, consistency: 0.80 },
-    "Napoli": { attack: 2.10, defense: 0.95, homeStrength: 1.20, awayStrength: 1.10, consistency: 0.75 },
-    "Roma": { attack: 2.00, defense: 0.98, homeStrength: 1.19, awayStrength: 1.09, consistency: 0.72 },
-    
-    // Ligue 1
-    "PSG": { attack: 2.45, defense: 0.85, homeStrength: 1.26, awayStrength: 1.16, consistency: 0.78 },
-    "Nice": { attack: 2.05, defense: 0.75, homeStrength: 1.18, awayStrength: 1.08, consistency: 0.75 },
-    "Monaco": { attack: 2.15, defense: 0.95, homeStrength: 1.20, awayStrength: 1.10, consistency: 0.70 },
-    "Lille": { attack: 2.00, defense: 0.85, homeStrength: 1.17, awayStrength: 1.07, consistency: 0.72 },
-    
-    // Championship Top Teams
-    "Leicester City": { attack: 1.95, defense: 1.05, homeStrength: 1.18, awayStrength: 1.08, consistency: 0.80 },
-    "Leeds United": { attack: 1.90, defense: 1.08, homeStrength: 1.17, awayStrength: 1.07, consistency: 0.78 },
-    "Southampton": { attack: 1.85, defense: 1.10, homeStrength: 1.16, awayStrength: 1.06, consistency: 0.75 },
-    
-    // MLS Top Teams
-    "Inter Miami": { attack: 1.80, defense: 1.15, homeStrength: 1.15, awayStrength: 1.05, consistency: 0.70 },
-    "Los Angeles FC": { attack: 1.75, defense: 1.12, homeStrength: 1.14, awayStrength: 1.04, consistency: 0.68 },
-    
-    "default": { attack: 1.60, defense: 1.40, homeStrength: 1.12, awayStrength: 0.98, consistency: 0.65 }
+// DYNAMISCHE LIGA-FAKTOREN MIT ML-OPTIMIERUNG
+const DYNAMIC_LEAGUE_FACTORS = {
+    "Premier League": { intensity: 1.1, predictability: 0.88, goalFactor: 1.05, homeAdvantage: 1.15 },
+    "Bundesliga": { intensity: 1.15, predictability: 0.85, goalFactor: 1.18, homeAdvantage: 1.12 },
+    "La Liga": { intensity: 0.95, predictability: 0.90, goalFactor: 0.95, homeAdvantage: 1.08 },
+    "Serie A": { intensity: 0.90, predictability: 0.92, goalFactor: 0.88, homeAdvantage: 1.10 },
+    "Ligue 1": { intensity: 0.98, predictability: 0.87, goalFactor: 1.02, homeAdvantage: 1.12 },
+    "Champions League": { intensity: 1.12, predictability: 0.86, goalFactor: 1.12, homeAdvantage: 1.05 },
+    "Europa League": { intensity: 1.08, predictability: 0.84, goalFactor: 1.08, homeAdvantage: 1.03 },
+    "Championship": { intensity: 1.05, predictability: 0.80, goalFactor: 1.02, homeAdvantage: 1.13 },
+    "MLS": { intensity: 1.02, predictability: 0.78, goalFactor: 1.10, homeAdvantage: 1.14 },
+    "Eredivisie": { intensity: 1.06, predictability: 0.82, goalFactor: 1.12, homeAdvantage: 1.11 },
+    "Primeira Liga": { intensity: 0.94, predictability: 0.85, goalFactor: 0.96, homeAdvantage: 1.09 },
+    "default": { intensity: 1.00, predictability: 0.80, goalFactor: 1.00, homeAdvantage: 1.10 }
 };
 
-// FOOTBALL-DATA.ORG SERVICE MIT ERWEITERTER DATENBANK
+// REALISTISCHE TEAM-STRENGTHS MIT ML-FEATURES
+const REALISTIC_TEAM_STRENGTHS = {
+    "Manchester City": { 
+        attack: 2.45, defense: 0.75, homeStrength: 1.28, awayStrength: 1.18, 
+        consistency: 0.92, style: "possession", pressureHandling: 0.88 
+    },
+    "Liverpool": { 
+        attack: 2.35, defense: 0.82, homeStrength: 1.25, awayStrength: 1.15, 
+        consistency: 0.88, style: "pressing", pressureHandling: 0.85 
+    },
+    "Bayern Munich": { 
+        attack: 2.50, defense: 0.70, homeStrength: 1.30, awayStrength: 1.20, 
+        consistency: 0.95, style: "dominant", pressureHandling: 0.90 
+    },
+    "Real Madrid": { 
+        attack: 2.40, defense: 0.75, homeStrength: 1.26, awayStrength: 1.16, 
+        consistency: 0.90, style: "counter", pressureHandling: 0.92 
+    },
+    "Inter Milan": { 
+        attack: 2.25, defense: 0.75, homeStrength: 1.23, awayStrength: 1.13, 
+        consistency: 0.84, style: "tactical", pressureHandling: 0.82 
+    },
+    "default": { 
+        attack: 1.60, defense: 1.40, homeStrength: 1.12, awayStrength: 0.98, 
+        consistency: 0.65, style: "balanced", pressureHandling: 0.70 
+    }
+};
+
+// FOOTBALL-DATA.ORG SERVICE MIT ENSEMBLE-INTEGRATION
 class FootballDataService {
     constructor(apiKey) {
         this.apiKey = apiKey;
@@ -200,7 +203,7 @@ class FootballDataService {
         console.log('🎯 Generating enhanced simulated matches based on expanded team database');
         
         const matches = [];
-        const matchCount = 15 + Math.floor(Math.random() * 15); // 15-30 Spiele
+        const matchCount = 15 + Math.floor(Math.random() * 15);
 
         for (let i = 0; i < matchCount; i++) {
             const leagues = Object.keys(EXPANDED_TEAM_DATABASE);
@@ -211,7 +214,6 @@ class FootballDataService {
                 const homeTeam = teams[Math.floor(Math.random() * teams.length)];
                 let awayTeam = teams[Math.floor(Math.random() * teams.length)];
                 
-                // Sicherstellen, dass nicht das gleiche Team
                 while (awayTeam === homeTeam && teams.length > 1) {
                     awayTeam = teams[Math.floor(Math.random() * teams.length)];
                 }
@@ -237,20 +239,14 @@ class FootballDataService {
         console.log(`🎯 Generated ${matches.length} simulated matches`);
         return matches;
     }
-
-    getRandomTeam(league) {
-        const teams = EXPANDED_TEAM_DATABASE[league];
-        return teams ? teams[Math.floor(Math.random() * teams.length)] : "Unknown Team";
-    }
 }
 
-// ERWEITERTE TEAM-STRENGTH FUNKTION
+// ERWEITERTE TEAM-STRENGTH FUNKTION MIT ML-FEATURES
 function getRealisticTeamStrength(teamName) {
-    // Exakte Übereinstimmung
     if (REALISTIC_TEAM_STRENGTHS[teamName]) {
         return REALISTIC_TEAM_STRENGTHS[teamName];
     }
-     // Teilweise Übereinstimmung für verschiedene Schreibweisen
+    
     for (const [team, strength] of Object.entries(REALISTIC_TEAM_STRENGTHS)) {
         if (teamName.toLowerCase().includes(team.toLowerCase()) || 
             team.toLowerCase().includes(teamName.toLowerCase())) {
@@ -258,16 +254,11 @@ function getRealisticTeamStrength(teamName) {
         }
     }
     
-    // Fallback: Suche in erweiterter Datenbank
     for (const leagueTeams of Object.values(EXPANDED_TEAM_DATABASE)) {
         if (leagueTeams.includes(teamName)) {
-            // Für bekannte Teams aus der Datenbank, aber ohne spezifische Stärken
             return { 
-                attack: 1.70, 
-                defense: 1.30, 
-                homeStrength: 1.15, 
-                awayStrength: 1.02, 
-                consistency: 0.68 
+                attack: 1.70, defense: 1.30, homeStrength: 1.15, awayStrength: 1.02, 
+                consistency: 0.68, style: "balanced", pressureHandling: 0.65 
             };
         }
     }
@@ -275,285 +266,167 @@ function getRealisticTeamStrength(teamName) {
     return REALISTIC_TEAM_STRENGTHS.default;
 }
 
-// REALISTISCHE xG-BERECHNUNG MIT VERBESSERTER FORM-INTEGRATION
-async function calculateRealisticXG(homeTeam, awayTeam, league = "") {
+// ULTIMATIVE xG-BERECHNUNG MIT ENSEMBLE-MODELLEN
+async function calculateAdvancedXG(homeTeam, awayTeam, league = "", context = {}) {
     const homeStrength = getRealisticTeamStrength(homeTeam);
     const awayStrength = getRealisticTeamStrength(awayTeam);
     
-    // Erweiterte Form-Analyse integrieren
+    // ML-Features extrahieren
+    const mlFeatures = await mlFeatureEngine.extractAdvancedFeatures(homeTeam, awayTeam, league);
+    
+    // Ensemble-Vorhersage
+    const ensemblePrediction = await ensembleModel.predict(homeTeam, awayTeam, league);
+    
+    // Dynamische Form-Berechnung (Weighted Exponential)
     const homeForm = await formAnalyzer.analyzeTeamForm(homeTeam, formAnalyzer.generateSimulatedForm(homeTeam, 8));
     const awayForm = await formAnalyzer.analyzeTeamForm(awayTeam, formAnalyzer.generateSimulatedForm(awayTeam, 8));
     
-    // Basis xG mit erweiterter Form-Korrektur
-    let homeBaseXG = homeStrength.attack * (0.8 + homeForm.overallRating * 0.4);
-    let awayBaseXG = awayStrength.attack * (0.8 + awayForm.overallRating * 0.4);
+    const weightedHomeForm = calculateWeightedForm(homeForm.recentMatches || []);
+    const weightedAwayForm = calculateWeightedForm(awayForm.recentMatches || []);
     
-    // Verbesserte Verteidigungs-Korrektur
+    // Liga-Faktoren
+    const leagueFactor = DYNAMIC_LEAGUE_FACTORS[league] || DYNAMIC_LEAGUE_FACTORS.default;
+    
+    // Basis xG mit Ensemble-Korrektur
+    let homeBaseXG = (homeStrength.attack * (0.8 + weightedHomeForm * 0.4) + ensemblePrediction.homeXG) / 2;
+    let awayBaseXG = (awayStrength.attack * (0.8 + weightedAwayForm * 0.4) + ensemblePrediction.awayXG) / 2;
+    
+    // Erweiterte Verteidigungs-Korrektur
     homeBaseXG *= (2 - awayStrength.defense);
     awayBaseXG *= (2 - homeStrength.defense);
     
-    // Liga-spezifische Anpassung mit mehr Ligen
-    const leagueFactors = {
-        "Premier League": 1.0,
-        "Bundesliga": 1.1,    // Mehr Tore
-        "La Liga": 0.9,       // Weniger Tore
-        "Serie A": 0.85,      // Defensiver
-        "Ligue 1": 0.95,
-        "Champions League": 1.05,
-        "Europa League": 1.02,
-        "Championship": 0.92,
-        "MLS": 1.08,
-        "Eredivisie": 1.06,
-        "Primeira Liga": 0.94
-    };
+    // Momentum und ML-Features
+    const homeMomentum = 1 + (homeForm.formMomentum * 0.3) + (mlFeatures.formMomentum * 0.2);
+    const awayMomentum = 1 + (awayForm.formMomentum * 0.3) - (mlFeatures.formMomentum * 0.2);
     
-    const leagueFactor = leagueFactors[league] || 1.0;
+    // Finale xG Werte mit allen Korrekturen
+    const finalHomeXG = homeBaseXG * homeStrength.homeStrength * leagueFactor.goalFactor * homeMomentum;
+    const finalAwayXG = awayBaseXG * awayStrength.awayStrength * leagueFactor.goalFactor * awayMomentum;
     
-    // Momentum und Form stärker gewichten
-    const homeMomentum = 1 + (homeForm.formMomentum * 0.3);
-    const awayMomentum = 1 + (awayForm.formMomentum * 0.3);
-    
-    // Finale xG Werte mit Momentum
-    const finalHomeXG = homeBaseXG * homeStrength.homeStrength * leagueFactor * homeMomentum;
-    const finalAwayXG = awayBaseXG * awayStrength.awayStrength * leagueFactor * awayMomentum;
+    // Confidence mit ML-Features berechnen
+    const confidence = calculateAdvancedConfidence(
+        ensemblePrediction.confidence, 
+        mlFeatures,
+        homeStrength.consistency,
+        awayStrength.consistency
+    );
     
     return {
         home: Math.max(0.15, Math.min(4.5, +finalHomeXG.toFixed(3))),
         away: Math.max(0.15, Math.min(4.0, +finalAwayXG.toFixed(3))),
         quality: (finalHomeXG + finalAwayXG) * 0.2 + (1 - Math.abs(finalHomeXG - finalAwayXG) / (finalHomeXG + finalAwayXG)) * 0.8,
-        confidence: 0.75 + (homeStrength.consistency + awayStrength.consistency) * 0.125,
+        confidence: confidence,
         formImpact: {
-            home: homeForm.overallRating,
-            away: awayForm.overallRating,
+            home: weightedHomeForm,
+            away: weightedAwayForm,
             homeMomentum: homeForm.formMomentum,
             awayMomentum: awayForm.formMomentum
+        },
+        mlFeatures: mlFeatures,
+        ensemblePrediction: ensemblePrediction
+    };
+}
+
+// WEIGHTED FORM CALCULATION (Phase 1)
+function calculateWeightedForm(matches) {
+    if (matches.length === 0) return 0.5;
+    
+    const weightedSum = matches.reduce((sum, match, index) => {
+        const weight = Math.pow(0.85, index); // Exponentielles Decay
+        const points = match.result === 'win' ? 1 : match.result === 'draw' ? 0.5 : 0;
+        return sum + (points * weight);
+    }, 0);
+    
+    const totalWeight = matches.reduce((sum, _, index) => sum + Math.pow(0.85, index), 0);
+    
+    return weightedSum / totalWeight;
+}
+
+// ADVANCED CONFIDENCE CALCULATION (Phase 1)
+function calculateAdvancedConfidence(baseConfidence, mlFeatures, homeConsistency, awayConsistency) {
+    const featureConfidence = mlFeatureEngine.calculateFeatureConsistency(mlFeatures);
+    const consistencyScore = (homeConsistency + awayConsistency) / 2;
+    const historicalAccuracy = learningSystem.getModelAccuracy('ensemble');
+    
+    return (baseConfidence * 0.4) + (featureConfidence * 0.35) + (consistencyScore * 0.15) + (historicalAccuracy * 0.10);
+}
+
+// ENSEMBLE WAHRSCHEINLICHKEITEN (Phase 2)
+async function computeEnsembleProbabilities(homeXG, awayXG, league, homeTeam, awayTeam, mlFeatures) {
+    // Traditionelle Poisson-Berechnung
+    const baseProbs = proCalculator.calculateAdvancedProbabilities(homeXG, awayXG, league);
+    
+    // Ensemble-Vorhersage
+    const ensembleProbs = await ensembleModel.predictProbabilities(homeTeam, awayTeam, league);
+    
+    // ML-Feature Korrektur
+    const mlCorrection = mlFeatureEngine.calculateProbabilityCorrection(mlFeatures);
+    
+    // Kombinierte Wahrscheinlichkeiten
+    const combinedProbs = {
+        home: (baseProbs.home * 0.4 + ensembleProbs.home * 0.4 + mlCorrection.home * 0.2),
+        draw: (baseProbs.draw * 0.4 + ensembleProbs.draw * 0.4 + mlCorrection.draw * 0.2),
+        away: (baseProbs.away * 0.4 + ensembleProbs.away * 0.4 + mlCorrection.away * 0.2),
+        over25: (baseProbs.over25 * 0.5 + ensembleProbs.over25 * 0.3 + mlCorrection.over25 * 0.2),
+        btts: (baseProbs.btts * 0.5 + ensembleProbs.btts * 0.3 + mlCorrection.btts * 0.2)
+    };
+    
+    // Normalisierung
+    const totalHD = combinedProbs.home + combinedProbs.draw + combinedProbs.away;
+    combinedProbs.home /= totalHD;
+    combinedProbs.draw /= totalHD;
+    combinedProbs.away /= totalHD;
+    
+    return {
+        ...combinedProbs,
+        confidence: calculateAdvancedConfidence(
+            ensembleProbs.confidence,
+            mlFeatures,
+            getRealisticTeamStrength(homeTeam).consistency,
+            getRealisticTeamStrength(awayTeam).consistency
+        ),
+        modelBreakdown: {
+            poisson: baseProbs,
+            ensemble: ensembleProbs,
+            mlCorrection: mlCorrection
         }
     };
 }
 
-// REALISTISCHE WAHRSCHEINLICHKEITEN MIT VERBESSERTEM MODELL
-function computeRealisticProbabilities(homeXG, awayXG, league, homeTeam, awayTeam) {
-    const baseProbs = proCalculator.calculateAdvancedProbabilities(homeXG, awayXG, league);
+// PREDICTIVE TREND-ANALYSE (Phase 3)
+async function computePredictiveTrends(probabilities, xgData, homeTeam, awayTeam, league, mlFeatures) {
+    const historicalPatterns = await trendAnalyzer.getHistoricalPatterns(league);
+    const currentGameData = {
+        probabilities,
+        xgData,
+        teams: { home: homeTeam, away: awayTeam },
+        league,
+        mlFeatures
+    };
     
-    // Team-spezifische Anpassungen
+    return await trendAnalyzer.analyzeMultiDimensionalTrends(currentGameData, historicalPatterns);
+}
+
+// INTELLIGENTE VALUE-ERKENNUNG (Phase 3)
+async function findSmartValueOpportunities(probabilities, homeTeam, awayTeam, league) {
+    const marketOdds = await valueIntelligence.fetchMarketOdds(homeTeam, awayTeam, league);
+    return await valueIntelligence.findSmartValueBets(probabilities, marketOdds);
+}
+
+// ULTIMATIVE ANALYSE GENERIERUNG
+async function generateUltimateAnalysis(homeTeam, awayTeam, probabilities, trendAnalysis, xgData, value, league, mlFeatures) {
     const homeStrength = getRealisticTeamStrength(homeTeam);
     const awayStrength = getRealisticTeamStrength(awayTeam);
     
-    // Verbesserte Konsistenz-basierte Korrektur
-    const consistencyFactor = (homeStrength.consistency + awayStrength.consistency) / 2;
-    const confidenceBoost = (consistencyFactor - 0.65) * 0.3;
-    
-    // Liga-spezifische Feinabstimmung
-    const leagueAdjustments = {
-        "Bundesliga": { home: 1.02, draw: 0.98, away: 1.02 },
-        "Serie A": { home: 1.01, draw: 1.03, away: 0.99 },
-        "La Liga": { home: 1.01, draw: 1.02, away: 1.00 },
-        "Premier League": { home: 1.02, draw: 0.99, away: 1.01 },
-        "default": { home: 1.0, draw: 1.0, away: 1.0 }
-    };
-    
-    const adjustment = leagueAdjustments[league] || leagueAdjustments.default;
-    
-    // Angepasste Wahrscheinlichkeiten
-    return {
-        home: Math.min(0.95, baseProbs.home * (1 + confidenceBoost) * adjustment.home),
-        draw: Math.max(0.05, baseProbs.draw * (1 - confidenceBoost * 0.5) * adjustment.draw),
-        away: Math.min(0.95, baseProbs.away * (1 + confidenceBoost) * adjustment.away),
-        over25: baseProbs.over25,
-        under25: baseProbs.under25,
-        btts: baseProbs.btts,
-        bttsNo: baseProbs.bttsNo,
-        confidence: 0.7 + consistencyFactor * 0.25
-    };
-}
-
-// ERWEITERTE MULTI-MARKET TREND-ANALYSE MIT MEHR TRENDS
-function computeAdvancedTrend(probabilities, xgData, homeTeam, awayTeam, league) {
-    const trends = [];
-    
-    const { home, away, draw, over25, btts } = probabilities;
-    const { home: homeXG, away: awayXG } = xgData;
-    const totalXG = homeXG + awayXG;
-    
-    // 1. HDH TRENDS - ERWEITERT
-    if (home > 0.65) {
-        const strength = home > 0.75 ? "strong" : home > 0.7 ? "medium" : "weak";
-        trends.push({
-            type: "hdh",
-            market: "home",
-            strength: strength,
-            confidence: Math.min(0.95, home * 0.9),
-            probability: home,
-            description: `${homeTeam} ${strength === 'strong' ? 'starker' : 'klarer'} Favorit`
-        });
-    }
-    
-    if (away > 0.6) {
-        const strength = away > 0.7 ? "strong" : away > 0.65 ? "medium" : "weak";
-        trends.push({
-            type: "hdh", 
-            market: "away",
-            strength: strength,
-            confidence: Math.min(0.95, away * 0.85),
-            probability: away,
-            description: `${awayTeam} mit ${strength === 'strong' ? 'starker' : 'deutlicher'} Auswärtstärke`
-        });
-    }
-    
-    if (draw > 0.35 && Math.abs(home - away) < 0.2) {
-        const strength = draw > 0.4 ? "strong" : "medium";
-        trends.push({
-            type: "hdh",
-            market: "draw", 
-            strength: strength,
-            confidence: draw * 0.8,
-            probability: draw,
-            description: `${strength === 'strong' ? 'Starke' : 'Kläre'} Tendenz zu Unentschieden`
-        });
-    }
-    
-    // 2. OVER/UNDER TRENDS - VERFEINERT
-    if (over25 > 0.68) {
-        const strength = over25 > 0.75 ? "strong" : over25 > 0.7 ? "medium" : "weak";
-        trends.push({
-            type: "goals",
-            market: "over25",
-            strength: strength,
-            confidence: Math.min(0.95, over25 * 0.9),
-            probability: over25,
-            description: `${strength === 'strong' ? 'Sehr hohe' : 'Hohe'} Torerwartung (${totalXG.toFixed(1)} xG)`
-        });
-    }
-    
-    if (over25 < 0.35) {
-        const strength = over25 < 0.25 ? "strong" : "medium";
-        trends.push({
-            type: "goals",
-            market: "under25",
-            strength: strength, 
-            confidence: Math.min(0.95, (1 - over25) * 0.9),
-            probability: 1 - over25,
-            description: `${strength === 'strong' ? 'Sehr geringe' : 'Geringe'} Torerwartung (${totalXG.toFixed(1)} xG)`
-        });
-    }
-    
-    // 3. BTTS TRENDS - ERWEITERT
-    if (btts > 0.65) {
-        const strength = btts > 0.72 ? "strong" : btts > 0.68 ? "medium" : "weak";
-        trends.push({
-            type: "btts",
-            market: "btts_yes",
-            strength: strength,
-            confidence: btts * 0.85,
-            probability: btts,
-            description: `${strength === 'strong' ? 'Sehr wahrscheinlich' : 'Wahrscheinlich'} beide Teams treffen`
-        });
-    }
-    
-    if (btts < 0.35) {
-        const strength = btts < 0.28 ? "strong" : "medium";
-        trends.push({
-            type: "btts",
-            market: "btts_no", 
-            strength: strength,
-            confidence: (1 - btts) * 0.85,
-            probability: 1 - btts,
-            description: `${strength === 'strong' ? 'Sehr wahrscheinlich' : 'Wahrscheinlich'} Clean Sheet`
-        });
-    }
-    
-    // 4. GOAL-INTENSIVE SPIELE - NEUE KATEGORIEN
-    if (totalXG > 3.5 && over25 > 0.7) {
-        trends.push({
-            type: "special",
-            market: "goal_fest", 
-            strength: "high",
-            confidence: 0.8,
-            probability: over25,
-            description: `Tor-Festival erwartet (${totalXG.toFixed(1)} xG)`
-        });
-    }
-    
-    if (totalXG > 4.0 && over25 > 0.75) {
-        trends.push({
-            type: "special",
-            market: "high_scoring", 
-            strength: "very_high",
-            confidence: 0.85,
-            probability: over25,
-            description: `Sehr torreich (${totalXG.toFixed(1)} xG)`
-        });
-    }
-      // 5. DEFENSIVE SPIELE - VERFEINERT
-    if (totalXG < 1.8 && over25 < 0.4) {
-        const strength = totalXG < 1.5 ? "strong" : "medium";
-        trends.push({
-            type: "special", 
-            market: "defensive_battle",
-            strength: strength,
-            confidence: 0.75,
-            probability: 1 - over25,
-            description: `${strength === 'strong' ? 'Sehr defensives' : 'Defensives'} Duell - wenige Tore`
-        });
-    }
-    
-    // 6. HOHE QUALITÄT SPIELE - NEUE LOGIK
-    if (xgData.quality > 0.8 && totalXG > 2.8) {
-        trends.push({
-            type: "special",
-            market: "high_quality",
-            strength: "medium",
-            confidence: 0.7,
-            probability: xgData.quality,
-            description: "Hohe Spielqualität erwartet"
-        });
-    }
-    
-    // 7. AUSGEGLICHENE SPIELE - NEUE KATEGORIE
-    if (Math.abs(home - away) < 0.15 && draw > 0.3) {
-        trends.push({
-            type: "special",
-            market: "balanced_game",
-            strength: "medium",
-            confidence: 0.65,
-            probability: draw,
-            description: "Sehr ausgeglichenes Spiel erwartet"
-        });
-    }
-    
-    // Trends nach Confidence sortieren
-    trends.sort((a, b) => b.confidence - a.confidence);
-    
-    const primaryTrend = trends[0] || { 
-        market: "balanced", 
-        description: "Ausgeglichenes Spiel",
-        confidence: 0.5,
-        probability: 0.5
-    };
-    
-    return {
-        primaryTrend: primaryTrend,
-        allTrends: trends,
-        confidence: trends.length > 0 ? trends[0].confidence : 0.5,
-        trendCount: trends.length
-    };
-}
-
-// REALISTISCHE ANALYSE GENERIEREN MIT MEHR DETAILS
-async function generateRealisticAnalysis(homeTeam, awayTeam, probabilities, trendAnalysis, xgData, value, league) {
-    const homeStrength = getRealisticTeamStrength(homeTeam);
-    const awayStrength = getRealisticTeamStrength(awayTeam);
-    
-    // HDH-Analyse
-    const hdaAnalysis = await hdaAnalyzer.analyzeHDA(homeTeam, awayTeam, league);
-    
-    // Form-Analyse
-    const homeForm = await formAnalyzer.analyzeTeamForm(homeTeam);
-    const awayForm = await formAnalyzer.analyzeTeamForm(awayTeam);
-    
-    // Verletzungsanalyse
-    const homeInjuries = await injuryTracker.getTeamInjuries(homeTeam);
-    const awayInjuries = await injuryTracker.getTeamInjuries(awayTeam);
+     // Alle Analysen parallel ausführen
+    const [hdaAnalysis, homeForm, awayForm, homeInjuries, awayInjuries, valueOpportunities] = await Promise.all([
+        hdaAnalyzer.analyzeHDA(homeTeam, awayTeam, league),
+        formAnalyzer.analyzeTeamForm(homeTeam),
+        formAnalyzer.analyzeTeamForm(awayTeam),
+        injuryTracker.getTeamInjuries(homeTeam),
+        injuryTracker.getTeamInjuries(awayTeam),
+        findSmartValueOpportunities(probabilities, homeTeam, awayTeam, league)
+    ]);
     
     const analysis = {
         summary: "",
@@ -567,111 +440,85 @@ async function generateRealisticAnalysis(homeTeam, awayTeam, probabilities, tren
                 home: homeStrength,
                 away: awayStrength,
                 advantage: homeStrength.attack - awayStrength.attack,
-                totalStrength: (homeStrength.attack + homeStrength.defense + awayStrength.attack + awayStrength.defense) / 4
+                styleMatchup: mlFeatureEngine.analyzeStyleCompatibility(homeStrength.style, awayStrength.style)
             },
             form: {
                 home: homeForm,
                 away: awayForm,
-                momentumDifference: homeForm.formMomentum - awayForm.formMomentum
+                momentumDifference: homeForm.formMomentum - awayForm.formMomentum,
+                weightedForm: {
+                    home: calculateWeightedForm(homeForm.recentMatches || []),
+                    away: calculateWeightedForm(awayForm.recentMatches || [])
+                }
             },
             injuries: {
                 home: homeInjuries,
                 away: awayInjuries,
                 totalImpact: (homeInjuries.overallImpact + awayInjuries.overallImpact) / 2
             },
-            marketInsights: hdaAnalysis.valueOpportunities,
+            marketInsights: valueOpportunities,
             qualityMetrics: {
                 matchQuality: xgData.quality,
                 expectedGoals: xgData.home + xgData.away,
-                balance: 1 - Math.abs(probabilities.home - probabilities.away)
+                balance: 1 - Math.abs(probabilities.home - probabilities.away),
+                predictability: DYNAMIC_LEAGUE_FACTORS[league]?.predictability || 0.8
+            },
+            mlAnalysis: {
+                features: mlFeatures,
+                confidence: xgData.confidence,
+                ensembleBreakdown: xgData.ensemblePrediction
             }
         }
     };
 
-    const homeProb = probabilities.home || 0;
-    const awayProb = probabilities.away || 0;
-    const drawProb = probabilities.draw || 0;
+    // Dynamische Zusammenfassung basierend auf allen Daten
     const bestValue = Math.max(value.home || 0, value.draw || 0, value.away || 0, value.over25 || 0);
-
-    // Dynamische Zusammenfassung basierend auf Top-Trends
     const topTrend = trendAnalysis.primaryTrend;
 
-    // Erweiterte Zusammenfassungslogik
-    if (topTrend.market === "home" && homeProb > 0.6) {
-        analysis.summary = `🔵 ${homeTeam} dominiert als ${homeProb > 0.7 ? 'starker' : 'klarer'} Favorit (${Math.round(homeProb * 100)}% Siegchance)`;
-        analysis.recommendation = homeProb > 0.7 ? "Heimsieg - Hohe Erfolgschance" : "Heimsieg - Gute Option";
-        analysis.riskLevel = homeProb > 0.7 ? "low" : "medium";
-    } else if (topTrend.market === "away" && awayProb > 0.55) {
-        analysis.summary = `🔴 ${awayTeam} zeigt ${awayProb > 0.65 ? 'starke' : 'gute'} Auswärtsleistung (${Math.round(awayProb * 100)}% Siegchance)`;
-        analysis.recommendation = awayProb > 0.65 ? "Auswärtssieg - Hohe Erfolgschance" : "Auswärtssieg - Solide Wahl";
-        analysis.riskLevel = awayProb > 0.65 ? "low" : "medium";
-    } else if (topTrend.market === "draw" && drawProb > 0.35) {
-        analysis.summary = `⚖️ Ausgeglichene Begegnung mit ${drawProb > 0.4 ? 'starker' : 'klarer'} Unentschieden-Tendenz (${Math.round(drawProb * 100)}%)`;
-        analysis.recommendation = "Unentschieden - Attraktive Option";
-        analysis.riskLevel = "medium";
-    } else if (topTrend.market === "over25" && probabilities.over25 > 0.65) {
-        analysis.summary = `⚽ ${probabilities.over25 > 0.75 ? 'Sehr hohe' : 'Hohe'} Torerwartung (${Math.round(probabilities.over25 * 100)}% für Over 2.5)`;
-        analysis.recommendation = "Over 2.5 Goals - Starke Indikation";
+    // Erweiterte Entscheidungslogik
+    if (topTrend.confidence > 0.8 && bestValue > 0.15) {
+        analysis.summary = `🎯 HOHE KONFIDENZ: ${topTrend.description} mit ${(bestValue * 100).toFixed(1)}% Value`;
+        analysis.recommendation = "Starke Empfehlung - Hohe KI-Konfidenz";
         analysis.riskLevel = "low";
-    } else if (topTrend.market === "under25" && probabilities.under25 > 0.65) {
-        analysis.summary = `🛡️ ${probabilities.under25 > 0.75 ? 'Sehr defensive' : 'Defensive'} Begegnung erwartet (${Math.round(probabilities.under25 * 100)}% für Under 2.5)`;
-        analysis.recommendation = "Under 2.5 Goals - Gute Wahl";
+    } else if (topTrend.confidence > 0.7 && bestValue > 0.08) {
+        analysis.summary = `📈 GUTE CHANCE: ${topTrend.description} mit ${(bestValue * 100).toFixed(1)}% Value`;
+        analysis.recommendation = "Solide Option - Gute Erfolgsaussichten";
         analysis.riskLevel = "medium";
     } else {
-        analysis.summary = `⚖️ Ausgeglichenes Spiel ohne klaren Favoriten - Vorsichtige Herangehensweise empfohlen.`;
+        analysis.summary = `⚖️ AUSGEGLICHEN: Vorsichtige Herangehensweise empfohlen`;
         analysis.recommendation = "Risikobewusste Entscheidung";
         analysis.riskLevel = "high";
     }
 
-    // Key Factors basierend auf allen relevanten Trends
-    trendAnalysis.allTrends.slice(0, 4).forEach(trend => {
-        if (trend.confidence > 0.6) {
-            analysis.keyFactors.push(`${trend.description} (${Math.round(trend.probability * 100)}%)`);
-        }
-    });
+    // Key Factors aus allen Quellen
+    analysis.keyFactors = [
+        ...trendAnalysis.allTrends.slice(0, 3).map(trend => `${trend.description} (${Math.round(trend.confidence * 100)}%)`),
+        `ML Confidence: ${Math.round(mlFeatures.confidence * 100)}%`,
+        `Value Opportunity: ${(bestValue * 100).toFixed(1)}%`,
+        ...valueOpportunities.slice(0, 2).map(opp => `${opp.market}: ${(opp.value * 100).toFixed(1)}%`)
+    ];
 
-    // Value als zusätzlichen Faktor hinzufügen
-    if (bestValue > 0.1) {
-        analysis.keyFactors.push(`Value Opportunity: ${(bestValue * 100).toFixed(1)}%`);
-    }
-
-    // Verletzungen als Warnfaktoren
-    if (homeInjuries.overallImpact > 0.4) analysis.keyFactors.push(`⚠️ ${homeTeam} Verletzungen (stark betroffen)`);
-    else if (homeInjuries.overallImpact > 0.2) analysis.keyFactors.push(`⚠️ ${homeTeam} Verletzungen (moderat betroffen)`);
-    
-    if (awayInjuries.overallImpact > 0.4) analysis.keyFactors.push(`⚠️ ${awayTeam} Verletzungen (stark betroffen)`);
-    else if (awayInjuries.overallImpact > 0.2) analysis.keyFactors.push(`⚠️ ${awayTeam} Verletzungen (moderat betroffen)`);
-
-    // Form-Faktoren
-    if (homeForm.formMomentum > 0.3) analysis.keyFactors.push(`📈 ${homeTeam} mit positivem Momentum`);
-    if (awayForm.formMomentum > 0.3) analysis.keyFactors.push(`📈 ${awayTeam} mit positivem Momentum`);
+    // Warnungen hinzufügen
+    if (homeInjuries.overallImpact > 0.4) analysis.keyFactors.push(`⚠️ ${homeTeam} stark von Verletzungen betroffen`);
+    if (awayInjuries.overallImpact > 0.4) analysis.keyFactors.push(`⚠️ ${awayTeam} stark von Verletzungen betroffen`);
+    if (mlFeatures.fatigueImpact > 0.3) analysis.keyFactors.push(`🕒 Ermüdungsfaktor beachten`);
 
     return analysis;
 }
 
-// VERBESSERTES CACHE SYSTEM
+// CACHE SYSTEM MIT LERNFÄHIGKEIT
 const cache = new Map();
-const CACHE_DURATION = 8 * 60 * 1000; // 8 Minuten (reduziert für aktuellere Daten)
-
-// Cache Cleanup alle Stunde
-setInterval(() => {
-    const now = Date.now();
-    for (const [key, value] of cache.entries()) {
-        if (now - value.timestamp > CACHE_DURATION * 2) {
-            cache.delete(key);
-        }
-    }
-}, 60 * 60 * 1000);
+const CACHE_DURATION = 8 * 60 * 1000;
 
 const footballDataService = new FootballDataService(FOOTBALL_DATA_KEY);
 
-// HAUPT-API ROUTE MIT VERBESSERTER PERFORMANCE
+// HAUPT-API ROUTE MIT ALLEN VERBESSERUNGEN
 app.get('/api/games', async (req, res) => {
     try {
         const requestedDate = req.query.date || new Date().toISOString().split('T')[0];
         const leagueFilter = req.query.league || '';
         
-        console.log(`🎯 API Request - Date: ${requestedDate}, League: ${leagueFilter || 'All'}`);
+        console.log(`🎯 ULTIMATE API Request - Date: ${requestedDate}, League: ${leagueFilter || 'All'}`);
         
         const cacheKey = `games-${requestedDate}-${leagueFilter}`;
         
@@ -685,13 +532,13 @@ app.get('/api/games', async (req, res) => {
                     source: cached.source, 
                     date: requestedDate, 
                     cached: true,
-                    version: '6.2.0',  // Version updated
-                    totalGames: cached.data.length
+                    version: '7.0.0',
+                    features: ['Ensemble Models', 'ML Features', 'Adaptive Learning', 'Predictive Trends']
                 }
             });
         }
         
-        console.log('🔄 Fetching match data from Football-Data.org...');
+        console.log('🔄 Fetching match data with ULTIMATE AI analysis...');
         const matches = await footballDataService.getMatchesByDate(requestedDate);
         
         if (matches.length === 0) {
@@ -702,12 +549,12 @@ app.get('/api/games', async (req, res) => {
                     total: 0,
                     source: "football_data",
                     message: "Keine Spiele für dieses Datum gefunden",
-                    version: '6.2.0'
+                    version: '7.0.0'
                 }
             });
         }
 
-        console.log(`🤖 Starting professional analysis for ${matches.length} matches...`);
+        console.log(`🤖 Starting ULTIMATE AI analysis for ${matches.length} matches...`);
         
         // Liga-Filter anwenden
         let filteredMatches = matches;
@@ -717,7 +564,8 @@ app.get('/api/games', async (req, res) => {
             );
             console.log(`🔍 After league filter: ${filteredMatches.length} matches`);
         }
-        // Parallele Verarbeitung mit verbessertem Error Handling
+
+        // Parallele Verarbeitung mit allen Verbesserungen
         const analyzedGames = await Promise.all(
             filteredMatches.map(async (match) => {
                 try {
@@ -725,30 +573,34 @@ app.get('/api/games', async (req, res) => {
                     const awayTeam = match.awayTeam?.name || "Unknown Away";
                     const league = match.competition?.name || "Unknown League";
                     
-                    console.log(`🔍 Analyzing: ${homeTeam} vs ${awayTeam}`);
+                    console.log(`🔍 ULTIMATE Analysis: ${homeTeam} vs ${awayTeam}`);
                     
-                    // xG-BERECHNUNG
-                    const xgData = await calculateRealisticXG(homeTeam, awayTeam, league);
+                    // ML-Features extrahieren
+                    const mlFeatures = await mlFeatureEngine.extractAdvancedFeatures(homeTeam, awayTeam, league);
                     
-                    // WAHRSCHEINLICHKEITEN
-                    const probabilities = computeRealisticProbabilities(xgData.home, xgData.away, league, homeTeam, awayTeam);
+      // xG-BERECHNUNG MIT ENSEMBLE
+                    const xgData = await calculateAdvancedXG(homeTeam, awayTeam, league, mlFeatures);
                     
-                    // VALUE-BERECHNUNG
-                    const value = proCalculator.calculateAdvancedValue(probabilities);
+                    // ENSEMBLE WAHRSCHEINLICHKEITEN
+                    const probabilities = await computeEnsembleProbabilities(xgData.home, xgData.away, league, homeTeam, awayTeam, mlFeatures);
                     
-                    // ERWEITERTE TREND-ANALYSE (Multi-Market)
-                    const trendAnalysis = computeAdvancedTrend(probabilities, xgData, homeTeam, awayTeam, league);
+                    // VALUE-BERECHNUNG MIT INTELLIGENZ
+                    const value = await valueIntelligence.findSmartValueBets(probabilities);
                     
-                    // ANALYSE
-                    const analysis = await generateRealisticAnalysis(homeTeam, awayTeam, probabilities, trendAnalysis, xgData, value, league);
+                    // PREDICTIVE TREND-ANALYSE
+                    const trendAnalysis = await computePredictiveTrends(probabilities, xgData, homeTeam, awayTeam, league, mlFeatures);
+                    
+                    // ULTIMATIVE ANALYSE
+                    const analysis = await generateUltimateAnalysis(homeTeam, awayTeam, probabilities, trendAnalysis, xgData, value, league, mlFeatures);
 
-                    // KI-SCORE berechnen - verbesserte Formel
-                    const kiScore = 0.25 * probabilities.confidence + 
-                                  0.20 * trendAnalysis.confidence + 
-                                  0.18 * (Math.max(...Object.values(value)) + 1) + 
-                                  0.15 * xgData.quality + 
+                    // KI-SCORE MIT ALLEN FAKTOREN
+                    const kiScore = 0.20 * probabilities.confidence + 
+                                  0.18 * trendAnalysis.confidence + 
+                                  0.16 * (Math.max(...Object.values(value)) + 1) + 
+                                  0.14 * xgData.quality + 
                                   0.12 * (2 - analysis.riskLevel.length * 0.3) +
-                                  0.10 * analysis.detailed.qualityMetrics.balance;
+                                  0.10 * analysis.detailed.qualityMetrics.balance +
+                                  0.10 * mlFeatures.confidence;
 
                     return {
                         id: match.id,
@@ -776,17 +628,24 @@ app.get('/api/games', async (req, res) => {
                         // Value & Odds
                         value: value,
                         
-                        // ERWEITERTE KI-Analyse
+                        // ULTIMATIVE KI-Analyse
                         trendAnalysis: trendAnalysis,
                         confidence: probabilities.confidence,
                         kiScore: +kiScore.toFixed(3),
                         analysis: analysis,
+                        mlFeatures: mlFeatures,
                         
                         timestamp: new Date().toISOString(),
                         source: match.source || 'football_data',
                         teamStrengths: {
                             home: getRealisticTeamStrength(homeTeam),
                             away: getRealisticTeamStrength(awayTeam)
+                        },
+                        modelInfo: {
+                            version: '7.0.0',
+                            ensemble: true,
+                            mlEnhanced: true,
+                            adaptiveLearning: true
                         }
                     };
                 } catch (error) {
@@ -800,7 +659,7 @@ app.get('/api/games', async (req, res) => {
         const validGames = analyzedGames.filter(game => game !== null);
         validGames.sort((a, b) => (b.kiScore || 0) - (a.kiScore || 0));
 
-        console.log(`✅ Analysis completed. Processed ${validGames.length} games`);
+        console.log(`✅ ULTIMATE analysis completed. Processed ${validGames.length} games`);
 
         const responseData = {
             response: validGames,
@@ -808,18 +667,20 @@ app.get('/api/games', async (req, res) => {
                 date: requestedDate,
                 total: validGames.length,
                 source: "football_data_org",
-                version: "6.2.0",
+                version: "7.0.0",
                 timestamp: new Date().toISOString(),
                 features: [
-                    "Enhanced Multi-Market Trend Analysis",
-                    "Expanded Team Database (300+ Teams)", 
-                    "Advanced Form Analysis",
-                    "Realistic Injury & Suspension Tracking",
-                    "Professional Value Detection",
-                    "Improved xG Calculation"
+                    "Ensemble Prediction Models",
+                    "Machine Learning Feature Engine", 
+                    "Adaptive Learning System",
+                    "Predictive Trend Analysis",
+                    "Intelligent Value Detection",
+                    "Weighted Form Calculation",
+                    "Dynamic League Factors"
                 ],
                 leagues: Object.keys(EXPANDED_TEAM_DATABASE),
-                teamCount: Object.values(EXPANDED_TEAM_DATABASE).reduce((sum, teams) => sum + teams.length, 0)
+                teamCount: Object.values(EXPANDED_TEAM_DATABASE).reduce((sum, teams) => sum + teams.length, 0),
+                modelPerformance: await learningSystem.getPerformanceStats()
             }
         };
 
@@ -833,25 +694,25 @@ app.get('/api/games', async (req, res) => {
         res.json(responseData);
 
     } catch (error) {
-        console.error('❌ API Error:', error);
+        console.error('❌ ULTIMATE API Error:', error);
         res.status(500).json({
             error: error.message,
             info: {
                 date: req.query.date,
                 source: "api_error", 
                 message: "Fehler beim Laden der Spieldaten",
-                version: "6.2.0"
+                version: "7.0.0"
             }
         });
     }
 });
 
 // Health Check - Erweitert
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
     const stats = {
-        status: 'OPERATIONAL',
+        status: 'ULTIMATE OPERATIONAL',
         timestamp: new Date().toISOString(),
-        version: '6.2.0',
+        version: '7.0.0',
         api: 'Football-Data.org',
         hasApiKey: !!FOOTBALL_DATA_KEY,
         cache: {
@@ -859,25 +720,30 @@ app.get('/health', (req, res) => {
             keys: Array.from(cache.keys())
         },
         features: [
-            'Enhanced Multi-Market Trend Analysis',
-            'Expanded Team Database (300+ Teams)',
-            'Realistic xG Calculation',
-            'Advanced Form Analysis', 
-            'Real Injury Tracking',
-            'Professional Value Detection',
-            'HDH Deep Analysis'
+            'Ensemble Prediction Models',
+            'Machine Learning Feature Engine',
+            'Adaptive Learning System',
+            'Predictive Trend Analysis',
+            'Intelligent Value Detection',
+            'Weighted Form Calculation',
+            'Dynamic League Factors'
         ],
         teamDatabase: {
             totalLeagues: Object.keys(EXPANDED_TEAM_DATABASE).length,
             totalTeams: Object.values(EXPANDED_TEAM_DATABASE).reduce((sum, teams) => sum + teams.length, 0),
             leagues: Object.keys(EXPANDED_TEAM_DATABASE)
+        },
+        modelStats: await learningSystem.getPerformanceStats(),
+        systemLoad: {
+            memory: process.memoryUsage(),
+            uptime: process.uptime()
         }
     };
     
     res.json(stats);
 });
 
-// Utility Functions - Erweitert
+// Utility Functions
 function getProfessionalFlag(teamName) {
     const flagMapping = {
         "Manchester": "gb", "Liverpool": "gb", "Arsenal": "gb", "Aston": "gb", "Tottenham": "gb",
@@ -901,10 +767,11 @@ function getProfessionalFlag(teamName) {
 
 // Server starten
 app.listen(PORT, () => {
-    console.log(`🚀 ProFoot Analytics v6.2.0 - Enhanced Multi-Market Trends`);
+    console.log(`🚀 ULTIMATE ProFoot Analytics v7.0.0 - Ensemble AI System`);
     console.log(`📍 Port: ${PORT}`);
     console.log(`🔗 Health: http://localhost:${PORT}/health`);
     console.log(`🎯 API: http://localhost:${PORT}/api/games`);
     console.log(`🏆 Using: ${FOOTBALL_DATA_KEY ? 'Football-Data.org API' : 'Enhanced Simulation'}`);
-    console.log(`📊 Expanded Team Database: ${Object.values(EXPANDED_TEAM_DATABASE).reduce((sum, teams) => sum + teams.length, 0)} teams across ${Object.keys(EXPANDED_TEAM_DATABASE).length} leagues`);
+    console.log(`🤖 Features: Ensemble Models, ML Engine, Adaptive Learning, Predictive Trends`);
+    console.log(`📊 Team Database: ${Object.values(EXPANDED_TEAM_DATABASE).reduce((sum, teams) => sum + teams.length, 0)} teams across ${Object.keys(EXPANDED_TEAM_DATABASE).length} leagues`);
 });
