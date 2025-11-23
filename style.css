@@ -165,7 +165,6 @@ body {
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
-
 /* Epic Controls */
 .controls {
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
@@ -520,8 +519,7 @@ body {
 .progress-over { background: linear-gradient(90deg, var(--primary), var(--primary-dark)); }
 .progress-under { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
 .progress-btts { background: linear-gradient(90deg, #ff7a00, #ea580c); }
-
-/* ⭐⭐ ERWEITERTE TREND-BADGE STYLES ⭐⭐ */
+        /* ⭐⭐ ERWEITERTE TREND-BADGE STYLES ⭐⭐ */
 .trend-indicator {
     display: inline-flex;
     align-items: center;
@@ -534,6 +532,12 @@ body {
     border: 1px solid rgba(255,255,255,0.1);
     white-space: nowrap;
     flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.trend-indicator:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
 /* HDH Trends */
@@ -574,10 +578,16 @@ body {
     color: white; 
 }
 
-/* Special Trends */
+/* Special Trends - NEUE STYLES */
 .trend-goal_fest { 
     background: linear-gradient(135deg, #ea580c, #dc2626); 
     color: white; 
+}
+
+.trend-high_scoring { 
+    background: linear-gradient(135deg, #dc2626, #b91c1c); 
+    color: white; 
+    animation: pulse 2s infinite;
 }
 
 .trend-defensive_battle { 
@@ -587,6 +597,11 @@ body {
 
 .trend-high_quality { 
     background: linear-gradient(135deg, #f59e0b, #d97706); 
+    color: white; 
+}
+
+.trend-balanced_game { 
+    background: linear-gradient(135deg, #6b7280, #4b5563); 
     color: white; 
 }
 
@@ -601,6 +616,27 @@ body {
     font-size: 0.8rem;
     padding: 0.5rem 0.75rem;
     margin-left: 0;
+}
+
+/* Strength Indicators */
+.trend-indicator[class*="strong"] {
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.trend-indicator[class*="high"] {
+    border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.trend-indicator[class*="very_high"] {
+    border: 2px solid rgba(255, 215, 0, 0.6);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+}
+
+/* Pulsing Animation for High Scoring */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }
 
 /* Epic KI Badge */
@@ -1019,6 +1055,36 @@ body {
     100% { transform: scale(1); }
 }
 
+/* Mobile Optimizations für Trends */
+@media (max-width: 768px) {
+    .trend-indicator {
+        font-size: 0.8rem;
+        padding: 0.5rem 1rem;
+        gap: 0.5rem;
+    }
+    
+    .trend-indicator.secondary {
+        font-size: 0.7rem;
+        padding: 0.4rem 0.75rem;
+    }
+    
+    .trend-indicator i {
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .trend-indicator {
+        font-size: 0.7rem;
+        padding: 0.4rem 0.75rem;
+    }
+    
+    .trend-indicator.secondary {
+        font-size: 0.65rem;
+        padding: 0.3rem 0.5rem;
+    }
+}
+
 /* Epic Responsive */
 @media (max-width: 768px) {
     .app-container {
@@ -1091,29 +1157,5 @@ body {
 
     .main-content {
         grid-template-columns: 1fr;
-    }
-
-    /* Responsive Trend Badges */
-    .trend-indicator {
-        font-size: 0.8rem;
-        padding: 0.5rem 1rem;
-    }
-    
-    .trend-indicator.secondary {
-        font-size: 0.7rem;
-        padding: 0.4rem 0.75rem;
-    }
-}
-
-/* Additional Mobile Optimizations */
-@media (max-width: 480px) {
-    .trend-indicator {
-        font-size: 0.7rem;
-        padding: 0.4rem 0.75rem;
-        gap: 0.5rem;
-    }
-    
-    .trend-indicator i {
-        font-size: 0.6rem;
     }
 }
