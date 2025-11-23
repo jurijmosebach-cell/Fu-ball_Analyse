@@ -235,8 +235,7 @@ class SimpleBankrollManager {
             console.log('Could not load bankroll data');
         }
     }
-}
-
+ }
 // ⭐⭐ INITIALISIERUNG DER MODULE ⭐⭐
 const confidenceCalculator = new AdvancedConfidenceCalculator();
 const bankrollManager = new SimpleBankrollManager();
@@ -323,10 +322,10 @@ function createAdvancedTrendBadge(trendAnalysis) {
         container.appendChild(primaryBadge);
     }
     
-    // Secondary Trends (max 2)
+    // Secondary Trends (max 3 statt 2)
     const secondaryTrends = trendAnalysis.allTrends
         .filter(trend => trend !== primaryTrend)
-        .slice(0, 2);
+        .slice(0, 3); // Erhöht auf 3 sekundäre Trends
     
     secondaryTrends.forEach(trend => {
         const secondaryBadge = createTrendBadgeElement(trend, true);
@@ -363,8 +362,10 @@ function createTrendBadgeElement(trend, isSecondary = false) {
         "btts_yes": "fas fa-exchange-alt",
         "btts_no": "fas fa-times",
         "goal_fest": "fas fa-fire",
+        "high_scoring": "fas fa-rocket",
         "defensive_battle": "fas fa-shield-alt",
         "high_quality": "fas fa-star",
+        "balanced_game": "fas fa-balance-scale",
         "balanced": "fas fa-equals"
     };
     
@@ -377,8 +378,10 @@ function createTrendBadgeElement(trend, isSecondary = false) {
         "btts_yes": "BTTS JA",
         "btts_no": "BTTS NEIN",
         "goal_fest": "TOR-FEST",
+        "high_scoring": "SEHR TORREICH",
         "defensive_battle": "DEFENSIV",
         "high_quality": "HOHE QUALITÄT",
+        "balanced_game": "AUSGEGLICHEN",
         "balanced": "AUSGEGLICHEN"
     };
     
@@ -386,11 +389,22 @@ function createTrendBadgeElement(trend, isSecondary = false) {
     const label = marketLabels[trend.market] || trend.market.toUpperCase();
     const probability = Math.round(trend.probability * 100);
     
+    // Strength indicator
+    const strengthIcons = {
+        "strong": "🔴",
+        "medium": "🟡", 
+        "weak": "🟢",
+        "high": "🔴",
+        "very_high": "🔥"
+    };
+    
+    const strengthIcon = strengthIcons[trend.strength] || "";
+    
     badge.innerHTML = `
         <i class="${icon}"></i>
         ${label} 
         <span style="margin-left: 0.5rem; font-size: 0.8em; font-weight: 900;">
-            ${probability}%
+            ${probability}% ${strengthIcon}
         </span>
     `;
     
@@ -402,7 +416,6 @@ function createTrendBadgeElement(trend, isSecondary = false) {
     
     return badge;
 }
-
 // ⭐⭐ ERWEITERTE TREND-STATISTIK BERECHNUNG ⭐⭐
 function calculateAdvancedStatistics(games) {
     const total = games.length;
@@ -667,17 +680,16 @@ function createGameElement(game, type = 'standard') {
 
     return gameEl;
 }
-
 // ⭐⭐ VERBESSERTE LOADGAMES FUNKTION ⭐⭐
 async function loadGames() {
     try {
-        console.log('🔄 Starte erweiterte KI-Analyse mit Multi-Market Trends...');
+        console.log('🔄 Starte erweiterte KI-Analyse mit erweiterter Team-Datenbank...');
         
         // Show loading state
         const loadingHTML = `
             <div class="loading">
                 <div class="loading-spinner"></div>
-                <div>ERWEITERTE MULTI-MARKET ANALYSE...</div>
+                <div>ERWEITERTE MULTI-MARKET ANALYSE MIT 300+ TEAMS...</div>
                 <div style="font-size: 0.9rem; margin-top: 0.5rem; color: #94a3b8;">
                     Analysiere HDH, Over/Under, BTTS & Spezialmärkte
                 </div>
@@ -691,12 +703,24 @@ async function loadGames() {
         topOver25Div.innerHTML = loadingHTML;
 
         let url = "/api/games";
+        const params = new URLSearchParams();
+        
         if (dateInput.value) {
-            url += "?date=" + dateInput.value;
+            params.append('date', dateInput.value);
+        }
+        
+        if (params.toString()) {
+            url += '?' + params.toString();
         }
         
         console.log('📡 Fetching from:', url);
-        const res = await fetch(url);
+        
+        // Timeout für langsame Requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
         
         if (!res.ok) {
             throw new Error(`HTTP error! status: ${res.status}`);
@@ -716,7 +740,7 @@ async function loadGames() {
             throw new Error('Unerwartetes Datenformat von der API');
         }
 
-        console.log(`🎯 ${games.length} Spiele geladen`);
+        console.log(`🎯 ${games.length} Spiele geladen von ${data.info?.leagues?.length || 'unbekannt'} Ligen`);
 
         // Apply filters
         if (leagueSelect.value) {
@@ -736,7 +760,7 @@ async function loadGames() {
         const stats = calculateAdvancedStatistics(games);
         updateAdvancedStatistics(stats);
 
-        // Premium Picks (erste 3 Spiele)
+        // Premium Picks (erste 3 Spiele mit höchstem KI-Score)
         premiumPicksDiv.innerHTML = "";
         const premiumPicks = games.slice(0, 3);
         
@@ -750,11 +774,14 @@ async function loadGames() {
                 <div class="loading">
                     <i class="fas fa-info-circle"></i>
                     <div>Keine Premium Picks für heute</div>
+                    <div style="font-size: 0.8rem; margin-top: 0.5rem;">
+                        Versuche ein anderes Datum oder erweitere die Filter
+                    </div>
                 </div>
             `;
         }
 
-        // Top Value Bets
+        // Top Value Bets - verbesserte Sortierung
         topValueBetsDiv.innerHTML = "";
         const valueBets = games
             .sort((a, b) => {
@@ -779,13 +806,18 @@ async function loadGames() {
                 topValueBetsDiv.appendChild(createGameElement(game, 'featured'));
             });
         } else {
-            topValueBetsDiv.innerHTML = `<div class="loading">Keine Value Bets gefunden</div>`;
+            topValueBetsDiv.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-chart-line"></i>
+                    <div>Keine Value Bets gefunden</div>
+                </div>
+            `;
         }
 
-        // Top Over 2.5
+        // Top Over 2.5 - verbesserte Filterung
         topOver25Div.innerHTML = "";
         const overGames = games
-            .filter(g => (g.over25 || 0) > 0.4)
+            .filter(g => (g.over25 || 0) > 0.45) // Reduziert von 0.5 auf 0.45 für mehr Spiele
             .sort((a, b) => (b.over25 || 0) - (a.over25 || 0))
             .slice(0, 5);
         
@@ -794,23 +826,35 @@ async function loadGames() {
                 topOver25Div.appendChild(createGameElement(game));
             });
         } else {
-            topOver25Div.innerHTML = `<div class="loading">Keine Over 2.5 Spiele gefunden</div>`;
+            topOver25Div.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-futbol"></i>
+                    <div>Keine Over 2.5 Spiele gefunden</div>
+                </div>
+            `;
         }
 
-        // Top Games (restliche Spiele)
+        // Top Games (restliche Spiele mit gutem KI-Score)
         topGamesDiv.innerHTML = "";
-        const remainingGames = games.filter(g => 
-            !premiumPicks.includes(g) && 
-            !valueBets.includes(g) && 
-            !overGames.includes(g)
-        ).slice(0, 5);
+        const remainingGames = games
+            .filter(g => 
+                !premiumPicks.includes(g) && 
+                !valueBets.includes(g) && 
+                !overGames.includes(g)
+            )
+            .slice(0, 5);
         
         if (remainingGames.length > 0) {
             remainingGames.forEach(game => {
                 topGamesDiv.appendChild(createGameElement(game, 'featured'));
             });
         } else {
-            topGamesDiv.innerHTML = `<div class="loading">Keine weiteren Top Spiele</div>`;
+            topGamesDiv.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-star"></i>
+                    <div>Keine weiteren Top Spiele</div>
+                </div>
+            `;
         }
 
         // Alle Spiele
@@ -827,7 +871,12 @@ async function loadGames() {
                 gamesDiv.appendChild(createGameElement(game));
             });
         } else {
-            gamesDiv.innerHTML = `<div class="loading">Keine weiteren Spiele</div>`;
+            gamesDiv.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-list"></i>
+                    <div>Keine weiteren Spiele</div>
+                </div>
+            `;
         }
 
         // Bankroll Panel einfügen
@@ -840,6 +889,9 @@ async function loadGames() {
         const bankrollPanelHTML = createBankrollPanel();
         sidebar.insertAdjacentHTML('afterbegin', bankrollPanelHTML);
 
+        // System Info aktualisieren
+        updateSystemInfo(data.info);
+
         console.log('✅ Alle Spiele erfolgreich geladen und angezeigt');
 
     } catch (err) {
@@ -849,8 +901,13 @@ async function loadGames() {
                 <i class="fas fa-exclamation-triangle"></i>
                 <div>Fehler beim Laden: ${err.message}</div>
                 <div style="font-size: 0.9rem; margin-top: 0.75rem;">
-                    Bitte öffne die Browser-Konsole für Details
+                    Bitte überprüfe die Konsole für Details oder versuche es später erneut
                 </div>
+                ${err.name === 'AbortError' ? `
+                    <div style="font-size: 0.8rem; margin-top: 0.5rem; color: #f59e0b;">
+                        ⏰ Timeout: Der Server braucht zu lange zum Antworten
+                    </div>
+                ` : ''}
             </div>
         `;
         premiumPicksDiv.innerHTML = errorHTML;
@@ -858,6 +915,22 @@ async function loadGames() {
         gamesDiv.innerHTML = errorHTML;
         topValueBetsDiv.innerHTML = errorHTML;
         topOver25Div.innerHTML = errorHTML;
+    }
+}
+// NEUE FUNKTION: System Info aktualisieren
+function updateSystemInfo(info) {
+    const systemInfoSection = document.querySelector('.system-info');
+    if (systemInfoSection && info) {
+        const versionElement = systemInfoSection.querySelector('.version-info');
+        const leaguesElement = systemInfoSection.querySelector('.leagues-info');
+        
+        if (versionElement) {
+            versionElement.textContent = info.version || '6.2.0';
+        }
+        
+        if (leaguesElement && info.leagues) {
+            leaguesElement.textContent = `${info.leagues.length} Ligen verfügbar`;
+        }
     }
 }
 
@@ -868,4 +941,4 @@ window.addEventListener("load", loadGames);
 // Auto-refresh every 5 minutes
 setInterval(loadGames, 5 * 60 * 1000);
 
-console.log('🚀 Erweiterte ProFoot Analytics - Multi-Market Trends Initialisiert!');
+console.log('🚀 Erweiterte ProFoot Analytics v6.2.0 - Enhanced Team Database Initialisiert!');
