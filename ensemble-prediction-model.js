@@ -47,47 +47,69 @@ export class EnsemblePredictionModel {
         };
     }
 
-    weightedEnsembleAverage(predictions) {
-        const result = {
-            homeWin: 0,
-            draw: 0,
-            awayWin: 0,
-            over25: 0,
-            btts: 0,
-            confidence: 0,
-            homeXG: 0,
-            awayXG: 0,
-            modelContributions: {}
+    // ERSETZE DIESE METHODE komplett:
+weightedEnsembleAverage(predictions) {
+    const result = {
+        homeWin: 0,
+        draw: 0,
+        awayWin: 0,
+        over25: 0,
+        btts: 0,
+        confidence: 0,
+        homeXG: 0,
+        awayXG: 0,
+        modelContributions: {}
+    };
+
+    Object.keys(this.weights).forEach((model, index) => {
+        const weight = this.weights[model];
+        const prediction = predictions[index];
+        
+        // ✅ SICHERE WERTE - Home-Bias reduzieren
+        const safeHome = Math.max(0.1, Math.min(0.8, prediction.homeWin || 0.33));
+        const safeDraw = Math.max(0.1, Math.min(0.5, prediction.draw || 0.33));
+        const safeAway = Math.max(0.1, Math.min(0.8, prediction.awayWin || 0.34));
+        const safeOver25 = Math.max(0.1, Math.min(0.9, prediction.over25 || 0.5));
+        const safeBtts = Math.max(0.1, Math.min(0.9, prediction.btts || 0.5));
+        
+        result.homeWin += safeHome * weight;
+        result.draw += safeDraw * weight;
+        result.awayWin += safeAway * weight;
+        result.over25 += safeOver25 * weight;
+        result.btts += safeBtts * weight;
+        result.confidence += (prediction.confidence || 0.5) * weight;
+        result.homeXG += (prediction.homeXG || 1.2) * weight;
+        result.awayXG += (prediction.awayXG || 1.0) * weight;
+        
+        result.modelContributions[model] = {
+            homeWin: safeHome,
+            confidence: prediction.confidence || 0.5,
+            weight: weight
         };
+    });
 
-        Object.keys(this.weights).forEach((model, index) => {
-            const weight = this.weights[model];
-            const prediction = predictions[index];
-            
-            result.homeWin += prediction.homeWin * weight;
-            result.draw += prediction.draw * weight;
-            result.awayWin += prediction.awayWin * weight;
-            result.over25 += prediction.over25 * weight;
-            result.btts += prediction.btts * weight;
-            result.confidence += prediction.confidence * weight;
-            result.homeXG += prediction.homeXG * weight;
-            result.awayXG += prediction.awayXG * weight;
-            
-            result.modelContributions[model] = {
-                homeWin: prediction.homeWin,
-                confidence: prediction.confidence,
-                weight: weight
-            };
-        });
-
-        // Normalize HD probabilities
-        const totalHD = result.homeWin + result.draw + result.awayWin;
+    // ✅ KORREKTE NORMALISIERUNG
+    const totalHD = result.homeWin + result.draw + result.awayWin;
+    if (totalHD > 0.8 && totalHD < 1.2) { // Nur normalisieren wenn sinnvoll
         result.homeWin /= totalHD;
         result.draw /= totalHD;
         result.awayWin /= totalHD;
-
-        return result;
+    } else {
+        // Fallback: Ausgeglichene Verteilung
+        result.homeWin = 0.35;
+        result.draw = 0.30;
+        result.awayWin = 0.35;
     }
+    
+    // ✅ FINALE BEGRENZUNG
+    result.homeWin = Math.max(0.15, Math.min(0.75, result.homeWin));
+    result.draw = Math.max(0.15, Math.min(0.45, result.draw));
+    result.awayWin = Math.max(0.15, Math.min(0.75, result.awayWin));
+    result.over25 = Math.max(0.2, Math.min(0.9, result.over25));
+    result.btts = Math.max(0.2, Math.min(0.9, result.btts));
+
+    return result;
+}
 
     async updateWeights(actualResults, predictions) {
         const errors = this.calculateModelErrors(actualResults, predictions);
