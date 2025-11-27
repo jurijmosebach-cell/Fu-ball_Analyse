@@ -273,15 +273,28 @@ class PoissonModel {
     }
 
     getTeamStrength(teamName) {
-        // Simplified team strength lookup
-        const strengths = {
-            "Manchester City": { attack: 2.45, defense: 0.75, consistency: 0.92 },
-            "Liverpool": { attack: 2.35, defense: 0.82, consistency: 0.88 },
-            "Bayern Munich": { attack: 2.50, defense: 0.70, consistency: 0.95 },
-            "default": { attack: 1.70, defense: 1.30, consistency: 0.70 }
-        };
-        return strengths[teamName] || strengths.default;
-    }
+    const strengths = {
+        "Manchester City": { attack: 2.45, defense: 0.75, consistency: 0.92 },
+        "Liverpool": { attack: 2.35, defense: 0.82, consistency: 0.88 },
+        "Bayern Munich": { attack: 2.50, defense: 0.70, consistency: 0.95 },
+        "Borussia Dortmund": { attack: 2.20, defense: 0.85, consistency: 0.80 },
+        "Real Madrid": { attack: 2.40, defense: 0.78, consistency: 0.90 },
+        "Barcelona": { attack: 2.30, defense: 0.80, consistency: 0.85 },
+        "PSG": { attack: 2.35, defense: 0.82, consistency: 0.82 },
+        "Arsenal": { attack: 2.25, defense: 0.80, consistency: 0.83 },
+        "Chelsea": { attack: 2.15, defense: 0.85, consistency: 0.78 },
+        "Tottenham": { attack: 2.20, defense: 0.88, consistency: 0.75 },
+        "Newcastle": { attack: 2.10, defense: 0.90, consistency: 0.72 },
+        "Aston Villa": { attack: 2.15, defense: 0.87, consistency: 0.77 },
+        "Bayer Leverkusen": { attack: 2.30, defense: 0.75, consistency: 0.88 },
+        "RB Leipzig": { attack: 2.25, defense: 0.82, consistency: 0.80 },
+        "Atletico Madrid": { attack: 2.10, defense: 0.75, consistency: 0.85 },
+        "Inter Milan": { attack: 2.20, defense: 0.78, consistency: 0.83 },
+        "AC Milan": { attack: 2.15, defense: 0.82, consistency: 0.80 },
+        "Napoli": { attack: 2.25, defense: 0.85, consistency: 0.78 },
+        "default": { attack: 1.70, defense: 1.30, consistency: 0.65 }
+    };
+    return strengths[teamName] || strengths.default;
 }
 
 class XGBoostModel {
