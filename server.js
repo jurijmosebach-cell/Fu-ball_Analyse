@@ -378,8 +378,26 @@ async function computeEnsembleProbabilities(homeXG, awayXG, league, homeTeam, aw
     // Traditionelle Poisson-Berechnung
     const baseProbs = proCalculator.calculateAdvancedProbabilities(homeXG, awayXG, league);
     
+    // ENSEMBLE WAHRSCHEINLICHKEITEN (Phase 2)
+async function computeEnsembleProbabilities(homeXG, awayXG, league, homeTeam, awayTeam, mlFeatures) {
+    // Traditionelle Poisson-Berechnung
+    const baseProbs = proCalculator.calculateAdvancedProbabilities(homeXG, awayXG, league);
+    
     // Ensemble-Vorhersage
     const ensembleProbs = await ensembleModel.predictProbabilities(homeTeam, awayTeam, league);
+    
+    // ✅ DEBUG: Prüfe auf Home-Bias
+    console.log(`🔍 ENSEMBLE CHECK: ${homeTeam} vs ${awayTeam}`);
+    console.log(`   Home: ${(ensembleProbs.home * 100).toFixed(1)}% | Draw: ${(ensembleProbs.draw * 100).toFixed(1)}% | Away: ${(ensembleProbs.away * 100).toFixed(1)}%`);
+    console.log(`   Total: ${((ensembleProbs.home + ensembleProbs.draw + ensembleProbs.away) * 100).toFixed(1)}%`);
+    
+    // ✅ Home-Bias Korrektur falls nötig
+    if (ensembleProbs.home > 0.6 && ensembleProbs.away < 0.2) {
+        console.log(`⚠️  Home-Bias erkannt! Korrigiere...`);
+        const correction = (ensembleProbs.home - 0.5) * 0.3;
+        ensembleProbs.home -= correction;
+        ensembleProbs.away += correction;
+    }
     
     // ML-Feature Korrektur
     const mlCorrection = mlFeatureEngine.calculateProbabilityCorrection(mlFeatures);
