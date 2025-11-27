@@ -317,7 +317,8 @@ async function calculateAdvancedXG(homeTeam, awayTeam, league = "", context = {}
             isHomeGame: false
         })
     ]);
-     // Sentiment Impact auf xG anwenden
+    
+    // Sentiment Impact auf xG anwenden
     const homeXGWithSentiment = finalHomeXG * (1 + homeSentiment.performanceImpact);
     const awayXGWithSentiment = finalAwayXG * (1 + awaySentiment.performanceImpact);
     
@@ -363,7 +364,6 @@ function calculateWeightedForm(matches) {
     
     return weightedSum / totalWeight;
 }
-
 // ADVANCED CONFIDENCE CALCULATION (Phase 1)
 function calculateAdvancedConfidence(baseConfidence, mlFeatures, homeConsistency, awayConsistency) {
     const featureConfidence = mlFeatureEngine.calculateFeatureConsistency(mlFeatures);
@@ -374,11 +374,6 @@ function calculateAdvancedConfidence(baseConfidence, mlFeatures, homeConsistency
 }
 
 // ENSEMBLE WAHRSCHEINLICHKEITEN (Phase 2)
-async function computeEnsembleProbabilities(homeXG, awayXG, league, homeTeam, awayTeam, mlFeatures) {
-    // Traditionelle Poisson-Berechnung
-    const baseProbs = proCalculator.calculateAdvancedProbabilities(homeXG, awayXG, league);
-    
-    // ENSEMBLE WAHRSCHEINLICHKEITEN (Phase 2)
 async function computeEnsembleProbabilities(homeXG, awayXG, league, homeTeam, awayTeam, mlFeatures) {
     // Traditionelle Poisson-Berechnung
     const baseProbs = proCalculator.calculateAdvancedProbabilities(homeXG, awayXG, league);
@@ -431,7 +426,7 @@ async function computeEnsembleProbabilities(homeXG, awayXG, league, homeTeam, aw
             mlCorrection: mlCorrection
         }
     };
-
+}
 
 // PREDICTIVE TREND-ANALYSE (Phase 3)
 async function computePredictiveTrends(probabilities, xgData, homeTeam, awayTeam, league, mlFeatures) {
@@ -477,7 +472,7 @@ async function generateUltimateAnalysis(homeTeam, awayTeam, probabilities, trend
     const homeStrength = getRealisticTeamStrength(homeTeam);
     const awayStrength = getRealisticTeamStrength(awayTeam);
     
-     // Alle Analysen parallel ausführen
+    // Alle Analysen parallel ausführen
     const [hdaAnalysis, homeForm, awayForm, homeInjuries, awayInjuries, valueOpportunities] = await Promise.all([
         hdaAnalyzer.analyzeHDA(homeTeam, awayTeam, league),
         formAnalyzer.analyzeTeamForm(homeTeam),
@@ -530,7 +525,8 @@ async function generateUltimateAnalysis(homeTeam, awayTeam, probabilities, trend
             sentiment: xgData.sentimentAnalysis
         }
     };
-     // Dynamische Zusammenfassung basierend auf allen Daten
+    
+    // Dynamische Zusammenfassung basierend auf allen Daten
     const bestValue = Math.max(value.home || 0, value.draw || 0, value.away || 0, value.over25 || 0);
     const topTrend = trendAnalysis.primaryTrend;
     const sentimentImpact = xgData.sentimentAnalysis;
@@ -630,9 +626,8 @@ app.get('/api/games', async (req, res) => {
                 match.competition?.name?.toLowerCase().includes(leagueFilter.toLowerCase())
             );
             console.log(`🔍 After league filter: ${filteredMatches.length} matches`);
-        }
-
-        // Parallele Verarbeitung mit allen Verbesserungen
+            }
+          // Parallele Verarbeitung mit allen Verbesserungen
         const analyzedGames = await Promise.all(
             filteredMatches.map(async (match) => {
                 try {
