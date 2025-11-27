@@ -431,7 +431,7 @@ async function computeEnsembleProbabilities(homeXG, awayXG, league, homeTeam, aw
             mlCorrection: mlCorrection
         }
     };
-}
+
 
 // PREDICTIVE TREND-ANALYSE (Phase 3)
 async function computePredictiveTrends(probabilities, xgData, homeTeam, awayTeam, league, mlFeatures) {
