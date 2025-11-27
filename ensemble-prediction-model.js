@@ -187,12 +187,13 @@ weightedEnsembleAverage(predictions) {
 // Supporting Model Classes
 class PoissonModel {
     async predict(homeTeam, awayTeam, league) {
-        // Simplified Poisson implementation
         const homeStrength = this.getTeamStrength(homeTeam);
         const awayStrength = this.getTeamStrength(awayTeam);
         
-        const homeXG = homeStrength.attack * (2 - awayStrength.defense);
-        const awayXG = awayStrength.attack * (2 - homeStrength.defense);
+        // ✅ AUSGEGLICHENE xG-Berechnung mit reduziertem Home-Bias
+        const homeAdvantage = this.getHomeAdvantage(league);
+        const homeXG = homeStrength.attack * (2 - awayStrength.defense) * homeAdvantage * 0.9;
+        const awayXG = awayStrength.attack * (2 - homeStrength.defense) * 1.1;
         
         return {
             homeWin: this.calculateWinProbability(homeXG, awayXG, 'home'),
@@ -205,6 +206,21 @@ class PoissonModel {
             awayXG
         };
     }
+    
+    // ✅ NEUE METHODE HINZUFÜGEN (nach der predict Methode)
+    getHomeAdvantage(league) {
+        const advantages = {
+            "Premier League": 1.10,
+            "Bundesliga": 1.12,  
+            "La Liga": 1.08,
+            "Serie A": 1.09,
+            "Ligue 1": 1.11,
+            "Champions League": 1.05,
+            "default": 1.08
+        };
+        return advantages[league] || advantages.default;
+    }
+}
 
     calculateWinProbability(homeXG, awayXG, side) {
         let winProb = 0;
