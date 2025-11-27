@@ -47,69 +47,68 @@ export class EnsemblePredictionModel {
         };
     }
 
-    // ERSETZE DIESE METHODE komplett:
-weightedEnsembleAverage(predictions) {
-    const result = {
-        homeWin: 0,
-        draw: 0,
-        awayWin: 0,
-        over25: 0,
-        btts: 0,
-        confidence: 0,
-        homeXG: 0,
-        awayXG: 0,
-        modelContributions: {}
-    };
-
-    Object.keys(this.weights).forEach((model, index) => {
-        const weight = this.weights[model];
-        const prediction = predictions[index];
-        
-        // ✅ SICHERE WERTE - Home-Bias reduzieren
-        const safeHome = Math.max(0.1, Math.min(0.8, prediction.homeWin || 0.33));
-        const safeDraw = Math.max(0.1, Math.min(0.5, prediction.draw || 0.33));
-        const safeAway = Math.max(0.1, Math.min(0.8, prediction.awayWin || 0.34));
-        const safeOver25 = Math.max(0.1, Math.min(0.9, prediction.over25 || 0.5));
-        const safeBtts = Math.max(0.1, Math.min(0.9, prediction.btts || 0.5));
-        
-        result.homeWin += safeHome * weight;
-        result.draw += safeDraw * weight;
-        result.awayWin += safeAway * weight;
-        result.over25 += safeOver25 * weight;
-        result.btts += safeBtts * weight;
-        result.confidence += (prediction.confidence || 0.5) * weight;
-        result.homeXG += (prediction.homeXG || 1.2) * weight;
-        result.awayXG += (prediction.awayXG || 1.0) * weight;
-        
-        result.modelContributions[model] = {
-            homeWin: safeHome,
-            confidence: prediction.confidence || 0.5,
-            weight: weight
+    weightedEnsembleAverage(predictions) {
+        const result = {
+            homeWin: 0,
+            draw: 0,
+            awayWin: 0,
+            over25: 0,
+            btts: 0,
+            confidence: 0,
+            homeXG: 0,
+            awayXG: 0,
+            modelContributions: {}
         };
-    });
 
-    // ✅ KORREKTE NORMALISIERUNG
-    const totalHD = result.homeWin + result.draw + result.awayWin;
-    if (totalHD > 0.8 && totalHD < 1.2) { // Nur normalisieren wenn sinnvoll
-        result.homeWin /= totalHD;
-        result.draw /= totalHD;
-        result.awayWin /= totalHD;
-    } else {
-        // Fallback: Ausgeglichene Verteilung
-        result.homeWin = 0.35;
-        result.draw = 0.30;
-        result.awayWin = 0.35;
+        Object.keys(this.weights).forEach((model, index) => {
+            const weight = this.weights[model];
+            const prediction = predictions[index];
+            
+            // ✅ SICHERE WERTE - Home-Bias reduzieren
+            const safeHome = Math.max(0.1, Math.min(0.8, prediction.homeWin || 0.33));
+            const safeDraw = Math.max(0.1, Math.min(0.5, prediction.draw || 0.33));
+            const safeAway = Math.max(0.1, Math.min(0.8, prediction.awayWin || 0.34));
+            const safeOver25 = Math.max(0.1, Math.min(0.9, prediction.over25 || 0.5));
+            const safeBtts = Math.max(0.1, Math.min(0.9, prediction.btts || 0.5));
+            
+            result.homeWin += safeHome * weight;
+            result.draw += safeDraw * weight;
+            result.awayWin += safeAway * weight;
+            result.over25 += safeOver25 * weight;
+            result.btts += safeBtts * weight;
+            result.confidence += (prediction.confidence || 0.5) * weight;
+            result.homeXG += (prediction.homeXG || 1.2) * weight;
+            result.awayXG += (prediction.awayXG || 1.0) * weight;
+            
+            result.modelContributions[model] = {
+                homeWin: safeHome,
+                confidence: prediction.confidence || 0.5,
+                weight: weight
+            };
+        });
+
+        // ✅ KORREKTE NORMALISIERUNG
+        const totalHD = result.homeWin + result.draw + result.awayWin;
+        if (totalHD > 0.8 && totalHD < 1.2) { // Nur normalisieren wenn sinnvoll
+            result.homeWin /= totalHD;
+            result.draw /= totalHD;
+            result.awayWin /= totalHD;
+        } else {
+            // Fallback: Ausgeglichene Verteilung
+            result.homeWin = 0.35;
+            result.draw = 0.30;
+            result.awayWin = 0.35;
+        }
+        
+        // ✅ FINALE BEGRENZUNG
+        result.homeWin = Math.max(0.15, Math.min(0.75, result.homeWin));
+        result.draw = Math.max(0.15, Math.min(0.45, result.draw));
+        result.awayWin = Math.max(0.15, Math.min(0.75, result.awayWin));
+        result.over25 = Math.max(0.2, Math.min(0.9, result.over25));
+        result.btts = Math.max(0.2, Math.min(0.9, result.btts));
+
+        return result;
     }
-    
-    // ✅ FINALE BEGRENZUNG
-    result.homeWin = Math.max(0.15, Math.min(0.75, result.homeWin));
-    result.draw = Math.max(0.15, Math.min(0.45, result.draw));
-    result.awayWin = Math.max(0.15, Math.min(0.75, result.awayWin));
-    result.over25 = Math.max(0.2, Math.min(0.9, result.over25));
-    result.btts = Math.max(0.2, Math.min(0.9, result.btts));
-
-    return result;
-}
 
     async updateWeights(actualResults, predictions) {
         const errors = this.calculateModelErrors(actualResults, predictions);
@@ -152,9 +151,11 @@ weightedEnsembleAverage(predictions) {
     }
 
     normalizeWeights() {
-        const totalWeight = Object.values(this.weights).reduce((sum, weight) => sum + weight, 0);
-        Object.keys(this.weights).forEach(model => {
-            this.weights[model] /= totalWeight;
+        const weights = this.weights;
+        const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
+        
+        Object.keys(weights).forEach(model => {
+            weights[model] /= totalWeight;
         });
     }
 
@@ -184,9 +185,11 @@ weightedEnsembleAverage(predictions) {
         };
     }
 }
+
 // Supporting Model Classes
 class PoissonModel {
     async predict(homeTeam, awayTeam, league) {
+        // Simplified Poisson implementation
         const homeStrength = this.getTeamStrength(homeTeam);
         const awayStrength = this.getTeamStrength(awayTeam);
         
@@ -206,21 +209,6 @@ class PoissonModel {
             awayXG
         };
     }
-    
-    // ✅ NEUE METHODE HINZUFÜGEN (nach der predict Methode)
-    getHomeAdvantage(league) {
-        const advantages = {
-            "Premier League": 1.10,
-            "Bundesliga": 1.12,  
-            "La Liga": 1.08,
-            "Serie A": 1.09,
-            "Ligue 1": 1.11,
-            "Champions League": 1.05,
-            "default": 1.08
-        };
-        return advantages[league] || advantages.default;
-    }
-}
 
     calculateWinProbability(homeXG, awayXG, side) {
         let winProb = 0;
@@ -273,28 +261,43 @@ class PoissonModel {
     }
 
     getTeamStrength(teamName) {
-    const strengths = {
-        "Manchester City": { attack: 2.45, defense: 0.75, consistency: 0.92 },
-        "Liverpool": { attack: 2.35, defense: 0.82, consistency: 0.88 },
-        "Bayern Munich": { attack: 2.50, defense: 0.70, consistency: 0.95 },
-        "Borussia Dortmund": { attack: 2.20, defense: 0.85, consistency: 0.80 },
-        "Real Madrid": { attack: 2.40, defense: 0.78, consistency: 0.90 },
-        "Barcelona": { attack: 2.30, defense: 0.80, consistency: 0.85 },
-        "PSG": { attack: 2.35, defense: 0.82, consistency: 0.82 },
-        "Arsenal": { attack: 2.25, defense: 0.80, consistency: 0.83 },
-        "Chelsea": { attack: 2.15, defense: 0.85, consistency: 0.78 },
-        "Tottenham": { attack: 2.20, defense: 0.88, consistency: 0.75 },
-        "Newcastle": { attack: 2.10, defense: 0.90, consistency: 0.72 },
-        "Aston Villa": { attack: 2.15, defense: 0.87, consistency: 0.77 },
-        "Bayer Leverkusen": { attack: 2.30, defense: 0.75, consistency: 0.88 },
-        "RB Leipzig": { attack: 2.25, defense: 0.82, consistency: 0.80 },
-        "Atletico Madrid": { attack: 2.10, defense: 0.75, consistency: 0.85 },
-        "Inter Milan": { attack: 2.20, defense: 0.78, consistency: 0.83 },
-        "AC Milan": { attack: 2.15, defense: 0.82, consistency: 0.80 },
-        "Napoli": { attack: 2.25, defense: 0.85, consistency: 0.78 },
-        "default": { attack: 1.70, defense: 1.30, consistency: 0.65 }
-    };
-    return strengths[teamName] || strengths.default;
+        // Simplified team strength lookup
+        const strengths = {
+            "Manchester City": { attack: 2.45, defense: 0.75, consistency: 0.92 },
+            "Liverpool": { attack: 2.35, defense: 0.82, consistency: 0.88 },
+            "Bayern Munich": { attack: 2.50, defense: 0.70, consistency: 0.95 },
+            "Borussia Dortmund": { attack: 2.20, defense: 0.85, consistency: 0.80 },
+            "Real Madrid": { attack: 2.40, defense: 0.78, consistency: 0.90 },
+            "Barcelona": { attack: 2.30, defense: 0.80, consistency: 0.85 },
+            "PSG": { attack: 2.35, defense: 0.82, consistency: 0.82 },
+            "Arsenal": { attack: 2.25, defense: 0.80, consistency: 0.83 },
+            "Chelsea": { attack: 2.15, defense: 0.85, consistency: 0.78 },
+            "Tottenham": { attack: 2.20, defense: 0.88, consistency: 0.75 },
+            "Newcastle": { attack: 2.10, defense: 0.90, consistency: 0.72 },
+            "Aston Villa": { attack: 2.15, defense: 0.87, consistency: 0.77 },
+            "Bayer Leverkusen": { attack: 2.30, defense: 0.75, consistency: 0.88 },
+            "RB Leipzig": { attack: 2.25, defense: 0.82, consistency: 0.80 },
+            "Atletico Madrid": { attack: 2.10, defense: 0.75, consistency: 0.85 },
+            "Inter Milan": { attack: 2.20, defense: 0.78, consistency: 0.83 },
+            "AC Milan": { attack: 2.15, defense: 0.82, consistency: 0.80 },
+            "Napoli": { attack: 2.25, defense: 0.85, consistency: 0.78 },
+            "default": { attack: 1.70, defense: 1.30, consistency: 0.65 }
+        };
+        return strengths[teamName] || strengths.default;
+    }
+       // ✅ NEUE METHODE HINZUFÜGEN
+    getHomeAdvantage(league) {
+        const advantages = {
+            "Premier League": 1.10,
+            "Bundesliga": 1.12,  
+            "La Liga": 1.08,
+            "Serie A": 1.09,
+            "Ligue 1": 1.11,
+            "Champions League": 1.05,
+            "default": 1.08
+        };
+        return advantages[league] || advantages.default;
+    }
 }
 
 class XGBoostModel {
@@ -483,8 +486,8 @@ class TimeSeriesModel {
         const baseHome = 0.4 + trends.homeTrend;
         const baseAway = 0.35 + trends.awayTrend;
         const baseDraw = 0.25 - (trends.homeTrend + trends.awayTrend) * 0.5;
-        
-        // Normalize
+
+       // Normalize
         const total = baseHome + baseDraw + baseAway;
         
         return {
@@ -573,4 +576,4 @@ class MarketEfficiencyModel {
             awayXG: 1.2 - (adjustment * 0.2)
         };
     }
-  }
+}
