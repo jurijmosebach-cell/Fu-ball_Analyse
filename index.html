@@ -212,6 +212,72 @@
             font-size: 13px;
         }
         
+        /* TOP PICKS STYLES */
+        .top-picks {
+            background: linear-gradient(45deg, #ff6b6b, #c44569);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 30px 0;
+            color: white;
+            border: 3px solid #ff9ff3;
+        }
+        
+        .top-picks h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .top-picks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        
+        .top-pick-card {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #ff9ff3;
+        }
+        
+        .top-pick-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .top-pick-teams {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .top-pick-score {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .top-pick-trend {
+            background: rgba(0, 198, 255, 0.2);
+            padding: 8px;
+            border-radius: 6px;
+            margin: 8px 0;
+            font-size: 13px;
+        }
+        
+        .top-pick-analysis {
+            font-size: 13px;
+            color: #666;
+            margin-top: 8px;
+        }
+
         .premium-picks {
             background: linear-gradient(45deg, #ffd700, #ff8c00);
             padding: 20px;
@@ -239,6 +305,10 @@
             .filter-select {
                 width: 100%;
                 max-width: 300px;
+            }
+            
+            .top-picks-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -269,9 +339,14 @@
         <div id="error" class="error" style="display: none;">
             ❌ Fehler beim Laden der Daten
         </div>
+          <!-- NEUE TOP PICKS SEKTION -->
+        <div id="topPicks" class="top-picks" style="display: none;">
+            <h2>🏆 TOP PICKS - Beste Wetten des Tages</h2>
+            <div id="topPicksContent" class="top-picks-grid"></div>
+        </div>
 
         <div id="premiumPicks" class="premium-picks" style="display: none;">
-            <h2>🏆 Premium Picks - Top Trends</h2>
+            <h2>💎 Premium Picks - Exklusive Trends</h2>
             <div id="premiumContent"></div>
         </div>
 
@@ -305,16 +380,19 @@
                 return '0.0';
             }
         }
-           // Hauptfunktionen
+
+        // Hauptfunktionen
         async function loadGames() {
             const loading = document.getElementById('loading');
             const error = document.getElementById('error');
             const gamesGrid = document.getElementById('gamesGrid');
+            const topPicks = document.getElementById('topPicks');
             const premiumPicks = document.getElementById('premiumPicks');
             
             loading.style.display = 'block';
             error.style.display = 'none';
             gamesGrid.innerHTML = '';
+            topPicks.style.display = 'none';
             premiumPicks.style.display = 'none';
 
             try {
@@ -341,6 +419,7 @@
                 }
                 
                 displayGames(data.response);
+                updateTopPicks(data.response); // NEUE FUNKTION
                 updatePremiumPicks(data.response);
                 populateFilters(data.info);
                 
@@ -404,6 +483,78 @@
             `).join('');
         }
 
+        // NEUE FUNKTION FÜR TOP PICKS
+        function updateTopPicks(games) {
+            const topPicks = document.getElementById('topPicks');
+            const topPicksContent = document.getElementById('topPicksContent');
+            
+            if (!games || games.length === 0) {
+                topPicks.style.display = 'none';
+                return;
+            }
+
+            // STRENGERE KRITERIEN FÜR TOP PICKS
+            const topPicksGames = games
+                .filter(game => {
+                    const kiScore = safeGet(game, 'kiScore', 0);
+                    const confidence = safeGet(game, 'confidence', 0);
+                    const riskLevel = safeGet(game, 'analysis.riskLevel', 'high');
+                    const bestTrend = safeGet(game, 'marketTrends.bestTrend');
+                    
+                    return kiScore > 0.7 && 
+                           confidence > 0.7 && 
+                           riskLevel === 'low' &&
+                           bestTrend &&
+                           safeGet(bestTrend, 'confidence', 0) > 0.75;
+                })
+                .sort((a, b) => safeGet(b, 'kiScore', 0) - safeGet(a, 'kiScore', 0))
+                .slice(0, 4); // Maximal 4 Top Picks
+
+            if (topPicksGames.length === 0) {
+                topPicks.style.display = 'none';
+                return;
+            }
+
+            topPicksContent.innerHTML = topPicksGames.map(game => {
+                const bestTrend = safeGet(game, 'marketTrends.bestTrend');
+                const analysis = safeGet(game, 'analysis');
+                
+                return `
+                    <div class="top-pick-card">
+                        <div class="top-pick-header">
+                            <div class="top-pick-teams">
+                                ${safeGet(game, 'home')} vs ${safeGet(game, 'away')}
+                            </div>
+                            <div class="top-pick-score">
+                                ${safeNumber(safeGet(game, 'kiScore', 0) * 100)}%
+                            </div>
+                        </div>
+                        
+                        <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
+                            ${safeGet(game, 'league')} • Confidence: ${safeNumber(safeGet(game, 'confidence', 0) * 100)}%
+                        </div>
+                        
+                        ${bestTrend ? `
+                            <div class="top-pick-trend">
+                                🎯 <strong>${safeGet(bestTrend, 'market')}</strong><br>
+                                ${safeGet(bestTrend, 'description')}<br>
+                                <small>Wahrscheinlichkeit: ${safeNumber(safeGet(bestTrend, 'probability', 0) * 100)}%</small>
+                            </div>
+                        ` : ''}
+                        
+                        ${analysis ? `
+                            <div class="top-pick-analysis">
+                                <strong>${safeGet(analysis, 'summary')}</strong><br>
+                                ${safeGet(analysis, 'recommendation')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            topPicks.style.display = 'block';
+        }
+
         function renderMarketTrends(game) {
             const marketTrends = safeGet(game, 'marketTrends');
             if (!marketTrends || !marketTrends.bestTrend) {
@@ -451,18 +602,18 @@
                 return;
             }
 
-            // Top 3 Spiele nach KI-Score
-            const topGames = games
+            // Weniger strikte Kriterien für Premium Picks
+            const premiumGames = games
                 .filter(game => safeGet(game, 'kiScore', 0) > 0.6)
                 .sort((a, b) => safeGet(b, 'kiScore', 0) - safeGet(a, 'kiScore', 0))
                 .slice(0, 3);
 
-            if (topGames.length === 0) {
+            if (premiumGames.length === 0) {
                 premiumPicks.style.display = 'none';
                 return;
             }
 
-            premiumContent.innerHTML = topGames.map(game => {
+            premiumContent.innerHTML = premiumGames.map(game => {
                 const bestTrend = safeGet(game, 'marketTrends.bestTrend');
                 return `
                     <div class="game-card" style="background: rgba(255,255,255,0.9); color: #333; margin: 10px 0;">
