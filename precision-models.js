@@ -614,8 +614,7 @@ class PrecisionXGBoostModel {
     sigmoid(x) {
         return 1 / (1 + Math.exp(-x));
     }
-}
-// PRÄZISES NEURAL NETWORK MODELL
+ }// PRÄZISES NEURAL NETWORK MODELL
 class PrecisionNeuralNetworkModel {
     async predict(homeTeam, awayTeam, league) {
         const embedding = this.getTeamEmbedding(homeTeam, awayTeam);
@@ -813,7 +812,7 @@ class PrecisionTimeSeriesModel {
             awayXG: +(1.1 + trends.awayTrend * 0.5).toFixed(3)
         };
     }
-}
+  }
 // PRÄZISES MARKET EFFICIENCY MODELL
 class PrecisionMarketEfficiencyModel {
     async predict(homeTeam, awayTeam, league) {
@@ -938,6 +937,50 @@ export class PrecisionTrendAnalyzer {
         trends.bestMarketOpportunity = this.findBestMarketOpportunity(trends, matchData);
         
         return trends;
+    }
+
+    // FEHLENDE METHODE HINZUGEFÜGT
+    async getHistoricalPatterns(league) {
+        // Simulierte historische Muster basierend auf Liga
+        const patterns = {
+            "Premier League": {
+                homeAdvantage: 0.12,
+                goalTrend: 1.05,
+                drawFrequency: 0.25
+            },
+            "Bundesliga": {
+                homeAdvantage: 0.15,
+                goalTrend: 1.18,
+                drawFrequency: 0.22
+            },
+            "La Liga": {
+                homeAdvantage: 0.10,
+                goalTrend: 0.95,
+                drawFrequency: 0.28
+            },
+            "Serie A": {
+                homeAdvantage: 0.11,
+                goalTrend: 0.88,
+                drawFrequency: 0.30
+            },
+            "Ligue 1": {
+                homeAdvantage: 0.13,
+                goalTrend: 1.02,
+                drawFrequency: 0.26
+            },
+            "Champions League": {
+                homeAdvantage: 0.08,
+                goalTrend: 1.12,
+                drawFrequency: 0.20
+            },
+            "default": {
+                homeAdvantage: 0.10,
+                goalTrend: 1.00,
+                drawFrequency: 0.25
+            }
+        };
+        
+        return patterns[league] || patterns.default;
     }
 
     async analyzeMarketTrends(matchData) {
@@ -1279,3 +1322,5 @@ export class PrecisionTrendAnalyzer {
 }
 
 export default EnhancedEnsemblePredictionModel;
+
+
