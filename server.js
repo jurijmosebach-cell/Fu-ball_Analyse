@@ -1,5 +1,6 @@
 // server-enhanced.js - ULTIMATIVE KI-FUSSBALLANALYSE MIT PRÄZISEN ENSEMBLE-MODELLEN
 import express from 'express';
+import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { ProfessionalCalculator } from './professional-calculations.js';
@@ -20,6 +21,19 @@ const PORT = process.env.PORT || 10000;
 
 // Football-Data.org API Key
 const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_API_KEY;
+
+// CORS MIDDLEWARE - FIX FÜR DIE TOP PICKS
+app.use(cors({
+    origin: [
+        'https://fu-ball-analyse.onrender.com',
+        'http://localhost:3000',
+        'http://localhost:10000',
+        'https://fu-ball-analyse-frontend.onrender.com'
+    ],
+    methods: ['GET', 'POST', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 
 // Middleware
 app.use(express.static(__dirname));
@@ -153,6 +167,7 @@ const REALISTIC_TEAM_STRENGTHS = {
         consistency: 0.65, style: "balanced", pressureHandling: 0.70 
     }
 };
+
 // ULTIMATIVE KI-MODULE INITIALISIEREN
 const proCalculator = new ProfessionalCalculator();
 const hdaAnalyzer = new HDAAnalyzer();
@@ -255,7 +270,6 @@ class FootballDataService {
         return matches;
     }
 }
-
 // ERWEITERTE TEAM-STRENGTH FUNKTION
 function getRealisticTeamStrength(teamName) {
     if (REALISTIC_TEAM_STRENGTHS[teamName]) {
@@ -380,6 +394,7 @@ function calculateAdvancedConfidence(baseConfidence, mlFeatures, homeConsistency
     
     return (baseConfidence * 0.4) + (featureConfidence * 0.35) + (consistencyScore * 0.15) + (historicalAccuracy * 0.10);
 }
+
 // ENSEMBLE WAHRSCHEINLICHKEITEN
 async function computeEnsembleProbabilities(homeXG, awayXG, league, homeTeam, awayTeam, mlFeatures) {
     const baseProbs = proCalculator.calculateAdvancedProbabilities(homeXG, awayXG, league);
@@ -426,9 +441,7 @@ async function computeEnsembleProbabilities(homeXG, awayXG, league, homeTeam, aw
             mlCorrection: mlCorrection
         }
     };
-}
-
-// PREDICTIVE TREND-ANALYSE
+ }// PREDICTIVE TREND-ANALYSE
 async function computePredictiveTrends(probabilities, xgData, homeTeam, awayTeam, league, mlFeatures) {
     const historicalPatterns = await trendAnalyzer.getHistoricalPatterns(league);
     const currentGameData = {
@@ -524,6 +537,7 @@ async function generateUltimateAnalysis(homeTeam, awayTeam, probabilities, trend
             sentiment: xgData.sentimentAnalysis
         }
     };
+
     // BEST MARKET TREND AUS XG DATA HOLEN
     const bestMarketTrend = xgData.marketTrends?.bestTrend;
     const bestMarket = xgData.marketTrends?.bestMarket;
@@ -655,8 +669,7 @@ app.get('/api/games', async (req, res) => {
                     const value = await valueIntelligence.findSmartValueBets(probabilities);
                     const trendAnalysis = await computePredictiveTrends(probabilities, xgData, homeTeam, awayTeam, league, mlFeatures);
                     const analysis = await generateUltimateAnalysis(homeTeam, awayTeam, probabilities, trendAnalysis, xgData, value, league, mlFeatures);
-
-                    // KI-SCORE MIT MARKET TRENDS
+                // KI-SCORE MIT MARKET TRENDS
                     const marketTrendBonus = xgData.marketTrends?.bestTrend?.confidence || 0;
                     const kiScore = 0.18 * probabilities.confidence + 
                                   0.16 * trendAnalysis.confidence + 
@@ -849,3 +862,5 @@ app.listen(PORT, () => {
     console.log(`📊 Team Database: ${Object.values(EXPANDED_TEAM_DATABASE).reduce((sum, teams) => sum + teams.length, 0)} teams across ${Object.keys(EXPANDED_TEAM_DATABASE).length} leagues`);
     console.log(`🎯 Multi-Market: Over/Under, BTTS, 1X2 mit individuellen Trend-Analysen`);
 });
+
+
