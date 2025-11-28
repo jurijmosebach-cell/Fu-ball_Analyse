@@ -787,8 +787,8 @@ app.get('/api/games', async (req, res) => {
     }
 });
 
-// Health Check
-app.get('/health', async (req, res) {
+// Health Check - KORRIGIERTE SYNTAX
+app.get('/health', async (req, res) => {
     const stats = {
         status: 'MULTI-MARKET TRENDS OPERATIONAL',
         timestamp: new Date().toISOString(),
