@@ -1,28 +1,43 @@
 {
-  "name": "profoot-analytics",
-  "version": "5.0.0",
-  "description": "Epische KI-gestützte Fußballanalyse mit HDH-Analyse",
+  "name": "ultimate-profoot-analytics",
+  "version": "8.2.0",
+  "description": "ULTIMATIVE KI-FUSSBALLANALYSE MIT PRÄZISEN ENSEMBLE-MODELLEN - Multi-Market Trend System",
   "type": "module",
-  "main": "server-real.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node server-real.js",
-    "dev": "node --watch server-real.js"
-  },
-  "dependencies": {
-    "express": "^4.19.2",
-    "simple-statistics": "^7.8.3"
-  },
-  "engines": {
-    "node": ">=18"
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "keywords": [
     "football",
-    "betting",
-    "analysis",
+    "soccer",
+    "predictions",
+    "analytics",
     "machine-learning",
-    "ai",
-    "sports-analytics"
+    "betting",
+    "sports-analytics",
+    "ki",
+    "ai"
   ],
-  "author": "ProFoot Analytics",
-  "license": "MIT"
+  "author": "ProFoot Analytics Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "node-fetch": "^3.3.2",
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jurijmosebach-cell/Fu-ball_Analyse"
+  },
+  "homepage": "https://fu-ball-analyse.onrender.com"
 }
