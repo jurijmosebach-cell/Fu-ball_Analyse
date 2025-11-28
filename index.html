@@ -3,1018 +3,555 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ ProFoot Analytics | Epische KI-Fußballanalyse & Value Betting</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Fußball Analyse - KI Vorhersagen</title>
     <style>
-        :root {
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --primary-light: #dbeafe;
-            --secondary: #059669;
-            --secondary-dark: #047857;
-            --accent: #f59e0b;
-            --accent-dark: #d97706;
-            --danger: #dc2626;
-            --warning: #f59e0b;
-            --success: #10b981;
-            --dark: #1f2937;
-            --dark-2: #374151;
-            --light: #f8fafc;
-            --light-2: #f1f5f9;
-            --gray: #6b7280;
-            --gray-light: #e5e7eb;
-            --border: #e2e8f0;
-            
-            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            --card-shadow-hover: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-            --glow: 0 0 20px rgba(37, 99, 235, 0.1);
-            --epic-glow: 0 0 40px rgba(37, 99, 235, 0.3);
-        }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
             min-height: 100vh;
-            color: var(--light);
-            line-height: 1.6;
-            font-weight: 400;
-            overflow-x: hidden;
         }
-
-        .app-container {
-            max-width: 1600px;
+        
+        .container {
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
-
-        /* Epic Header */
+        
         .header {
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 3rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--card-shadow-hover), var(--epic-glow);
-            border: 1px solid rgba(100, 116, 139, 0.3);
-            position: relative;
-            overflow: hidden;
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
         }
-
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
-            box-shadow: 0 0 20px rgba(37, 99, 235, 0.5);
-        }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 2rem;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .logo-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: var(--epic-glow);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .logo-icon::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-            transform: rotate(45deg);
-            animation: shimmer 3s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-        }
-
-        .logo-icon i {
-            font-size: 2.5rem;
-            color: white;
-            z-index: 2;
-        }
-
-        .logo-text h1 {
-            font-size: 3rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #00c6ff, #0072ff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
-            letter-spacing: -0.025em;
-            text-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
-
-        .logo-text .subtitle {
-            color: var(--gray-light);
-            font-size: 1.3rem;
-            font-weight: 500;
-            letter-spacing: -0.01em;
-        }
-
-        .stats-bar {
+        
+        .filters {
             display: flex;
-            gap: 3rem;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
             flex-wrap: wrap;
         }
-
-        .stat-item {
-            text-align: center;
-            position: relative;
-        }
-
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: 900;
-            color: white;
-            margin-bottom: 0.25rem;
-            font-feature-settings: "tnum";
-            text-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            color: var(--gray-light);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        /* Epic Controls */
-        .controls {
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 2.5rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--card-shadow);
-            border: 1px solid rgba(100, 116, 139, 0.3);
-        }
-
-        .controls-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            align-items: end;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .form-label {
-            font-weight: 700;
-            color: var(--light);
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .form-label i {
-            color: var(--primary);
-            width: 20px;
-        }
-
-        .form-control {
-            padding: 1rem 1.5rem;
-            border: 2px solid rgba(100, 116, 139, 0.5);
-            border-radius: 14px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            background: rgba(15, 23, 42, 0.7);
-            color: white;
-            font-weight: 500;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
-            transform: translateY(-2px);
-            background: rgba(15, 23, 42, 0.9);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
+        
+        .filter-select {
+            padding: 10px 15px;
             border: none;
-            padding: 1.25rem 3rem;
-            border-radius: 14px;
-            font-weight: 800;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            justify-content: center;
-            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
-            letter-spacing: -0.01em;
-            position: relative;
-            overflow: hidden;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-size: 14px;
+            min-width: 150px;
         }
-
-        .btn-primary::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 30px rgba(37, 99, 235, 0.6);
-        }
-
-        .btn-primary:hover::before {
-            left: 100%;
-        }
-
-        /* Epic Main Content */
-        .main-content {
+        
+        .games-grid {
             display: grid;
-            grid-template-columns: 1fr 420px;
-            gap: 2.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
         }
-
-        @media (max-width: 1200px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
+        
+        .game-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
         }
-
-        /* Epic Cards */
-        .card {
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 2.5rem;
-            box-shadow: var(--card-shadow);
-            border: 1px solid rgba(100, 116, 139, 0.3);
-            transition: all 0.4s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
-        }
-
-        .card:hover {
-            box-shadow: var(--card-shadow-hover), var(--epic-glow);
+        
+        .game-card:hover {
             transform: translateY(-5px);
-            border-color: rgba(100, 116, 139, 0.5);
+            background: rgba(255, 255, 255, 0.15);
         }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 2px solid rgba(100, 116, 139, 0.3);
-        }
-
-        .card-title {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: var(--light);
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            letter-spacing: -0.025em;
-        }
-
-        .card-title i {
-            color: var(--primary);
-        }
-
-        .card-badge {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 800;
-            letter-spacing: 0.02em;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-        }
-
-        /* Epic Game Items */
-        .game-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .game-item {
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
-            border-radius: 20px;
-            padding: 2rem;
-            border-left: 6px solid var(--primary);
-            box-shadow: var(--card-shadow);
-            transition: all 0.4s ease;
-            cursor: pointer;
-            position: relative;
-            border: 1px solid rgba(100, 116, 139, 0.3);
-            overflow: hidden;
-        }
-
-        .game-item::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(5, 150, 105, 0.05) 100%);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .game-item:hover {
-            transform: translateX(8px) translateY(-3px);
-            box-shadow: var(--card-shadow-hover), var(--glow);
-            border-left-color: var(--secondary);
-        }
-
-        .game-item:hover::before {
-            opacity: 1;
-        }
-
-        .game-item.featured {
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
-            border-left-color: var(--secondary);
-            border: 1px solid rgba(5, 150, 105, 0.3);
-        }
-
-        .game-item.premium {
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
-            border-left-color: var(--accent);
-            border: 2px solid rgba(245, 158, 11, 0.4);
-            box-shadow: 0 8px 30px rgba(245, 158, 11, 0.2), var(--glow);
-        }
-
-        .game-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1.75rem;
-        }
-
+        
         .teams {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 1.5rem;
-            flex: 1;
+            margin-bottom: 15px;
         }
-
+        
         .team {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 1rem;
-            font-weight: 800;
-            font-size: 1.2rem;
+            text-align: center;
+            flex: 1;
         }
-
+        
         .team-logo {
             width: 50px;
-            height: 35px;
-            border-radius: 8px;
-            object-fit: cover;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255,255,255,0.1);
+            height: 50px;
+            border-radius: 50%;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
         }
-
+        
+        .team-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
         .vs {
-            color: var(--gray-light);
-            font-weight: 700;
-            font-size: 1rem;
-            background: rgba(100, 116, 139, 0.2);
-            padding: 0.75rem 1.25rem;
-            border-radius: 20px;
+            margin: 0 15px;
+            font-weight: bold;
+            color: #00c6ff;
         }
-
-        .game-meta {
-            text-align: right;
-        }
-
-        .league {
-            font-weight: 800;
-            color: var(--primary);
-            font-size: 1rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .game-date {
-            font-size: 0.9rem;
-            color: var(--gray-light);
-            font-weight: 600;
-        }
-
-        /* Epic Progress Bars */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 1.75rem;
-        }
-
-        .metric {
+        
+        .probabilities {
             display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
+            justify-content: space-around;
+            margin: 15px 0;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 10px;
         }
-
-        .metric-label {
-            font-size: 0.9rem;
-            color: var(--gray-light);
-            font-weight: 700;
-            display: flex;
-            justify-content: space-between;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
+        
+        .prob-item {
+            text-align: center;
         }
-
-        .metric-value {
-            font-weight: 800;
-            color: white;
-            font-feature-settings: "tnum";
+        
+        .prob-label {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-bottom: 5px;
         }
-
-        .progress-bar {
-            height: 12px;
-            background: rgba(100, 116, 139, 0.2);
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
-            position: relative;
+        
+        .prob-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #00c6ff;
         }
-
-        .progress-fill {
-            height: 100%;
-            border-radius: 12px;
-            transition: width 0.8s ease;
-            position: relative;
-            overflow: hidden;
+        
+        .trends {
+            margin: 15px 0;
         }
-
-        .progress-fill::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            animation: shimmer 2s infinite;
+        
+        .trend-item {
+            background: rgba(0, 198, 255, 0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 14px;
         }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
+        
+        .trend-item strong {
+            color: #00c6ff;
         }
-
-        .progress-home { background: linear-gradient(90deg, var(--secondary), var(--secondary-dark)); }
-        .progress-draw { background: linear-gradient(90deg, var(--accent), var(--accent-dark)); }
-        .progress-away { background: linear-gradient(90deg, var(--danger), #b91c1c); }
-        .progress-over { background: linear-gradient(90deg, var(--primary), var(--primary-dark)); }
-        .progress-under { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
-        .progress-btts { background: linear-gradient(90deg, #ff7a00, #ea580c); }
-
-        /* Epic KI Badge */
-        .ki-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1.25rem;
+        
+        .analysis {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        
+        .analysis-summary {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #00c6ff;
+        }
+        
+        .analysis-factors {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        
+        .ki-score {
+            text-align: center;
+            margin-top: 10px;
+            padding: 8px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
             border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 800;
-            margin-left: 0.75rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255,255,255,0.1);
+            font-weight: bold;
         }
-
-        .ki-high { background: linear-gradient(135deg, #166534, #15803d); color: white; }
-        .ki-medium { background: linear-gradient(135deg, #ca8a04, #eab308); color: white; }
-        .ki-low { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
-
-        /* Epic Trend Indicator */
-        .trend-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1.25rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 800;
-            margin-left: 0.75rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .trend-home { background: linear-gradient(135deg, #166534, #15803d); color: white; }
-        .trend-away { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
-        .trend-draw { background: linear-gradient(135deg, #ca8a04, #eab308); color: white; }
-        .trend-balanced { background: linear-gradient(135deg, #475569, #64748b); color: white; }
-
-        /* Epic Analysis Section */
-        .analysis-section {
-            margin-top: 1.75rem;
-            padding: 1.75rem;
-            background: rgba(15, 23, 42, 0.7);
-            border-radius: 16px;
-            border-left: 4px solid var(--primary);
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
-        }
-
-        .analysis-title {
-            font-weight: 800;
-            color: white;
-            margin-bottom: 0.75rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 1.1rem;
-        }
-
-        .analysis-text {
-            font-size: 0.95rem;
-            color: var(--gray-light);
-            line-height: 1.6;
-            font-weight: 500;
-        }
-
-        /* Epic Premium Badge */
-        .premium-badge {
-            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 800;
-            margin-left: 1rem;
-            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
-        }
-
-        /* Epic Loading */
+        
         .loading {
             text-align: center;
-            padding: 5rem 2rem;
-            color: var(--gray-light);
+            padding: 40px;
+            font-size: 18px;
         }
-
-        .loading-spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(100, 116, 139, 0.3);
-            border-top: 4px solid var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 2rem;
-            box-shadow: 0 0 20px rgba(37, 99, 235, 0.3);
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-         /* Epic Sidebar */
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-        }
-
-        .quick-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
-            padding: 2rem 1.5rem;
-            border-radius: 20px;
+        
+        .error {
             text-align: center;
-            box-shadow: var(--card-shadow);
-            border: 1px solid rgba(100, 116, 139, 0.3);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            padding: 20px;
+            background: rgba(255, 0, 0, 0.2);
+            border-radius: 10px;
+            margin: 20px 0;
         }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        
+        .market-trends {
+            margin: 10px 0;
         }
-
-        .stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--card-shadow-hover);
+        
+        .market-trend {
+            background: rgba(0, 255, 127, 0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            font-size: 13px;
         }
-
-        .stat-card .value {
-            font-size: 2rem;
-            font-weight: 900;
-            color: white;
-            margin-bottom: 0.75rem;
-            font-feature-settings: "tnum";
-            text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        
+        .premium-picks {
+            background: linear-gradient(45deg, #ffd700, #ff8c00);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 30px 0;
+            color: #333;
         }
-
-        .stat-card .label {
-            font-size: 0.85rem;
-            color: var(--gray-light);
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+        
+        .premium-picks h2 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #333;
         }
-
-        /* Epic Value Highlight */
-        .value-highlight {
-            background: linear-gradient(135deg, var(--success), var(--secondary));
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 14px;
-            font-size: 0.9rem;
-            font-weight: 800;
-            margin-left: 0.75rem;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-
-        /* Epic Bankroll Panel */
-        .bankroll-panel {
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
-            border-radius: 20px;
-            padding: 2.5rem;
-            margin-bottom: 2rem;
-            border: 1px solid rgba(100, 116, 139, 0.3);
-            box-shadow: var(--card-shadow-hover);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .bankroll-panel::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
-        }
-
-        /* Epic Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .game-item {
-            animation: fadeInUp 0.6s ease;
-        }
-
-        /* Epic Premium Section */
-        .premium-section {
-            position: relative;
-        }
-
-        .premium-section::before {
-            content: '💎';
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            font-size: 2rem;
-            z-index: 2;
-            text-shadow: 0 0 20px rgba(245, 158, 11, 0.7);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
-        }
-
-        /* Epic Responsive */
+        
         @media (max-width: 768px) {
-            .app-container {
-                padding: 1rem;
-            }
-
-            .header {
-                padding: 2rem 1.5rem;
-            }
-
-            .header-content {
-                flex-direction: column;
-                text-align: center;
-                gap: 1.5rem;
-            }
-
-            .logo {
-                justify-content: center;
-            }
-
-            .stats-bar {
-                justify-content: center;
-                gap: 2rem;
-            }
-
-            .controls {
-                padding: 2rem;
-            }
-
-            .controls-grid {
+            .games-grid {
                 grid-template-columns: 1fr;
-            }
-
-            .game-header {
-                flex-direction: column;
-                gap: 1.5rem;
-            }
-
-            .teams {
-                justify-content: center;
-            }
-
-            .game-meta {
-                text-align: center;
-            }
-
-            .metrics-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .quick-stats {
-                grid-template-columns: 1fr;
-            }
-
-            .card {
-                padding: 2rem;
             }
             
-            .logo-text h1 {
-                font-size: 2.5rem;
+            .filters {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .filter-select {
+                width: 100%;
+                max-width: 300px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Epic Header -->
-        <header class="header">
-            <div class="header-content">
-                <div class="logo">
-                    <div class="logo-icon">
-                        <i class="fas fa-robot"></i>
-                    </div>
-                    <div class="logo-text">
-                        <h1>ProFoot Analytics</h1>
-                        <div class="subtitle">Epische KI-Fußballanalyse & Value Betting</div>
-                    </div>
-                </div>
-                <div class="stats-bar">
-                    <div class="stat-item">
-                        <div class="stat-value" id="totalMatches">0</div>
-                        <div class="stat-label">Analysierte Spiele</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="premiumPicks">0</div>
-                        <div class="stat-label">Premium Picks</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="updateTime">-</div>
-                        <div class="stat-label">Letztes Update</div>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <!-- Epic Controls -->
-        <section class="controls">
-            <div class="controls-grid">
-                <div class="form-group">
-                    <label class="form-label" for="date">
-                        <i class="fas fa-calendar-alt"></i> Datum
-                    </label>
-                    <input type="date" id="date" class="form-control">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label" for="league">
-                        <i class="fas fa-trophy"></i> Liga
-                    </label>
-                    <select id="league" class="form-control">
-                        <option value="">Alle Ligen</option>
-                        <option value="Premier League">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
-                        <option value="La Liga">🇪🇸 La Liga</option>
-                        <option value="Bundesliga">🇩🇪 Bundesliga</option>
-                        <option value="Serie A">🇮🇹 Serie A</option>
-                        <option value="Ligue 1">🇫🇷 Ligue 1</option>
-                        <option value="Championship">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Championship</option>
-                        <option value="Primeira Liga">🇵🇹 Primeira Liga</option>
-                        <option value="European Championship">🇪🇺 European Championship</option>
-                        <option value="Champions League">⭐ Champions League</option>
-                        <option value="Europa League">🌍 Europa League</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label" for="team">
-                        <i class="fas fa-search"></i> Team suchen
-                    </label>
-                    <input type="text" id="team" class="form-control" placeholder="Team Name eingeben...">
-                </div>
-                
-                <button id="loadBtn" class="btn-primary">
-                    <i class="fas fa-robot"></i> EPISCHE KI-ANALYSE STARTEN
-                </button>
-            </div>
-        </section>
-
-        <!-- Epic Main Content -->
-        <div class="main-content">
-            <!-- Left Column -->
-            <div class="main-column">
-                <!-- Premium Picks -->
-                <section class="card premium-section">
-                    <div class="card-header">
-                        <h2 class="card-title">
-                            <i class="fas fa-crown"></i>
-                            EPISCHE KI-PREMIUM PICKS
-                        </h2>
-                        <span class="card-badge" id="premiumCount">TOP 3</span>
-                    </div>
-                    <div class="game-list" id="premiumPicks"></div>
-                </section>
-
-                <!-- Value Bets -->
-                <section class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">
-                            <i class="fas fa-trending-up"></i>
-                            TOP VALUE-WETTEN
-                        </h2>
-                        <span class="card-badge">Value > 8%</span>
-                    </div>
-                    <div class="game-list" id="topValueBets"></div>
-                </section>
-
-                <!-- Over 2.5 Goals -->
-                <section class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">
-                            <i class="fas fa-bullseye"></i>
-                            OVER 2.5 TORE
-                        </h2>
-                        <span class="card-badge">Wahrscheinlichkeit</span>
-                    </div>
-                    <div class="game-list" id="topOver25"></div>
-                </section>
-
-                <!-- Featured Games -->
-                <section class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">
-                            <i class="fas fa-star"></i>
-                            TOP SPIELE
-                        </h2>
-                        <span class="card-badge" id="featuredCount">KI-Empfehlung</span>
-                    </div>
-                    <div class="game-list" id="topGames"></div>
-                </section>
-
-                <!-- All Games -->
-                <section class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">
-                            <i class="fas fa-list"></i>
-                            ALLE SPIELE
-                        </h2>
-                        <span class="card-badge" id="allGamesCount">Gesamt</span>
-                    </div>
-                    <div class="game-list" id="games"></div>
-                </section>
-            </div>
-
-            <!-- Right Sidebar -->
-            <div class="sidebar">
-                <!-- Quick Stats -->
-                <section class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">
-                            <i class="fas fa-chart-bar"></i>
-                            LIVE-STATISTIK
-                        </h2>
-                    </div>
-                    <div class="quick-stats">
-                        <div class="stat-card">
-                            <div class="value" id="avgConfidence">-</div>
-                            <div class="label">KI-Konfidenz</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="value" id="highValueBets">0</div>
-                            <div class="label">Value Bets</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="value" id="strongTrends">0</div>
-                            <div class="label">Starke Trends</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="value" id="over25Rate">-</div>
-                            <div class="label">Over 2.5 Rate</div>
-                        </div>
-                    </div>
-                </section>
-                <!-- Additional Stats -->
-                <section class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">
-                            <i class="fas fa-info-circle"></i>
-                            SYSTEM-INFO
-                        </h2>
-                    </div>
-                    <div style="padding: 1.5rem 0;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 1rem; background: rgba(15, 23, 42, 0.7); border-radius: 14px;">
-                            <span style="font-weight: 700; color: white;">Version</span>
-                            <span style="font-weight: 900; color: var(--primary);">5.0.0 EPIC</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 1rem; background: rgba(15, 23, 42, 0.7); border-radius: 14px;">
-                            <span style="font-weight: 700; color: white;">KI-Modelle</span>
-                            <span style="font-weight: 900; color: var(--success);">AKTIV</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(15, 23, 42, 0.7); border-radius: 14px;">
-                            <span style="font-weight: 700; color: white;">Datenquelle</span>
-                            <span style="font-weight: 900; color: var(--primary);">LIVE API</span>
-                        </div>
-                    </div>
-                </section>
-            </div>
+    <div class="container">
+        <div class="header">
+            <h1>⚽ KI Fußball Analyse</h1>
+            <p>Multi-Market Trends & Ensemble Vorhersagen</p>
         </div>
+
+        <div class="filters">
+            <select id="dateSelect" class="filter-select">
+                <option value="">Datum auswählen...</option>
+            </select>
+            <select id="leagueSelect" class="filter-select">
+                <option value="">Alle Ligen</option>
+            </select>
+            <button onclick="loadGames()" class="filter-select" style="background: #00c6ff; color: white; cursor: pointer;">
+                🔄 Aktualisieren
+            </button>
+        </div>
+
+        <div id="loading" class="loading">
+            📊 Lade Spiele und KI-Analysen...
+        </div>
+
+        <div id="error" class="error" style="display: none;">
+            ❌ Fehler beim Laden der Daten
+        </div>
+
+        <div id="premiumPicks" class="premium-picks" style="display: none;">
+            <h2>🏆 Premium Picks - Top Trends</h2>
+            <div id="premiumContent"></div>
+        </div>
+
+        <div id="gamesGrid" class="games-grid"></div>
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        // Fehlerbehandlung für alle Funktionen
+        function safeGet(object, path, defaultValue = 'N/A') {
+            try {
+                const value = path.split('.').reduce((obj, key) => obj && obj[key], object);
+                return value !== undefined && value !== null ? value : defaultValue;
+            } catch (error) {
+                return defaultValue;
+            }
+        }
+
+        function safeUpperCase(str) {
+            try {
+                return String(str || '').toUpperCase();
+            } catch (error) {
+                return 'N/A';
+            }
+        }
+
+        function safeNumber(num, decimals = 1) {
+            try {
+                const value = parseFloat(num);
+                return isNaN(value) ? '0.0' : value.toFixed(decimals);
+            } catch (error) {
+                return '0.0';
+            }
+        }
+           // Hauptfunktionen
+        async function loadGames() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const gamesGrid = document.getElementById('gamesGrid');
+            const premiumPicks = document.getElementById('premiumPicks');
+            
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            gamesGrid.innerHTML = '';
+            premiumPicks.style.display = 'none';
+
+            try {
+                const dateSelect = document.getElementById('dateSelect');
+                const leagueSelect = document.getElementById('leagueSelect');
+                
+                const date = dateSelect.value || new Date().toISOString().split('T')[0];
+                const league = leagueSelect.value;
+                
+                const apiUrl = `/api/games?date=${date}${league ? `&league=${encodeURIComponent(league)}` : ''}`;
+                
+                console.log('Lade Daten von:', apiUrl);
+                
+                const response = await fetch(apiUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.response || !Array.isArray(data.response)) {
+                    throw new Error('Ungültiges Datenformat');
+                }
+                
+                displayGames(data.response);
+                updatePremiumPicks(data.response);
+                populateFilters(data.info);
+                
+            } catch (error) {
+                console.error('Fehler beim Laden:', error);
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').innerHTML = `❌ Fehler: ${error.message}`;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function displayGames(games) {
+            const gamesGrid = document.getElementById('gamesGrid');
+            
+            if (!games || games.length === 0) {
+                gamesGrid.innerHTML = '<div class="game-card" style="text-align: center; grid-column: 1/-1;">Keine Spiele für diesen Tag gefunden</div>';
+                return;
+            }
+
+            gamesGrid.innerHTML = games.map(game => `
+                <div class="game-card">
+                    <div class="teams">
+                        <div class="team">
+                            <div class="team-logo">
+                                ${getTeamFlag(safeGet(game, 'home'))}
+                            </div>
+                            <div class="team-name">${safeGet(game, 'home', 'Unbekannt')}</div>
+                        </div>
+                        <div class="vs">VS</div>
+                        <div class="team">
+                            <div class="team-logo">
+                                ${getTeamFlag(safeGet(game, 'away'))}
+                            </div>
+                            <div class="team-name">${safeGet(game, 'away', 'Unbekannt')}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="probabilities">
+                        <div class="prob-item">
+                            <div class="prob-label">Heim</div>
+                            <div class="prob-value">${safeNumber(safeGet(game, 'prob.home', 0) * 100)}%</div>
+                        </div>
+                        <div class="prob-item">
+                            <div class="prob-label">Unent.</div>
+                            <div class="prob-value">${safeNumber(safeGet(game, 'prob.draw', 0) * 100)}%</div>
+                        </div>
+                        <div class="prob-item">
+                            <div class="prob-label">Ausw.</div>
+                            <div class="prob-value">${safeNumber(safeGet(game, 'prob.away', 0) * 100)}%</div>
+                        </div>
+                    </div>
+                    
+                    ${renderMarketTrends(game)}
+                    ${renderAnalysis(game)}
+                    
+                    <div class="ki-score">
+                        KI Score: ${safeNumber(safeGet(game, 'kiScore', 0) * 100)}%
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderMarketTrends(game) {
+            const marketTrends = safeGet(game, 'marketTrends');
+            if (!marketTrends || !marketTrends.bestTrend) {
+                return '<div class="trends"><div class="trend-item">📊 Trends werden analysiert...</div></div>';
+            }
+
+            const bestTrend = marketTrends.bestTrend;
+            return `
+                <div class="market-trends">
+                    <div class="market-trend">
+                        🎯 <strong>Top Trend:</strong> ${safeGet(bestTrend, 'market', 'Unbekannt')} 
+                        (${safeNumber(safeGet(bestTrend, 'probability', 0) * 100)}% | Confidence: ${safeNumber(safeGet(bestTrend, 'confidence', 0) * 100)}%)
+                    </div>
+                    <div class="market-trend">
+                        📈 ${safeGet(bestTrend, 'description', 'Trend analysiert')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderAnalysis(game) {
+            const analysis = safeGet(game, 'analysis');
+            if (!analysis) {
+                return '';
+            }
+
+            return `
+                <div class="analysis">
+                    <div class="analysis-summary">${safeGet(analysis, 'summary', 'Analyse wird berechnet...')}</div>
+                    <div class="analysis-factors">
+                        ${(safeGet(analysis, 'keyFactors', [])).slice(0, 3).map(factor => 
+                            `• ${safeGet(factor, 'toString', factor)}`
+                        ).join('<br>')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function updatePremiumPicks(games) {
+            const premiumPicks = document.getElementById('premiumPicks');
+            const premiumContent = document.getElementById('premiumContent');
+            
+            if (!games || games.length === 0) {
+                premiumPicks.style.display = 'none';
+                return;
+            }
+
+            // Top 3 Spiele nach KI-Score
+            const topGames = games
+                .filter(game => safeGet(game, 'kiScore', 0) > 0.6)
+                .sort((a, b) => safeGet(b, 'kiScore', 0) - safeGet(a, 'kiScore', 0))
+                .slice(0, 3);
+
+            if (topGames.length === 0) {
+                premiumPicks.style.display = 'none';
+                return;
+            }
+
+            premiumContent.innerHTML = topGames.map(game => {
+                const bestTrend = safeGet(game, 'marketTrends.bestTrend');
+                return `
+                    <div class="game-card" style="background: rgba(255,255,255,0.9); color: #333; margin: 10px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${safeGet(game, 'home', 'Heim')} vs ${safeGet(game, 'away', 'Auswärts')}</strong>
+                                <br>
+                                <small>${safeGet(game, 'league', 'Liga unbekannt')}</small>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 18px; font-weight: bold; color: #0072ff;">
+                                    ${safeNumber(safeGet(game, 'kiScore', 0) * 100)}%
+                                </div>
+                                <small>KI Confidence</small>
+                            </div>
+                        </div>
+                        ${bestTrend ? `
+                            <div style="margin-top: 10px; padding: 8px; background: rgba(0, 198, 255, 0.2); border-radius: 5px;">
+                                🎯 <strong>Empfehlung:</strong> ${safeGet(bestTrend, 'market')} 
+                                (${safeNumber(safeGet(bestTrend, 'probability', 0) * 100)}%)
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            premiumPicks.style.display = 'block';
+        }
+
+        function populateFilters(info) {
+            // Datum-Filter
+            const dateSelect = document.getElementById('dateSelect');
+            if (dateSelect.options.length <= 1) {
+                const today = new Date();
+                for (let i = -2; i <= 7; i++) {
+                    const date = new Date();
+                    date.setDate(today.getDate() + i);
+                    const dateString = date.toISOString().split('T')[0];
+                    const option = document.createElement('option');
+                    option.value = dateString;
+                    option.textContent = date.toLocaleDateString('de-DE');
+                    if (i === 0) option.selected = true;
+                    dateSelect.appendChild(option);
+                }
+            }
+
+            // Liga-Filter
+            const leagueSelect = document.getElementById('leagueSelect');
+            if (leagueSelect.options.length <= 1 && info && info.leagues) {
+                safeGet(info, 'leagues', []).forEach(league => {
+                    const option = document.createElement('option');
+                    option.value = league;
+                    option.textContent = league;
+                    leagueSelect.appendChild(option);
+                });
+            }
+        }
+
+        function getTeamFlag(teamName) {
+            const team = String(teamName || '').toLowerCase();
+            
+            if (team.includes('manchester') || team.includes('liverpool') || team.includes('arsenal') || 
+                team.includes('tottenham') || team.includes('chelsea')) return '🏴󠁧󠁢󠁥󠁮󠁧󠁿';
+            if (team.includes('bayern') || team.includes('dortmund') || team.includes('leipzig')) return '🇩🇪';
+            if (team.includes('real') || team.includes('barcelona') || team.includes('atletico')) return '🇪🇸';
+            if (team.includes('milan') || team.includes('juventus') || team.includes('inter')) return '🇮🇹';
+            if (team.includes('psg') || team.includes('lyon') || team.includes('marseille')) return '🇫🇷';
+            if (team.includes('benfica') || team.includes('porto') || team.includes('sporting')) return '🇵🇹';
+            if (team.includes('ajax') || team.includes('psv') || team.includes('feyenoord')) return '🇳🇱';
+            
+            return '⚽';
+        }
+
+        // Initialisierung
+        document.addEventListener('DOMContentLoaded', function() {
+            loadGames();
+            
+            // Auto-Refresh alle 2 Minuten
+            setInterval(loadGames, 120000);
+        });
+
+        // Globale Fehlerbehandlung
+        window.addEventListener('error', function(e) {
+            console.error('Globaler Fehler:', e.error);
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Nicht behandelter Promise Fehler:', e.reason);
+        });
+    </script>
 </body>
 </html>
