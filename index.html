@@ -380,7 +380,7 @@
                 return '0.0';
             }
         }
-         // Hauptfunktionen
+        // Hauptfunktionen
         async function loadGames() {
             const loading = document.getElementById('loading');
             const error = document.getElementById('error');
@@ -628,14 +628,24 @@
                 return '';
             }
 
+            const keyFactors = safeGet(analysis, 'keyFactors', []);
+            const displayFactors = keyFactors.slice(0, 3).map(factor => {
+                // Mehrere Fallbacks für verschiedene Faktor-Typen
+                if (typeof factor === 'string') return factor;
+                if (typeof factor === 'object' && factor !== null) {
+                    return factor.description || factor.text || String(factor);
+                }
+                return String(factor);
+            });
+
             return `
                 <div class="analysis">
                     <div class="analysis-summary">${safeGet(analysis, 'summary', 'Analyse wird berechnet...')}</div>
-                    <div class="analysis-factors">
-                        ${(safeGet(analysis, 'keyFactors', [])).slice(0, 3).map(factor => 
-                            `• ${safeGet(factor, 'toString', factor)}`
-                        ).join('<br>')}
-                    </div>
+                    ${displayFactors.length > 0 ? `
+                        <div class="analysis-factors">
+                            ${displayFactors.map(factor => `• ${factor}`).join('<br>')}
+                        </div>
+                    ` : ''}
                 </div>
             `;
         }
@@ -743,7 +753,8 @@
         // Initialisierung
         document.addEventListener('DOMContentLoaded', function() {
             loadGames();
-             // Auto-Refresh alle 2 Minuten
+            
+            // Auto-Refresh alle 2 Minuten
             setInterval(loadGames, 120000);
         });
 
