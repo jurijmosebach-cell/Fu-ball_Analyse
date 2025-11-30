@@ -363,7 +363,6 @@
                 return defaultValue;
             }
         }
-
         function safeUpperCase(str) {
             try {
                 return String(str || '').toUpperCase();
@@ -483,7 +482,7 @@
             `).join('');
         }
 
-        // NEUE FUNKTION FÜR TOP PICKS
+        // KORRIGIERTE FUNKTION FÜR TOP PICKS
         function updateTopPicks(games) {
             const topPicks = document.getElementById('topPicks');
             const topPicksContent = document.getElementById('topPicksContent');
@@ -493,22 +492,46 @@
                 return;
             }
 
-            // STRENGERE KRITERIEN FÜR TOP PICKS
+            console.log(`🔍 Analysiere ${games.length} Spiele für Top Picks...`);
+
+            // WENIGER STRENGE KRITERIEN FÜR TOP PICKS
             const topPicksGames = games
                 .filter(game => {
                     const kiScore = safeGet(game, 'kiScore', 0);
                     const confidence = safeGet(game, 'confidence', 0);
                     const riskLevel = safeGet(game, 'analysis.riskLevel', 'high');
                     const bestTrend = safeGet(game, 'marketTrends.bestTrend');
+                    const bestTrendConfidence = safeGet(bestTrend, 'confidence', 0);
                     
-                    return kiScore > 0.7 && 
-                           confidence > 0.7 && 
-                           riskLevel === 'low' &&
+                    // Debug-Ausgabe
+                    console.log(`📊 Spiel: ${safeGet(game, 'home')} vs ${safeGet(game, 'away')}`);
+                    console.log(`   kiScore: ${kiScore}, Confidence: ${confidence}, Risk: ${riskLevel}`);
+                    console.log(`   Best Trend: ${bestTrend ? 'Ja' : 'Nein'}, Trend Confidence: ${bestTrendConfidence}`);
+                    
+                    // Angepasste Kriterien
+                    return kiScore > 0.5 &&           // Reduziert von 0.7
+                           confidence > 0.5 &&        // Reduziert von 0.7
+                           (riskLevel === 'low' || riskLevel === 'medium') && // Erweitert auf medium
                            bestTrend &&
-                           safeGet(bestTrend, 'confidence', 0) > 0.75;
+                           bestTrendConfidence > 0.6; // Reduziert von 0.75
                 })
                 .sort((a, b) => safeGet(b, 'kiScore', 0) - safeGet(a, 'kiScore', 0))
-                .slice(0, 4); // Maximal 4 Top Picks
+                .slice(0, 6); // Erhöht auf 6 Top Picks
+
+            console.log(`🎯 Gefundene Top Picks: ${topPicksGames.length}`);
+
+            if (topPicksGames.length === 0) {
+                // Fallback: Zeige die besten 3 Spiele basierend auf kiScore
+                const fallbackPicks = games
+                    .filter(game => safeGet(game, 'kiScore', 0) > 0.4)
+                    .sort((a, b) => safeGet(b, 'kiScore', 0) - safeGet(a, 'kiScore', 0))
+                    .slice(0, 3);
+                    
+                if (fallbackPicks.length > 0) {
+                    console.log(`🔄 Verwende Fallback mit ${fallbackPicks.length} Spielen`);
+                    topPicksGames.push(...fallbackPicks);
+                }
+            }
 
             if (topPicksGames.length === 0) {
                 topPicks.style.display = 'none';
@@ -518,6 +541,13 @@
             topPicksContent.innerHTML = topPicksGames.map(game => {
                 const bestTrend = safeGet(game, 'marketTrends.bestTrend');
                 const analysis = safeGet(game, 'analysis');
+                const marketTrends = safeGet(game, 'marketTrends');
+                
+                // Finde den besten verfügbaren Trend
+                let displayTrend = bestTrend;
+                if (!displayTrend && marketTrends && marketTrends.allTrends && marketTrends.allTrends.length > 0) {
+                    displayTrend = marketTrends.allTrends[0];
+                }
                 
                 return `
                     <div class="top-pick-card">
@@ -532,20 +562,28 @@
                         
                         <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
                             ${safeGet(game, 'league')} • Confidence: ${safeNumber(safeGet(game, 'confidence', 0) * 100)}%
+                            <br>Risiko: ${safeGet(game, 'analysis.riskLevel', 'medium')}
                         </div>
                         
-                        ${bestTrend ? `
+                        ${displayTrend ? `
                             <div class="top-pick-trend">
-                                🎯 <strong>${safeGet(bestTrend, 'market')}</strong><br>
-                                ${safeGet(bestTrend, 'description')}<br>
-                                <small>Wahrscheinlichkeit: ${safeNumber(safeGet(bestTrend, 'probability', 0) * 100)}%</small>
+                                🎯 <strong>${safeGet(displayTrend, 'market', 'Top Trend')}</strong><br>
+                                ${safeGet(displayTrend, 'description', 'Starker Trend identifiziert')}<br>
+                                <small>Wahrscheinlichkeit: ${safeNumber(safeGet(displayTrend, 'probability', 0) * 100)}%</small>
                             </div>
-                        ` : ''}
+                        ` : `
+                            <div class="top-pick-trend">
+                                📊 <strong>KI-Empfehlung</strong><br>
+                                Heim: ${safeNumber(safeGet(game, 'prob.home', 0) * 100)}% | 
+                                Unent.: ${safeNumber(safeGet(game, 'prob.draw', 0) * 100)}% | 
+                                Ausw.: ${safeNumber(safeGet(game, 'prob.away', 0) * 100)}%
+                            </div>
+                        `}
                         
                         ${analysis ? `
                             <div class="top-pick-analysis">
-                                <strong>${safeGet(analysis, 'summary')}</strong><br>
-                                ${safeGet(analysis, 'recommendation')}
+                                <strong>${safeGet(analysis, 'summary', 'KI-Analyse verfügbar')}</strong><br>
+                                ${safeGet(analysis, 'recommendation', 'Empfohlen basierend auf KI-Berechnungen')}
                             </div>
                         ` : ''}
                     </div>
@@ -611,9 +649,8 @@
             if (premiumGames.length === 0) {
                 premiumPicks.style.display = 'none';
                 return;
-            }
-
-            premiumContent.innerHTML = premiumGames.map(game => {
+                }
+        premiumContent.innerHTML = premiumGames.map(game => {
                 const bestTrend = safeGet(game, 'marketTrends.bestTrend');
                 return `
                     <div class="game-card" style="background: rgba(255,255,255,0.9); color: #333; margin: 10px 0;">
